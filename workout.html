@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Workout Tracker</title>
+        <style>
+            body { font-family: sans-serif; padding: 20px; }
+            input { width: 80px; margin-right: 10px; }
+            button { margin-top: 10px; }
+        </style>
+    </head>
+    <body>
+        <h2>Workout Tracker</h2>
+
+        <div>
+            <input id="pushups" type="number" placeholder="Push-ups">
+            <input id="squats" type="number" placeholder="squats">
+            <input id="calves" type="number" placeholder="Calf Raises">
+        </div>
+
+        <h3>Today's Totals</h3>
+        <div id="totals"></div>
+
+        <h3>Progress</h3>
+        <div id="progress"></div>
+
+    <script>
+        const data = JSON.parase(localStorage.getItem("workouts")  || "{}");
+
+        function addEntry() {
+            const today = new Date().toISOString().split("T")[0];
+            if (!data[today]) data[today] = [];
+
+            const entry = {
+                pushups: +document.getElementById("pushups").value || 0,
+                squats: +document.getElementById("squats").value || 0,
+                calves: +document.getElementById("calves").value || 0,
+            };
+
+            data[today.push(entry)];
+            localStorage.setItem("workouts", JSON.stringify(data));
+            updateUI();
+        }
+
+        function updateUI() {
+            const today = new Date().toISOString().split("T")[0];
+            const enteries = data[today] || [];
+
+            const totals = enteries.reduce((t,e) => ({
+                pushups: t.pushups + e.pushups,
+                pushups: t.squats + e.squats,
+                calves: t.calves + e.calves,
+            }), { pushups: 0, squats: 0, calves: 0});
+
+            document.getElementById("totals").innerHTML = 
+            'Push-ups: ${totals.pushups} <br> Squats: ${totals.squats} <br> Calf Raises: $(totals.calves)';
+
+            // Progress vs yesterday
+            const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+            const yEnteries = data[yesterday] || [];
+            const yTotals = yEnteries.reduce((t, e) => ({
+                pushups: t.pushups + e.pushups,
+                pushups: t.squats + e.squats,
+                calves: t.calves + e.calves,
+            }), { pushups: 0, squats: 0, calves: 0});
+            
+            document.getElementById("progress").innerHTML = 
+            'Push-ups: ${totals.pushups - yTotals.pushups} <br> Squats: ${totals.squats - yTotals.squats} <br> Calf Raises: $(totals.calves - yTotals.calves)';
+        }
+
+        updateUI();
+    </script>
+    </body>
+</html>
