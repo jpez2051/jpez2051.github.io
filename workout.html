@@ -46,7 +46,7 @@
             <canvas id="chart" width="400" height="200"></canvas>
         </div>
     <script>
-        const data = JSON.parase(localStorage.getItem("workouts")  || "{}");
+        const data = JSON.parse(localStorage.getItem("workouts")  || "{}");
 
         function addEntry() {
             const today = new Date().toISOString().split("T")[0];
@@ -134,3 +134,4 @@
     </body>
 
 </html>
+
