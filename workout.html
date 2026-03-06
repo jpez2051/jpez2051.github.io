@@ -3,9 +3,15 @@
     <head>
         <title>Workout Tracker</title>
         <style>
-            body { font-family: sans-serif; padding: 20px; }
-            input { width: 80px; margin-right: 10px; }
-            button { margin-top: 10px; }
+            body { font-family: -apple-system; BlinkMacSystemFont, sans-serif;
+                  padding: 20px;
+                  max-width: 500px;
+                  margin: auto;
+                }
+            input { width: 90px; margin: 5px; padding: 8px; font-size: 16px; }
+            button { padding: 10px;  margin: 5px 0; font-size: 16px }
+            .section { margin-top: 25px; }
+            .entry { padding: 5px 0; border-bottom: 1px solid #add; }
         </style>
     </head>
     <body>
@@ -15,14 +21,30 @@
             <input id="pushups" type="number" placeholder="Push-ups">
             <input id="squats" type="number" placeholder="squats">
             <input id="calves" type="number" placeholder="Calf Raises">
+            <br>
+            <button onclick="addEntry()">Add Entry</button>
+            <button onclick="repeatLast()">Repeat Last Entry</button>
+        </div>
+        
+        <div class="section">
+            <h3>Today's Totals</h3>
+            <div id="totals"></div>
         </div>
 
-        <h3>Today's Totals</h3>
-        <div id="totals"></div>
+        <div class="section">
+            <h3>Progress vs Yesterday</h3>
+            <div id="progress"></div>
+        </div>
 
-        <h3>Progress</h3>
-        <div id="progress"></div>
+        <div class="section">
+            <h3>History</h3>
+            <div id="history"></div>
+        </div>
 
+        <div class="section">
+            <h3>Weekly Chart</h3>
+            <canvas id="chart" width="400" height="200"></canvas>
+        </div>
     <script>
         const data = JSON.parase(localStorage.getItem("workouts")  || "{}");
 
@@ -41,33 +63,74 @@
             updateUI();
         }
 
+        function repeatLast() {
+            const today = new Date().toISOString().split("T")[0};
+            const entries = data[today] || [];
+            if (entries.length === 0) return;
+
+            const last = entries[entries.lenght - 1];
+            data[today].push({...last});
+            local.Storage.setItem("workouts", JSON.stringify(data));
+            updateUI();
+        }
+
+        function totalsFor(date) {
+            const entries = data[date] || [];
+            return entries.reduce((t, e) => ({
+                pushups: t.pushups + e.pushups,
+                pushups: t.squats + e.squats,
+                calves: t.calves + e.calves,
+            }), { pushups: 0, squats: 0, calves: 0});
+        }
+           
         function updateUI() {
             const today = new Date().toISOString().split("T")[0];
-            const enteries = data[today] || [];
+            const yesterday = new Date(Date.now() - 86400000.toISOString().split("T")[0];
 
-            const totals = enteries.reduce((t,e) => ({
-                pushups: t.pushups + e.pushups,
-                pushups: t.squats + e.squats,
-                calves: t.calves + e.calves,
-            }), { pushups: 0, squats: 0, calves: 0});
+            const t = totalsFor(today);
+            const y = totalsFor(yesterday);
 
             document.getElementById("totals").innerHTML = 
-            'Push-ups: ${totals.pushups} <br> Squats: ${totals.squats} <br> Calf Raises: $(totals.calves)';
-
-            // Progress vs yesterday
-            const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
-            const yEnteries = data[yesterday] || [];
-            const yTotals = yEnteries.reduce((t, e) => ({
-                pushups: t.pushups + e.pushups,
-                pushups: t.squats + e.squats,
-                calves: t.calves + e.calves,
-            }), { pushups: 0, squats: 0, calves: 0});
+                'Push-ups: ${t.pushups} <br> Squats: ${t.squats} <br> Calf Raises: $(t.calves)';
             
             document.getElementById("progress").innerHTML = 
-            'Push-ups: ${totals.pushups - yTotals.pushups} <br> Squats: ${totals.squats - yTotals.squats} <br> Calf Raises: $(totals.calves - yTotals.calves)';
+                'Push-ups: ${t.pushups - y.pushups} <br> Squats: ${t.squats - y.squats} <br> Calf Raises: $(t.calves - y.calves)';
+            // History
+            let hist = "";
+            Object.keys(data).sort().reverse().forEach(date => {
+                const d = totalsFor(date);
+                hist += '<div class="entry"><strong>${date}</strong><br>
+                    Push-ups: ${d.pushups}, Squats: ${d.squats}, Calves: {d.calves}</div>':
+            });
+            document.getElementByID("history").innterHTML = hists;
+
+            drawChart();
+        }
+
+        fucntion drawChart() {
+            const ctx = document.getElementByID("chart").getContext("2d");
+            ctx.clearRect(0, 0, 400, 200);
+
+            const dates = [...Array(7)].map((_, i) => {
+                const d = new Date(Date.now() - (6 - i) * 86400000);
+                return d.toISOString().split("T")[0];
+            });
+
+            const totals = dates.map(d => totalsFor(d).pushups;
+
+            const max = Math.max(...totals, 10);
+
+            totals.forEach((val, i) => {
+                const barHeight = (val / max) * 180;
+                ctx.fillStyle = "#4CAF50";
+                ctx.fillRect(i *50 + 20, 200 - barHeight, 40, barHeight);
+                ctx.fillStyle = "#000";
+                ctx.fillText(val, i * 55 + 30, 195 - barHeight);
+            });
         }
 
         updateUI();
     </script>
     </body>
+
 </html>
