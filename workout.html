@@ -114,7 +114,7 @@
             drawChart();
         }
 
-        function drawChart() {
+   function drawChart() {
     const ctx = document.getElementById("chart").getContext("2d");
     ctx.clearRect(0, 0, 400, 200);
 
@@ -123,33 +123,50 @@
         return d.toISOString().split("T")[0];
     });
 
-    // Get totals for each exercise
+    // Totals for each exercise
     const pushups = dates.map(d => totalsFor(d).pushups);
     const squats  = dates.map(d => totalsFor(d).squats);
     const calves  = dates.map(d => totalsFor(d).calves);
 
-    // Find max for scaling
     const max = Math.max(...pushups, ...squats, ...calves, 10);
 
+    ctx.font = "12px sans-serif";
+    ctx.textAlign = "center";
+
     dates.forEach((date, i) => {
-        const x = i * 50 + 20;
+        const x = i * 50 + 30; // center of the group
+
+        // Convert date → weekday name
+        const dayName = new Date(date).toLocaleDateString("en-US", { weekday: "short" });
+
+        // Draw day label
+        ctx.fillStyle = "#000";
+        ctx.fillText(dayName, x + 10, 195);
+
+        // Draw bars
+        const barWidth = 10;
+
+        const h1 = (pushups[i] / max) * 160;
+        const h2 = (squats[i]  / max) * 160;
+        const h3 = (calves[i]  / max) * 160;
 
         // Pushups (green)
-        let h1 = (pushups[i] / max) * 180;
         ctx.fillStyle = "#4CAF50";
-        ctx.fillRect(x, 200 - h1, 10, h1);
+        ctx.fillRect(x, 180 - h1, barWidth, h1);
+        ctx.fillText(pushups[i], x + barWidth / 2, 175 - h1);
 
         // Squats (blue)
-        let h2 = (squats[i] / max) * 180;
         ctx.fillStyle = "#2196F3";
-        ctx.fillRect(x + 12, 200 - h2, 10, h2);
+        ctx.fillRect(x + 12, 180 - h2, barWidth, h2);
+        ctx.fillText(squats[i], x + 12 + barWidth / 2, 175 - h2);
 
         // Calves (orange)
-        let h3 = (calves[i] / max) * 180;
         ctx.fillStyle = "#FF9800";
-        ctx.fillRect(x + 24, 200 - h3, 10, h3);
+        ctx.fillRect(x + 24, 180 - h3, barWidth, h3);
+        ctx.fillText(calves[i], x + 24 + barWidth / 2, 175 - h3);
     });
 }
+
 
 
         updateUI();
@@ -157,6 +174,7 @@
     </body>
 
 </html>
+
 
 
 
