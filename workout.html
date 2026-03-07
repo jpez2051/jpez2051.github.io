@@ -163,13 +163,22 @@
         }
     }
 
-    // Get last 7 dates (including today)
+    // make dates start on Sunday
     function getLast7Dates() {
-        return [...Array(7)].map((_, i) => {
-            const d = new Date();
-            d.setDate(d.getDate() - (6 - i));
-            return d.toISOString().split("T")[0];
-        });
+        const today = new Date();
+        const dayOfWeek = today.getDay();// 0 = Suday, 6 = saturday
+
+        // find the most recent sunday
+        const sunday = new Date(today);
+        sunday.setDate(today.getDate() - dayOfWeek);
+
+        // Build Sunday -> Saturday
+        const dates = [];
+        for (let i = 0; i < 7; i++) {
+            d.setDate(sunday.getDate() + i);
+            dates.push(d.toISOString().split("T")[0];
+        }
+        return dates;
     }
 
     function computeWeeklyStats() {
@@ -371,4 +380,5 @@
 
 </body>
 </html>
+
 
