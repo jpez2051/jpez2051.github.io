@@ -92,10 +92,10 @@
             const y = totalsFor(yesterday);
 
             document.getElementById("totals").innerHTML = 
-                `Push-ups: ${t.pushups} <br> Squats: ${t.squats} <br> Calf Raises: $(t.calves)`;
+                `Push-ups: ${t.pushups} <br> Squats: ${t.squats} <br> Calf Raises: ${t.calves}`;
             
             document.getElementById("progress").innerHTML = 
-                `Push-ups: ${t.pushups - y.pushups} <br> Squats: ${t.squats - y.squats} <br> Calf Raises: $(t.calves - y.calves)`;
+                `Push-ups: ${t.pushups - y.pushups} <br> Squats: ${t.squats - y.squats} <br> Calf Raises: ${t.calves - y.calves}`;
             // History
             let hist = "";
             Object.keys(data).sort().reverse().forEach(date => {
@@ -135,6 +135,7 @@
     </body>
 
 </html>
+
 
 
 
