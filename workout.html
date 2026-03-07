@@ -3,7 +3,7 @@
     <head>
         <title>Workout Tracker</title>
         <style>
-            body { font-family: -apple-system; BlinkMacSystemFont, sans-serif;
+            body { font-family: -apple-system; BlinkMacSystemFont: sans-serif;
                   padding: 20px;
                   max-width: 500px;
                   margin: auto;
@@ -58,20 +58,20 @@
                 calves: +document.getElementById("calves").value || 0,
             };
 
-            data[today.push(entry)];
+            data[today].push(entry);
             localStorage.setItem("workouts", JSON.stringify(data));
             alert("Entry added!"); 
             updateUI();
         }
 
         function repeatLast() {
-            const today = new Date().toISOString().split("T")[0};
+            const today = new Date().toISOString().split("T")[0];
             const entries = data[today] || [];
             if (entries.length === 0) return;
 
-            const last = entries[entries.lenght - 1];
+            const last = entries[entries.length - 1];
             data[today].push({...last});
-            local.Storage.setItem("workouts", JSON.stringify(data));
+            localStorage.setItem("workouts", JSON.stringify(data));
             updateUI();
         }
 
@@ -79,37 +79,37 @@
             const entries = data[date] || [];
             return entries.reduce((t, e) => ({
                 pushups: t.pushups + e.pushups,
-                pushups: t.squats + e.squats,
+                squats: t.squats + e.squats,
                 calves: t.calves + e.calves,
             }), { pushups: 0, squats: 0, calves: 0});
         }
            
         function updateUI() {
             const today = new Date().toISOString().split("T")[0];
-            const yesterday = new Date(Date.now() - 86400000.toISOString().split("T")[0];
+            const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
 
             const t = totalsFor(today);
             const y = totalsFor(yesterday);
 
             document.getElementById("totals").innerHTML = 
-                'Push-ups: ${t.pushups} <br> Squats: ${t.squats} <br> Calf Raises: $(t.calves)';
+                `Push-ups: ${t.pushups} <br> Squats: ${t.squats} <br> Calf Raises: $(t.calves)`;
             
             document.getElementById("progress").innerHTML = 
-                'Push-ups: ${t.pushups - y.pushups} <br> Squats: ${t.squats - y.squats} <br> Calf Raises: $(t.calves - y.calves)';
+                `Push-ups: ${t.pushups - y.pushups} <br> Squats: ${t.squats - y.squats} <br> Calf Raises: $(t.calves - y.calves)`;
             // History
             let hist = "";
             Object.keys(data).sort().reverse().forEach(date => {
                 const d = totalsFor(date);
-                hist += '<div class="entry"><strong>${date}</strong><br>
-                    Push-ups: ${d.pushups}, Squats: ${d.squats}, Calves: {d.calves}</div>':
+                hist += `<div class="entry"><strong>${date}</strong><br>
+                    Push-ups: ${d.pushups}, Squats: ${d.squats}, Calves: ${d.calves}</div>`;
             });
-            document.getElementByID("history").innterHTML = hists;
+            document.getElementById("history").innerHTML = hist;
 
             drawChart();
         }
 
-        fucntion drawChart() {
-            const ctx = document.getElementByID("chart").getContext("2d");
+        function drawChart() {
+            const ctx = document.getElementById("chart").getContext("2d");
             ctx.clearRect(0, 0, 400, 200);
 
             const dates = [...Array(7)].map((_, i) => {
@@ -117,7 +117,7 @@
                 return d.toISOString().split("T")[0];
             });
 
-            const totals = dates.map(d => totalsFor(d).pushups;
+            const totals = dates.map(d => totalsFor(d).pushups);
 
             const max = Math.max(...totals, 10);
 
@@ -135,5 +135,6 @@
     </body>
 
 </html>
+
 
 
