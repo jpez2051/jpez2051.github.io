@@ -2,34 +2,33 @@
 <html>
     <head>
         <title>Workout Tracker</title>
+
+        <!-- Makes the app scale correctly on iPhone -->
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta name="apple-mobile-web-app-capable" content="yes">
-        <meta name="apple-mobile-web-app-status-bar-style" content="black">
+
         <style>
-            body { font-family: -apple-system; BlinkMacSystemFont: sans-serif;
+            body { font-family: -apple-system, BlinkMacSystemFont, sans-serif;
                   padding: 20px;
                   max-width: 500px;
                   margin: auto;
                 }
             input { width: 90px; margin: 5px; padding: 8px; font-size: 16px; }
-            button { padding: 10px;  margin: 5px 0; font-size: 16px }
+            button { padding: 10px; margin: 5px 0; font-size: 16px; }
             .section { margin-top: 25px; }
             .entry { padding: 5px 0; border-bottom: 1px solid #add; }
         </style>
     </head>
     <body>
-        <button onclick="refreshPage()">Refresh</button>
-        
         <h2>Workout Tracker</h2>
 
         <div>
             <input id="pushups" type="number" placeholder="Push-ups">
-            <input id="squats" type="number" placeholder="squats">
+            <input id="squats" type="number" placeholder="Squats">
             <input id="calves" type="number" placeholder="Calf Raises">
             <br>
             <button onclick="addEntry()">Add Entry</button>
             <button onclick="repeatLast()">Repeat Last Entry</button>
-            
+            <button onclick="refreshPage()">Refresh</button>
         </div>
         
         <div class="section">
@@ -51,147 +50,25 @@
             <h3>Weekly Chart</h3>
             <canvas id="chart" width="400" height="200"></canvas>
         </div>
-    <script>
-        function refreshPage() {
-    location.reload();
-}
-        const data = JSON.parse(localStorage.getItem("workouts")  || "{}");
 
-        function addEntry() {
-            const today = new Date().toISOString().split("T")[0];
-            if (!data[today]) data[today] = [];
+<script>
+    const data = JSON.parse(localStorage.getItem("workouts") || "{}");
 
-            const entry = {
-                pushups: +document.getElementById("pushups").value || 0,
-                squats: +document.getElementById("squats").value || 0,
-                calves: +document.getElementById("calves").value || 0,
-            };
+    function refreshPage() {
+        location.reload();
+    }
 
-            data[today].push(entry);
-            localStorage.setItem("workouts", JSON.stringify(data));
-            alert("Entry added!");
+    function addEntry() {
+        const today = new Date().toISOString().split("T")[0];
+        if (!data[today]) data[today] = [];
 
-            //clear inputs after entry
-            document.getElementById("pushups").value = "";
-            document.getElementById("squats").value = "";
-            document.getElementById("calves").value = "";
-            
-            updateUI();
-        }
+        const entry = {
+            pushups: +document.getElementById("pushups").value || 0,
+            squats: +document.getElementById("squats").value || 0,
+            calves: +document.getElementById("calves").value || 0,
+        };
 
-        function repeatLast() {
-            const today = new Date().toISOString().split("T")[0];
-            const entries = data[today] || [];
-            if (entries.length === 0) return;
+        data[today].push(entry);
+        localStorage.setItem("workouts", JSON.stringify(data));
 
-            const last = entries[entries.length - 1];
-            data[today].push({...last});
-            localStorage.setItem("workouts", JSON.stringify(data));
-            updateUI();
-        }
-
-        function totalsFor(date) {
-            const entries = data[date] || [];
-            return entries.reduce((t, e) => ({
-                pushups: t.pushups + e.pushups,
-                squats: t.squats + e.squats,
-                calves: t.calves + e.calves,
-            }), { pushups: 0, squats: 0, calves: 0});
-        }
-           
-        function updateUI() {
-            const today = new Date().toISOString().split("T")[0];
-            const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
-
-            const t = totalsFor(today);
-            const y = totalsFor(yesterday);
-
-            document.getElementById("totals").innerHTML = 
-                `Push-ups: ${t.pushups} <br> Squats: ${t.squats} <br> Calf Raises: ${t.calves}`;
-            
-            document.getElementById("progress").innerHTML = 
-                `Push-ups: ${t.pushups - y.pushups} <br> Squats: ${t.squats - y.squats} <br> Calf Raises: ${t.calves - y.calves}`;
-            // History
-            let hist = "";
-            Object.keys(data).sort().reverse().forEach(date => {
-                const d = totalsFor(date);
-                hist += `<div class="entry"><strong>${date}</strong><br>
-                    Push-ups: ${d.pushups}, Squats: ${d.squats}, Calves: ${d.calves}</div>`;
-            });
-            document.getElementById("history").innerHTML = hist;
-
-            drawChart();
-        }
-
-   function drawChart() {
-    const ctx = document.getElementById("chart").getContext("2d");
-    ctx.clearRect(0, 0, 400, 200);
-
-    const dates = [...Array(7)].map((_, i) => {
-        const d = new Date(Date.now() - (6 - i) * 86400000);
-        return d.toISOString().split("T")[0];
-    });
-
-    // Totals for each exercise
-    const pushups = dates.map(d => totalsFor(d).pushups);
-    const squats  = dates.map(d => totalsFor(d).squats);
-    const calves  = dates.map(d => totalsFor(d).calves);
-
-    const max = Math.max(...pushups, ...squats, ...calves, 10);
-
-    ctx.font = "12px sans-serif";
-    ctx.textAlign = "center";
-
-    dates.forEach((date, i) => {
-        const x = i * 50 + 30; // center of the group
-
-        // Convert date → weekday name
-        const dayName = new Date(date).toLocaleDateString("en-US", { weekday: "short" });
-
-        // Draw day label
-        ctx.fillStyle = "#000";
-        ctx.fillText(dayName, x + 10, 195);
-
-        // Draw bars
-        const barWidth = 10;
-
-        const h1 = (pushups[i] / max) * 160;
-        const h2 = (squats[i]  / max) * 160;
-        const h3 = (calves[i]  / max) * 160;
-
-        // Pushups (green)
-        ctx.fillStyle = "#4CAF50";
-        ctx.fillRect(x, 180 - h1, barWidth, h1);
-        ctx.fillText(pushups[i], x + barWidth / 2, 175 - h1);
-
-        // Squats (blue)
-        ctx.fillStyle = "#2196F3";
-        ctx.fillRect(x + 12, 180 - h2, barWidth, h2);
-        ctx.fillText(squats[i], x + 12 + barWidth / 2, 175 - h2);
-
-        // Calves (orange)
-        ctx.fillStyle = "#FF9800";
-        ctx.fillRect(x + 24, 180 - h3, barWidth, h3);
-        ctx.fillText(calves[i], x + 24 + barWidth / 2, 175 - h3);
-    });
-}
-
-
-
-        updateUI();
-    </script>
-    </body>
-
-</html>
-
-
-
-
-
-
-
-
-
-
-
-
+        // Clear
