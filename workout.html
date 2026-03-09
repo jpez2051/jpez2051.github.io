@@ -4,14 +4,28 @@
     <meta charset="UTF-8">
     <title>Workout Tracker</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <style>
         :root { --bg: #f8f9fa; --card: #fff; --p: #4CAF50; --s: #2196F3; --a: #FF9800; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 400px; }
+        
+        html, body { 
+            overscroll-behavior-y: contain; 
+            font-family: -apple-system, sans-serif; 
+            background: var(--bg); 
+            margin: 0; 
+            padding: 0;
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            min-height: 100vh;
+        }
+
+        .container { width: 100%; max-width: 400px; padding: 15px; box-sizing: border-box; flex: 1; }
         .card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         input { width: 100%; padding: 12px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
         .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        button { padding: 12px; border: none; border-radius: 8px; font-weight: bold; color: white; cursor: pointer; transition: opacity 0.2s; }
+        button { padding: 12px; border: none; border-radius: 8px; font-weight: bold; color: white; cursor: pointer; }
         button:active { opacity: 0.7; }
         .btn-add { background: var(--p); grid-column: span 2; }
         .btn-rep { background: var(--s); }
@@ -21,11 +35,31 @@
         .history-item { border-bottom: 1px solid #eee; padding: 8px 0; display: flex; justify-content: space-between; font-size: 0.9em; }
         .chart-legend { display: flex; justify-content: center; gap: 10px; font-size: 11px; margin-bottom: 8px; color: #666; }
         .legend-item span { width: 10px; height: 10px; display: inline-block; margin-right: 4px; border-radius: 2px; }
+
+        #ptr-element {
+            position: absolute; top: 0; left: 0; width: 100%; height: 50px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; color: #999; transform: translateY(-50px);
+            transition: transform 0.2s ease; z-index: 10;
+        }
+
+        /* NEW FOOTER STYLE */
+        footer {
+            width: 100%;
+            padding: 20px 0;
+            text-align: center;
+            font-size: 10px;
+            color: #bbb;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
+<div id="ptr-element">Pull to refresh...</div>
+
+<div class="container" id="main-content">
     <div class="card">
         <label style="font-size:12px; font-weight:bold; color:#666;">Select Workout Date:</label>
         <input type="date" id="active-date">
@@ -67,6 +101,10 @@
     </div>
 </div>
 
+<footer>
+    Workout Tracker Pro — v2.2
+</footer>
+
 <script>
     var workouts = {};
     try {
@@ -74,24 +112,36 @@
         if(saved) workouts = JSON.parse(saved);
     } catch(e) { workouts = {}; }
 
-    function getToday() {
-        var d = new Date();
-        return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-    }
+    // PTR LOGIC
+    var startY = 0;
+    var ptr = document.getElementById('ptr-element');
+    var content = document.getElementById('main-content');
+    window.addEventListener('touchstart', function(e) { if (window.scrollY === 0) startY = e.touches[0].pageY; }, {passive: true});
+    window.addEventListener('touchmove', function(e) {
+        var y = e.touches[0].pageY;
+        if (window.scrollY === 0 && y > startY) {
+            var diff = y - startY;
+            if (diff > 10 && diff < 80) {
+                ptr.style.transform = 'translateY(' + (diff - 50) + 'px)';
+                content.style.transform = 'translateY(' + diff/2 + 'px)';
+                ptr.innerText = diff > 60 ? "Release to refresh..." : "Pull to refresh...";
+            }
+        }
+    }, {passive: true});
+    window.addEventListener('touchend', function(e) {
+        var y = e.changedTouches[0].pageY;
+        if (window.scrollY === 0 && (y - startY) > 60) { location.reload(); } 
+        else { ptr.style.transform = 'translateY(-50px)'; content.style.transform = 'translateY(0px)'; }
+    });
 
-    function fmtDate(iso) {
-        if(!iso) return "";
-        var p = iso.split('-');
-        return p[1] + '/' + p[2] + '/' + p[0];
-    }
-
-    // This function now handles OLD and NEW data formats
+    // HELPERS
+    function getToday() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+    function fmtDate(iso) { if(!iso) return ""; var p = iso.split('-'); return p[1] + '/' + p[2] + '/' + p[0]; }
     function getTots(day) {
         var list = workouts[day] || [];
         var res = { p: 0, s: 0, c: 0 };
         for(var i=0; i<list.length; i++) {
             var e = list[i];
-            // Check for new short names OR old long names
             res.p += (e.p || e.pushups || 0);
             res.s += (e.s || e.squats || 0);
             res.c += (e.c || e.calves || 0);
@@ -103,48 +153,32 @@
         var active = document.getElementById("active-date").value;
         if(!active) return;
         var t = getTots(active);
-        
         document.getElementById("label-date").innerText = "Totals for " + fmtDate(active);
-        document.getElementById("totals").innerHTML = 
-            '<div><span class="stat-val">'+t.p+'</span>Pushups</div>' +
-            '<div><span class="stat-val">'+t.s+'</span>Squats</div>' +
-            '<div><span class="stat-val">'+t.c+'</span>Calves</div>';
-
+        document.getElementById("totals").innerHTML = '<div><span class="stat-val">'+t.p+'</span>P</div><div><span class="stat-val">'+t.s+'</span>S</div><div><span class="stat-val">'+t.c+'</span>C</div>';
         var hist = "";
         var sortedDays = Object.keys(workouts).sort().reverse().slice(0,7);
         for(var i=0; i<sortedDays.length; i++) {
             var dayT = getTots(sortedDays[i]);
             hist += '<div class="history-item"><strong>'+fmtDate(sortedDays[i])+'</strong> <span>P:'+dayT.p+' S:'+dayT.s+' C:'+dayT.c+'</span></div>';
         }
-        document.getElementById("history").innerHTML = hist || '<p style="color:#999;text-align:center;">No history found.</p>';
+        document.getElementById("history").innerHTML = hist || '<p style="color:#999;text-align:center;">No history.</p>';
         draw();
     }
 
     function draw() {
         var can = document.getElementById("chart");
+        if(!can) return;
         var ctx = can.getContext("2d");
         ctx.clearRect(0,0,400,200);
         var days = [];
-        for(var i=6; i>=0; i--) {
-            var d = new Date(); d.setDate(d.getDate()-i);
-            days.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'));
-        }
+        for(var i=6; i>=0; i--) { var d = new Date(); d.setDate(d.getDate()-i); days.push(getToday().split('-')[0] + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0')); }
         var max = 10;
-        for(var j=0; j<days.length; j++) {
-            var t = getTots(days[j]);
-            max = Math.max(max, t.p, t.s, t.c);
-        }
+        for(var j=0; j<days.length; j++) { var t = getTots(days[j]); max = Math.max(max, t.p, t.s, t.c); }
         var sel = document.getElementById("active-date").value;
         for(var k=0; k<days.length; k++) {
-            var day = days[k];
-            var t = getTots(day);
-            var x = k * 55 + 15;
+            var day = days[k]; var t = getTots(day); var x = k * 55 + 15;
             ctx.globalAlpha = (day === sel) ? 1.0 : 0.3;
-            var bar = function(val, col, off) {
-                var h = (val/max) * 150;
-                ctx.fillStyle = col;
-                ctx.fillRect(x+off, 170-h, 10, h);
-            };
+            var bar = function(val, col, off) { var h = (val/max) * 150; ctx.fillStyle = col; ctx.fillRect(x+off, 170-h, 10, h); };
             bar(t.p, "#4CAF50", 0); bar(t.s, "#2196F3", 12); bar(t.c, "#FF9800", 24);
             ctx.globalAlpha = 1; ctx.fillStyle = "#333"; ctx.font = "10px sans-serif"; ctx.textAlign="center";
             var lbl = new Date(day.replace(/-/g,'/')).toLocaleDateString(undefined, {weekday:'narrow'});
@@ -155,16 +189,8 @@
     function addEntry() {
         var d = document.getElementById("active-date").value;
         if(!workouts[d]) workouts[d] = [];
-        var entry = {
-            p: parseInt(document.getElementById("in-p").value) || 0,
-            s: parseInt(document.getElementById("in-s").value) || 0,
-            c: parseInt(document.getElementById("in-c").value) || 0
-        };
-        if(entry.p === 0 && entry.s === 0 && entry.c === 0) return;
-        workouts[d].push(entry);
-        document.getElementById("in-p").value = "";
-        document.getElementById("in-s").value = "";
-        document.getElementById("in-c").value = "";
+        workouts[d].push({ p: parseInt(document.getElementById("in-p").value) || 0, s: parseInt(document.getElementById("in-s").value) || 0, c: parseInt(document.getElementById("in-c").value) || 0 });
+        document.getElementById("in-p").value = ""; document.getElementById("in-s").value = ""; document.getElementById("in-c").value = "";
         save();
     }
 
@@ -179,21 +205,13 @@
 
     function deleteLast() {
         var d = document.getElementById("active-date").value;
-        if(workouts[d] && workouts[d].length > 0) {
-            workouts[d].pop();
-            if(workouts[d].length === 0) delete workouts[d];
-            save();
-        }
+        if(workouts[d] && workouts[d].length > 0) { workouts[d].pop(); if(workouts[d].length === 0) delete workouts[d]; save(); }
     }
 
-    function save() { 
-        localStorage.setItem("workouts", JSON.stringify(workouts)); 
-        update(); 
-    }
-    
-    function exportData() { navigator.clipboard.writeText(JSON.stringify(workouts)).then(function(){ alert("Data copied to clipboard!"); }); }
-    function importData() { var s = prompt("Paste backup data:"); if(s){ try{workouts=JSON.parse(s);save();}catch(e){alert("Invalid data.");} } }
-    function clearAll() { if(confirm("This will delete all history. Continue?")){workouts={};save();} }
+    function save() { localStorage.setItem("workouts", JSON.stringify(workouts)); update(); }
+    function exportData() { navigator.clipboard.writeText(JSON.stringify(workouts)).then(function(){ alert("Exported!"); }); }
+    function importData() { var s = prompt("Paste data:"); if(s){ try{workouts=JSON.parse(s);save();}catch(e){alert("Error");} } }
+    function clearAll() { if(confirm("Delete all history?")){workouts={};save();} }
 
     window.onload = function() {
         document.getElementById("active-date").value = getToday();
