@@ -92,7 +92,7 @@
             display: flex; align-items: center; justify-content: center;
             z-index: 1000; transition: opacity 0.5s;
         }
-        .hidden { opacity: 0; pointer-events: none; }
+        .hidden { opacity: 0 !important; pointer-events: none !important; }
     </style>
 </head>
 <body>
@@ -139,7 +139,4 @@
     <div class="card">
         <h3>History</h3>
         <div id="history"></div>
-        <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px; display: flex; flex-direction: column; gap: 10px;">
-            <button onclick="exportData()" style="background:#f0f0f0; color:#444; font-size:12px; padding:8px;">Backup Data to Clipboard</button>
-            <button onclick="importData()" style="background:#f0f0f0; color:#444; font-size:12px; padding:8px;">Restore from Clipboard</button>
-            <button onclick="
+        <div style="margin-top: 20px; border-top: 1px solid #
