@@ -31,7 +31,6 @@
 
         .container { width: 100%; max-width: 450px; }
 
-        /* Refresh Button Styling */
         .refresh-container {
             width: 100%;
             display: flex;
@@ -128,6 +127,11 @@
     </div>
 
     <div class="card">
+        <h3>Personal Records</h3>
+        <div id="prs" class="stat-grid"></div>
+    </div>
+
+    <div class="card">
         <h3>Weekly Trend</h3>
         <canvas id="chart" width="400" height="200" style="width:100%; height:auto;"></canvas>
     </div>
@@ -135,9 +139,11 @@
     <div class="card">
         <h3>History</h3>
         <div id="history"></div>
-        <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px;">
-            <button onclick="clearAllData()" style="background:none; color:#ccc; font-size:10px; border:none; cursor:pointer;">Clear All Data</button>
-            <p id="debug-date" style="font-size: 10px; color: #ccc; margin: 5px 0 0 0;"></p>
+        <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px; display: flex; flex-direction: column; gap: 10px;">
+            <button onclick="exportData()" style="background:#f0f0f0; color:#444; font-size:12px; padding:8px;">Backup Data to Clipboard</button>
+            <button onclick="importData()" style="background:#f0f0f0; color:#444; font-size:12px; padding:8px;">Restore from Clipboard</button>
+            <button onclick="clearAllData()" style="background:none; color:#ccc; font-size:10px; border:none;">Clear All Data</button>
+            <p id="debug-date" style="font-size: 10px; color: #ccc; margin: 0; text-align: center;"></p>
         </div>
     </div>
 </div>
@@ -160,15 +166,12 @@
     function addEntry() {
         const today = getLocalDate();
         if (!data[today]) data[today] = [];
-
         const entry = {
             pushups: +document.getElementById("pushups").value || 0,
             squats: +document.getElementById("squats").value || 0,
             calves: +document.getElementById("calves").value || 0,
         };
-
         if (Object.values(entry).every(v => v === 0)) return;
-
         data[today].push(entry);
         document.querySelectorAll('input').forEach(i => i.value = "");
         save();
@@ -180,8 +183,6 @@
             data[today].pop();
             if (data[today].length === 0) delete data[today];
             save();
-        } else {
-            alert("No entries to delete for today.");
         }
     }
 
@@ -193,11 +194,24 @@
         }
     }
 
-    function clearAllData() {
-        if(confirm("This will delete ALL history. Proceed?")) {
-            data = {};
-            save();
+    function exportData() {
+        const dataStr = JSON.stringify(data);
+        navigator.clipboard.writeText(dataStr).then(() => alert("Data copied! Save it in your Notes app."));
+    }
+
+    function importData() {
+        const input = prompt("Paste your backup string here:");
+        if (input) {
+            try {
+                const parsed = JSON.parse(input);
+                data = parsed;
+                save();
+            } catch (e) { alert("Invalid data string."); }
         }
+    }
+
+    function clearAllData() {
+        if(confirm("Delete EVERYTHING?")) { data = {}; save(); }
     }
 
     function totalsFor(date) {
@@ -210,7 +224,6 @@
 
     function updateUI(animate = false) {
         const today = getLocalDate();
-        
         const yesterdayDate = new Date();
         yesterdayDate.setDate(yesterdayDate.getDate() - 1);
         const yesterday = getLocalDate(yesterdayDate);
@@ -218,25 +231,40 @@
         const t = totalsFor(today);
         const y = totalsFor(yesterday);
 
-        document.getElementById("debug-date").innerText = `System Date: ${today}`;
+        document.getElementById("debug-date").innerText = `Local System Date: ${today}`;
         document.getElementById("today-label").innerText = `Today (${today})`;
 
+        // Totals
         document.getElementById("totals").innerHTML = `
             <div><span class="stat-val">${t.pushups}</span>Pushups</div>
             <div><span class="stat-val">${t.squats}</span>Squats</div>
             <div><span class="stat-val">${t.calves}</span>Calves</div>`;
 
+        // PRs
+        let prs = {p: 0, s: 0, c: 0};
+        Object.keys(data).forEach(d => {
+            const tot = totalsFor(d);
+            if(tot.pushups > prs.p) prs.p = tot.pushups;
+            if(tot.squats > prs.s) prs.s = tot.squats;
+            if(tot.calves > prs.c) prs.c = tot.calves;
+        });
+        document.getElementById("prs").innerHTML = `
+            <div><span class="stat-val">${prs.p}</span>Pushups</div>
+            <div><span class="stat-val">${prs.s}</span>Squats</div>
+            <div><span class="stat-val">${prs.c}</span>Calves</div>`;
+
+        // Progress
         const diff = (v1, v2) => {
             const d = v1 - v2;
             const color = d > 0 ? 'green' : (d < 0 ? 'red' : 'gray');
             return `<span style="color:${color}; font-weight:bold;">${d > 0 ? '+'+d : d}</span>`;
         };
-        
         document.getElementById("progress").innerHTML = `
             <div>${diff(t.pushups, y.pushups)} vs Yest</div>
             <div>${diff(t.squats, y.squats)} vs Yest</div>
             <div>${diff(t.calves, y.calves)} vs Yest</div>`;
 
+        // History
         const historyHtml = Object.keys(data).sort().reverse().slice(0,10).map(date => {
             const tot = totalsFor(date);
             return `<div class="history-item"><span><strong>${date}</strong></span> <span>P:${tot.pushups} S:${tot.squats} C:${tot.calves}</span></div>`;
@@ -260,33 +288,29 @@
         const max = Math.max(...chartData, 10);
         
         let start = null;
-        function render(progress) {
+        function render(p) {
             ctx.clearRect(0,0,400,200);
             days.forEach((day, i) => {
                 const val = totalsFor(day).pushups;
-                const h = (val / max) * 140 * progress;
+                const h = (val / max) * 140 * p;
                 const x = i * 55 + 15;
-                
                 ctx.fillStyle = (day === getLocalDate()) ? "#4CAF50" : "#A9DFBF";
                 ctx.fillRect(x, 170 - h, 35, h);
-                
                 ctx.fillStyle = "#333";
                 ctx.textAlign = "center";
                 ctx.font = "12px sans-serif";
                 if(val > 0) ctx.fillText(val, x + 17, 165 - h);
-                
                 const label = new Date(day.replace(/-/g, '\/')).toLocaleDateString(undefined, {weekday:'narrow'});
                 ctx.fillText(label, x + 17, 190);
             });
         }
-
         if(!animate) render(1);
         else {
             const step = (ts) => {
                 if(!start) start = ts;
-                const p = Math.min(1, (ts - start) / 400);
-                render(p);
-                if(p < 1) requestAnimationFrame(step);
+                const progress = Math.min(1, (ts - start) / 400);
+                render(progress);
+                if(progress < 1) requestAnimationFrame(step);
             };
             requestAnimationFrame(step);
         }
@@ -296,7 +320,6 @@
         setTimeout(() => document.getElementById("splash").classList.add("hidden"), 800);
         updateUI();
     };
-
     window.addEventListener('focus', () => updateUI());
 </script>
 </body>
