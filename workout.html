@@ -78,6 +78,7 @@
             font-size: 16px;
             background: #fff;
             box-sizing: border-box;
+            -webkit-appearance: none;
         }
 
         .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
@@ -110,6 +111,7 @@
         #history { max-height: 200px; overflow-y: auto; font-size: 0.85em; }
         .history-item { border-bottom: 1px solid #eee; padding: 8px 0; display: flex; justify-content: space-between; }
 
+        /* SPLASH SCREEN - Now has a force-hide safeguard */
         #splash {
             position: fixed; inset: 0; background: #111; color: white;
             display: flex; align-items: center; justify-content: center;
@@ -131,8 +133,8 @@
     
     <div class="card">
         <div class="date-picker-group">
-            <label for="active-date">Workout Date:</label>
-            <input type="date" id="active-date" onchange="updateUI(false)">
+            <label for="active-date">Log Entry For:</label>
+            <input type="date" id="active-date">
         </div>
         <div class="input-group">
             <input id="pushups" type="number" pattern="\d*" placeholder="Push-ups">
@@ -147,7 +149,7 @@
     </div>
 
     <div class="card">
-        <h3 id="today-label">Selected Date Totals</h3>
+        <h3 id="today-label">Daily Totals</h3>
         <div id="totals" class="stat-grid"></div>
         <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
         <div id="progress" class="stat-grid"></div>
@@ -159,7 +161,7 @@
     </div>
 
     <div class="card">
-        <h3>Weekly Trend</h3>
+        <h3>Weekly Trend (Pushups)</h3>
         <canvas id="chart" width="400" height="200" style="width:100%; height:auto;"></canvas>
     </div>
 
@@ -167,7 +169,7 @@
         <h3>History</h3>
         <div id="history"></div>
         <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px; display: flex; flex-direction: column; gap: 10px;">
-            <button onclick="exportData()" style="background:#f0f0f0; color:#444; font-size:12px; padding:8px;">Backup Data to Clipboard</button>
+            <button onclick="exportData()" style="background:#f0f0f0; color:#444; font-size:12px; padding:8px;">Backup to Clipboard</button>
             <button onclick="importData()" style="background:#f0f0f0; color:#444; font-size:12px; padding:8px;">Restore from Clipboard</button>
             <button onclick="clearAllData()" style="background:none; color:#ccc; font-size:10px; border:none;">Clear All Data</button>
             <p id="debug-date" style="font-size: 10px; color: #ccc; margin: 0; text-align: center;"></p>
@@ -176,8 +178,10 @@
 </div>
 
 <script>
+    // 1. Data Initialization
     let data = JSON.parse(localStorage.getItem("workouts") || "{}");
 
+    // 2. Date Helpers
     function getLocalDate(dateObj = new Date()) {
         const year = dateObj.getFullYear();
         const month = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -191,20 +195,26 @@
         return `${parts[1]}/${parts[2]}/${parts[0]}`;
     }
 
+    // 3. Core Logic
     function save() {
         localStorage.setItem("workouts", JSON.stringify(data));
         updateUI(true);
     }
 
     function addEntry() {
-        const selectedDate = document.getElementById("active-date").value;
+        const dateInput = document.getElementById("active-date");
+        if(!dateInput) return;
+        const selectedDate = dateInput.value;
+        
         if (!data[selectedDate]) data[selectedDate] = [];
         const entry = {
             pushups: +document.getElementById("pushups").value || 0,
             squats: +document.getElementById("squats").value || 0,
             calves: +document.getElementById("calves").value || 0,
         };
+        
         if (Object.values(entry).every(v => v === 0)) return;
+        
         data[selectedDate].push(entry);
         document.querySelectorAll('input[type="number"]').forEach(i => i.value = "");
         save();
@@ -222,4 +232,65 @@
     function repeatLast() {
         const selectedDate = document.getElementById("active-date").value;
         if (data[selectedDate]?.length > 0) {
-            data[selectedDate].push({ ...data[selectedDate]
+            data[selectedDate].push({ ...data[selectedDate][data[selectedDate].length - 1] });
+            save();
+        }
+    }
+
+    function totalsFor(date) {
+        return (data[date] || []).reduce((t, e) => ({
+            pushups: t.pushups + e.pushups,
+            squats: t.squats + e.squats,
+            calves: t.calves + e.calves,
+        }), { pushups: 0, squats: 0, calves: 0 });
+    }
+
+    // 4. UI Update Logic
+    function updateUI(animate = false) {
+        const dateEl = document.getElementById("active-date");
+        if(!dateEl) return;
+        
+        const selectedDate = dateEl.value;
+        
+        // Calculate previous day for progress
+        const parts = selectedDate.split('-');
+        const d = new Date(parts[0], parts[1]-1, parts[2]);
+        d.setDate(d.getDate() - 1);
+        const yesterday = getLocalDate(d);
+        
+        const t = totalsFor(selectedDate);
+        const y = totalsFor(yesterday);
+
+        // Labels
+        document.getElementById("debug-date").innerText = `System Today: ${formatDisplayDate(getLocalDate())}`;
+        document.getElementById("today-label").innerText = `Totals: ${formatDisplayDate(selectedDate)}`;
+
+        // Numbers
+        document.getElementById("totals").innerHTML = `
+            <div><span class="stat-val">${t.pushups}</span>Pushups</div>
+            <div><span class="stat-val">${t.squats}</span>Squats</div>
+            <div><span class="stat-val">${t.calves}</span>Calves</div>`;
+
+        // PRs
+        let prs = {p: 0, s: 0, c: 0};
+        Object.keys(data).forEach(d => {
+            const tot = totalsFor(d);
+            if(tot.pushups > prs.p) prs.p = tot.pushups;
+            if(tot.squats > prs.s) prs.s = tot.squats;
+            if(tot.calves > prs.c) prs.c = tot.calves;
+        });
+        document.getElementById("prs").innerHTML = `
+            <div><span class="stat-val">${prs.p}</span>Pushups</div>
+            <div><span class="stat-val">${prs.s}</span>Squats</div>
+            <div><span class="stat-val">${prs.c}</span>Calves</div>`;
+
+        // Comparison
+        const diff = (v1, v2) => {
+            const d = v1 - v2;
+            const color = d > 0 ? 'green' : (d < 0 ? 'red' : 'gray');
+            return `<span style="color:${color}; font-weight:bold;">${d > 0 ? '+'+d : d}</span>`;
+        };
+        document.getElementById("progress").innerHTML = `
+            <div>${diff(t.pushups, y.pushups)} vs Prev</div>
+            <div>${diff(t.squats, y.squats)} vs Prev</div>
+            <div>${diff(
