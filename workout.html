@@ -2,315 +2,146 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Workout Tracker Pro</title>
+    <title>Workout Tracker</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
     <style>
-        :root {
-            --bg: #f8f9fa;
-            --card: #ffffff;
-            --text: #333;
-            --primary: #4CAF50;
-            --secondary: #2196F3;
-            --accent: #FF9800;
-            --danger: #ff4444;
-        }
-
-        body {
-            font-family: -apple-system, system-ui, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 10px 20px 20px 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .container { width: 100%; max-width: 450px; }
-
-        .refresh-container {
-            width: 100%;
-            display: flex;
-            justify-content: flex-end;
-            margin-bottom: 5px;
-        }
-        .btn-refresh {
-            background: #e0e0e0;
-            color: #666;
-            font-size: 12px;
-            padding: 6px 12px;
-            border-radius: 20px;
-            border: none;
-            font-weight: 600;
-        }
-
-        .card {
-            background: var(--card);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
-
-        h2, h3 { margin-top: 0; color: #111; }
-        
-        .date-picker-group {
-            margin-bottom: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        
-        #active-date {
-            width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-            font-size: 16px;
-            background: #fff;
-            box-sizing: border-box;
-        }
-
-        .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
-        input[type="number"] {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
-            box-sizing: border-box;
-        }
-
-        .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        button {
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .btn-add { background: var(--primary); color: white; grid-column: span 2; }
-        .btn-repeat { background: var(--secondary); color: white; }
-        .btn-delete { background: var(--danger); color: white; }
-        
-        .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); text-align: center; font-size: 0.9em; }
-        .stat-val { font-size: 1.2em; font-weight: bold; display: block; }
-
-        #history { max-height: 200px; overflow-y: auto; font-size: 0.85em; }
-        .history-item { border-bottom: 1px solid #eee; padding: 8px 0; display: flex; justify-content: space-between; }
-
-        #splash {
-            position: fixed; inset: 0; background: #111; color: white;
-            display: flex; align-items: center; justify-content: center;
-            z-index: 1000; transition: opacity 0.5s;
-        }
-        .hidden { opacity: 0 !important; pointer-events: none !important; }
-
-        .chart-legend {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            font-size: 10px;
-            margin-bottom: 10px;
-        }
-        .legend-item span { width: 10px; height: 10px; display: inline-block; border-radius: 2px; margin-right: 4px; }
+        :root { --bg: #f8f9fa; --card: #fff; --p: #4CAF50; --s: #2196F3; --a: #FF9800; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 400px; }
+        .card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        input { width: 100%; padding: 12px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+        .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        button { padding: 12px; border: none; border-radius: 8px; font-weight: bold; color: white; cursor: pointer; }
+        .btn-add { background: var(--p); grid-column: span 2; }
+        .btn-rep { background: var(--s); }
+        .btn-del { background: #ff4444; }
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; text-align: center; gap: 5px; }
+        .stat-val { font-size: 1.1em; font-weight: bold; display: block; }
+        .history-item { border-bottom: 1px solid #eee; padding: 8px 0; display: flex; justify-content: space-between; font-size: 0.85em; }
+        .chart-legend { display: flex; justify-content: center; gap: 10px; font-size: 10px; margin-bottom: 5px; }
+        .legend-item span { width: 8px; height: 8px; display: inline-block; margin-right: 4px; }
     </style>
 </head>
 <body>
 
-<div id="splash"><h1>TRAIN</h1></div>
-
 <div class="container">
-    <div class="refresh-container">
-        <button class="btn-refresh" onclick="location.reload()">Refresh App</button>
-    </div>
-
-    <h2>Workout Tracker</h2>
+    <button onclick="location.reload()" style="background:#ccc; color:#333; margin-bottom:10px; width:100%; padding:5px; font-size:10px;">Hard Refresh App</button>
     
     <div class="card">
-        <div class="date-picker-group">
-            <label style="font-size:12px; font-weight:bold; color:#666;">Log Date:</label>
-            <input type="date" id="active-date">
-        </div>
-        <div class="input-group">
-            <input id="pushups" type="number" pattern="\d*" placeholder="Push-ups">
+        <label style="font-size:12px; font-weight:bold;">Log Date:</label>
+        <input type="date" id="active-date">
+        <div style="display:flex; gap:5px;">
+            <input id="pushups" type="number" pattern="\d*" placeholder="Pushups">
             <input id="squats" type="number" pattern="\d*" placeholder="Squats">
             <input id="calves" type="number" pattern="\d*" placeholder="Calves">
         </div>
         <div class="btn-row">
             <button class="btn-add" onclick="addEntry()">Add Entry</button>
-            <button class="btn-repeat" onclick="repeatLast()">Repeat Last</button>
-            <button class="btn-delete" onclick="deleteLast()">Undo Last</button>
+            <button class="btn-rep" onclick="repeatLast()">Repeat Last</button>
+            <button class="btn-del" onclick="deleteLast()">Undo Last</button>
         </div>
     </div>
 
     <div class="card">
-        <h3 id="today-label">Totals</h3>
+        <h3 id="label-date" style="margin-top:0;">Totals</h3>
         <div id="totals" class="stat-grid"></div>
-        <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
-        <div id="progress" class="stat-grid"></div>
     </div>
 
     <div class="card">
-        <h3>Personal Records</h3>
-        <div id="prs" class="stat-grid"></div>
-    </div>
-
-    <div class="card">
-        <h3>Weekly Trend</h3>
+        <h3 style="margin-top:0;">Trend</h3>
         <div class="chart-legend">
-            <div class="legend-item"><span style="background:var(--primary)"></span>Pushups</div>
-            <div class="legend-item"><span style="background:var(--secondary)"></span>Squats</div>
-            <div class="legend-item"><span style="background:var(--accent)"></span>Calves</div>
+            <div class="legend-item"><span style="background:var(--p)"></span>P</div>
+            <div class="legend-item"><span style="background:var(--s)"></span>S</div>
+            <div class="legend-item"><span style="background:var(--a)"></span>C</div>
         </div>
         <canvas id="chart" width="400" height="200" style="width:100%; height:auto;"></canvas>
     </div>
 
     <div class="card">
-        <h3>History</h3>
+        <h3 style="margin-top:0;">History</h3>
         <div id="history"></div>
-        <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px; display: flex; flex-direction: column; gap: 10px;">
-            <button onclick="exportData()" style="background:#f0f0f0; color:#444; font-size:12px; padding:8px;">Backup to Clipboard</button>
-            <button onclick="importData()" style="background:#f0f0f0; color:#444; font-size:12px; padding:8px;">Restore from Clipboard</button>
-            <button onclick="clearAllData()" style="background:none; color:#ccc; font-size:10px; border:none;">Clear All Data</button>
-            <p id="debug-date" style="font-size: 10px; color: #ccc; text-align: center;"></p>
+        <div style="margin-top:15px; border-top:1px solid #eee; padding-top:10px; display:flex; gap:5px; flex-wrap:wrap;">
+            <button onclick="exportData()" style="background:#eee; color:#444; font-size:10px; flex:1;">Backup</button>
+            <button onclick="importData()" style="background:#eee; color:#444; font-size:10px; flex:1;">Restore</button>
+            <button onclick="clearAll()" style="background:none; color:#ccc; font-size:10px; border:none; width:100%;">Clear All</button>
         </div>
     </div>
 </div>
 
 <script>
-    // SAFETY FIRST: Kill the splash screen no matter what after 1.2 seconds
-    setTimeout(function() {
-        var s = document.getElementById("splash");
-        if(s) s.classList.add("hidden");
-    }, 1200);
-
-    // DATA LOADING
     var workouts = {};
     try {
         var saved = localStorage.getItem("workouts");
         if(saved) workouts = JSON.parse(saved);
     } catch(e) { workouts = {}; }
 
-    // DATE HELPERS
-    function getTodayISO() {
-        var now = new Date();
-        return now.getFullYear() + '-' + 
-               String(now.getMonth() + 1).padStart(2, '0') + '-' + 
-               String(now.getDate()).padStart(2, '0');
+    function getToday() {
+        var d = new Date();
+        return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
     }
 
-    function toFriendlyDate(iso) {
+    function fmtDate(iso) {
         if(!iso) return "";
         var p = iso.split('-');
         return p[1] + '/' + p[2] + '/' + p[0];
     }
 
-    // CALCULATION
-    function getDayTotals(isoDate) {
-        var list = workouts[isoDate] || [];
-        var res = { pushups: 0, squats: 0, calves: 0 };
+    function getTots(day) {
+        var list = workouts[day] || [];
+        var res = { p: 0, s: 0, c: 0 };
         for(var i=0; i<list.length; i++) {
-            res.pushups += (list[i].pushups || 0);
-            res.squats += (list[i].squats || 0);
-            res.calves += (list[i].calves || 0);
+            res.p += (list[i].p || 0);
+            res.s += (list[i].s || 0);
+            res.c += (list[i].c || 0);
         }
         return res;
     }
 
-    // MAIN UI UPDATE
-    function refreshUI() {
-        var activeDate = document.getElementById("active-date").value;
-        if(!activeDate) return;
-
-        // Progress calc
-        var d = new Date(activeDate.replace(/-/g, '/'));
-        d.setDate(d.getDate() - 1);
-        var yestISO = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-
-        var t = getDayTotals(activeDate);
-        var y = getDayTotals(yestISO);
-
-        document.getElementById("today-label").innerText = "Totals: " + toFriendlyDate(activeDate);
-        document.getElementById("debug-date").innerText = "System Date: " + toFriendlyDate(getTodayISO());
-
+    function update() {
+        var active = document.getElementById("active-date").value;
+        if(!active) return;
+        var t = getTots(active);
+        
+        document.getElementById("label-date").innerText = "Totals: " + fmtDate(active);
         document.getElementById("totals").innerHTML = 
-            '<div><span class="stat-val">'+t.pushups+'</span>Pushups</div>' +
-            '<div><span class="stat-val">'+t.squats+'</span>Squats</div>' +
-            '<div><span class="stat-val">'+t.calves+'</span>Calves</div>';
+            '<div><span class="stat-val">'+t.p+'</span>P</div>' +
+            '<div><span class="stat-val">'+t.s+'</span>S</div>' +
+            '<div><span class="stat-val">'+t.c+'</span>C</div>';
 
-        // PRs
-        var pr = {p:0, s:0, c:0};
-        for(var day in workouts) {
-            var tot = getDayTotals(day);
-            if(tot.pushups > pr.p) pr.p = tot.pushups;
-            if(tot.squats > pr.s) pr.s = tot.squats;
-            if(tot.calves > pr.c) pr.c = tot.calves;
+        var hist = "";
+        var sortedDays = Object.keys(workouts).sort().reverse().slice(0,5);
+        for(var i=0; i<sortedDays.length; i++) {
+            var dayT = getTots(sortedDays[i]);
+            hist += '<div class="history-item"><strong>'+fmtDate(sortedDays[i])+'</strong> <span>P:'+dayT.p+' S:'+dayT.s+' C:'+dayT.c+'</span></div>';
         }
-        document.getElementById("prs").innerHTML = 
-            '<div><span class="stat-val">'+pr.p+'</span>Pushups</div>' +
-            '<div><span class="stat-val">'+pr.s+'</span>Squats</div>' +
-            '<div><span class="stat-val">'+pr.c+'</span>Calves</div>';
-
-        var diff = function(v1, v2) {
-            var n = v1 - v2;
-            var c = n > 0 ? 'green' : (n < 0 ? 'red' : 'gray');
-            return '<span style="color:'+c+'; font-weight:bold;">' + (n > 0 ? '+' + n : n) + '</span>';
-        };
-        document.getElementById("progress").innerHTML = 
-            '<div>'+diff(t.pushups, y.pushups)+' vs Prev</div>' +
-            '<div>'+diff(t.squats, y.squats)+' vs Prev</div>' +
-            '<div>'+diff(t.calves, y.calves)+' vs Prev</div>';
-
-        // History
-        var days = Object.keys(workouts).sort().reverse().slice(0,7);
-        var hHtml = "";
-        for(var j=0; j<days.length; j++) {
-            var dayTot = getDayTotals(days[j]);
-            hHtml += '<div class="history-item"><span><strong>'+toFriendlyDate(days[j])+'</strong></span> <span>P:'+dayTot.pushups+' S:'+dayTot.squats+' C:'+dayTot.calves+'</span></div>';
-        }
-        document.getElementById("history").innerHTML = hHtml || "No entries yet.";
-
-        drawChart();
+        document.getElementById("history").innerHTML = hist || "No data.";
+        draw();
     }
 
-    function drawChart() {
-        var canvas = document.getElementById("chart");
-        if(!canvas) return;
-        var ctx = canvas.getContext("2d");
+    function draw() {
+        var can = document.getElementById("chart");
+        var ctx = can.getContext("2d");
+        ctx.clearRect(0,0,400,200);
         var days = [];
         for(var i=6; i>=0; i--) {
-            var d = new Date();
-            d.setDate(d.getDate() - i);
-            days.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'));
+            var d = new Date(); d.setDate(d.getDate()-i);
+            days.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'));
         }
-
         var max = 10;
-        for(var k=0; k<days.length; k++) {
-            var t = getDayTotals(days[k]);
-            max = Math.max(max, t.pushups, t.squats, t.calves);
+        for(var j=0; j<days.length; j++) {
+            var t = getTots(days[j]);
+            max = Math.max(max, t.p, t.s, t.c);
         }
-
-        var active = document.getElementById("active-date").value;
-        ctx.clearRect(0,0,400,200);
-
-        for(var m=0; m<days.length; m++) {
-            var dayStr = days[m];
-            var tot = getDayTotals(dayStr);
-            var x = m * 55 + 15;
-            
-            ctx.globalAlpha = (dayStr === active) ? 1.0 : 0.4;
-
-            var drawB = function(val, color, off) {
-                var h = (val / max) * 150;
-                ctx.fillStyle = color;
-                ctx.fillRect(x + off, 170 - h, 10, h);
+        var sel = document.getElementById("active-date").value;
+        for(var k=0; k<days.length; k++) {
+            var day = days[k];
+            var t = getTots(day);
+            var x = k * 55 + 15;
+            ctx.globalAlpha = (day === sel) ? 1.0 : 0.4;
+            var bar = function(val, col, off) {
+                var h = (val/max) * 150;
+                ctx.fillStyle = col;
+                ctx.fillRect(x+off, 170-h, 10, h);
             };
-
-            drawB(tot.pushups, "#4CAF50", 0);
-            drawB(tot.squats, "#2196F3", 12);
-            drawB(tot.
+            bar(t.p, "#4CAF50", 0); bar(t.s, "#2196F3", 12); bar(t.c, "#FF9800", 24);
+            ctx.globalAlpha = 1; ctx.fillStyle
