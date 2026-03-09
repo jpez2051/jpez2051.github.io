@@ -71,6 +71,7 @@
             border: 1px solid #ddd;
             font-size: 16px;
             background: #fff;
+            box-sizing: border-box;
         }
 
         .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
@@ -80,6 +81,7 @@
             border: 1px solid #ddd;
             border-radius: 8px;
             font-size: 16px;
+            box-sizing: border-box;
         }
 
         .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -131,7 +133,7 @@
     
     <div class="card">
         <div class="date-picker-group">
-            <label style="font-size:12px; font-weight:bold; color:#666;">Date:</label>
+            <label style="font-size:12px; font-weight:bold; color:#666;">Log Date:</label>
             <input type="date" id="active-date">
         </div>
         <div class="input-group">
@@ -173,4 +175,142 @@
         <div id="history"></div>
         <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px; display: flex; flex-direction: column; gap: 10px;">
             <button onclick="exportData()" style="background:#f0f0f0; color:#444; font-size:12px; padding:8px;">Backup to Clipboard</button>
-            <button onclick="importData()" style="background:#f0f0f0; color:#444; font-size:12px; padding:8px;">
+            <button onclick="importData()" style="background:#f0f0f0; color:#444; font-size:12px; padding:8px;">Restore from Clipboard</button>
+            <button onclick="clearAllData()" style="background:none; color:#ccc; font-size:10px; border:none;">Clear All Data</button>
+            <p id="debug-date" style="font-size: 10px; color: #ccc; text-align: center;"></p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // SAFETY FIRST: Kill the splash screen no matter what after 1.2 seconds
+    setTimeout(function() {
+        var s = document.getElementById("splash");
+        if(s) s.classList.add("hidden");
+    }, 1200);
+
+    // DATA LOADING
+    var workouts = {};
+    try {
+        var saved = localStorage.getItem("workouts");
+        if(saved) workouts = JSON.parse(saved);
+    } catch(e) { workouts = {}; }
+
+    // DATE HELPERS
+    function getTodayISO() {
+        var now = new Date();
+        return now.getFullYear() + '-' + 
+               String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+               String(now.getDate()).padStart(2, '0');
+    }
+
+    function toFriendlyDate(iso) {
+        if(!iso) return "";
+        var p = iso.split('-');
+        return p[1] + '/' + p[2] + '/' + p[0];
+    }
+
+    // CALCULATION
+    function getDayTotals(isoDate) {
+        var list = workouts[isoDate] || [];
+        var res = { pushups: 0, squats: 0, calves: 0 };
+        for(var i=0; i<list.length; i++) {
+            res.pushups += (list[i].pushups || 0);
+            res.squats += (list[i].squats || 0);
+            res.calves += (list[i].calves || 0);
+        }
+        return res;
+    }
+
+    // MAIN UI UPDATE
+    function refreshUI() {
+        var activeDate = document.getElementById("active-date").value;
+        if(!activeDate) return;
+
+        // Progress calc
+        var d = new Date(activeDate.replace(/-/g, '/'));
+        d.setDate(d.getDate() - 1);
+        var yestISO = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+
+        var t = getDayTotals(activeDate);
+        var y = getDayTotals(yestISO);
+
+        document.getElementById("today-label").innerText = "Totals: " + toFriendlyDate(activeDate);
+        document.getElementById("debug-date").innerText = "System Date: " + toFriendlyDate(getTodayISO());
+
+        document.getElementById("totals").innerHTML = 
+            '<div><span class="stat-val">'+t.pushups+'</span>Pushups</div>' +
+            '<div><span class="stat-val">'+t.squats+'</span>Squats</div>' +
+            '<div><span class="stat-val">'+t.calves+'</span>Calves</div>';
+
+        // PRs
+        var pr = {p:0, s:0, c:0};
+        for(var day in workouts) {
+            var tot = getDayTotals(day);
+            if(tot.pushups > pr.p) pr.p = tot.pushups;
+            if(tot.squats > pr.s) pr.s = tot.squats;
+            if(tot.calves > pr.c) pr.c = tot.calves;
+        }
+        document.getElementById("prs").innerHTML = 
+            '<div><span class="stat-val">'+pr.p+'</span>Pushups</div>' +
+            '<div><span class="stat-val">'+pr.s+'</span>Squats</div>' +
+            '<div><span class="stat-val">'+pr.c+'</span>Calves</div>';
+
+        var diff = function(v1, v2) {
+            var n = v1 - v2;
+            var c = n > 0 ? 'green' : (n < 0 ? 'red' : 'gray');
+            return '<span style="color:'+c+'; font-weight:bold;">' + (n > 0 ? '+' + n : n) + '</span>';
+        };
+        document.getElementById("progress").innerHTML = 
+            '<div>'+diff(t.pushups, y.pushups)+' vs Prev</div>' +
+            '<div>'+diff(t.squats, y.squats)+' vs Prev</div>' +
+            '<div>'+diff(t.calves, y.calves)+' vs Prev</div>';
+
+        // History
+        var days = Object.keys(workouts).sort().reverse().slice(0,7);
+        var hHtml = "";
+        for(var j=0; j<days.length; j++) {
+            var dayTot = getDayTotals(days[j]);
+            hHtml += '<div class="history-item"><span><strong>'+toFriendlyDate(days[j])+'</strong></span> <span>P:'+dayTot.pushups+' S:'+dayTot.squats+' C:'+dayTot.calves+'</span></div>';
+        }
+        document.getElementById("history").innerHTML = hHtml || "No entries yet.";
+
+        drawChart();
+    }
+
+    function drawChart() {
+        var canvas = document.getElementById("chart");
+        if(!canvas) return;
+        var ctx = canvas.getContext("2d");
+        var days = [];
+        for(var i=6; i>=0; i--) {
+            var d = new Date();
+            d.setDate(d.getDate() - i);
+            days.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'));
+        }
+
+        var max = 10;
+        for(var k=0; k<days.length; k++) {
+            var t = getDayTotals(days[k]);
+            max = Math.max(max, t.pushups, t.squats, t.calves);
+        }
+
+        var active = document.getElementById("active-date").value;
+        ctx.clearRect(0,0,400,200);
+
+        for(var m=0; m<days.length; m++) {
+            var dayStr = days[m];
+            var tot = getDayTotals(dayStr);
+            var x = m * 55 + 15;
+            
+            ctx.globalAlpha = (dayStr === active) ? 1.0 : 0.4;
+
+            var drawB = function(val, color, off) {
+                var h = (val / max) * 150;
+                ctx.fillStyle = color;
+                ctx.fillRect(x + off, 170 - h, 10, h);
+            };
+
+            drawB(tot.pushups, "#4CAF50", 0);
+            drawB(tot.squats, "#2196F3", 12);
+            drawB(tot.
