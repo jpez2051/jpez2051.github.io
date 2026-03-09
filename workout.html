@@ -293,4 +293,90 @@
         document.getElementById("progress").innerHTML = `
             <div>${diff(t.pushups, y.pushups)} vs Prev</div>
             <div>${diff(t.squats, y.squats)} vs Prev</div>
-            <div>${diff(
+            <div>${diff(t.calves, y.calves)} vs Prev</div>`;
+
+        // History
+        const historyHtml = Object.keys(data).sort().reverse().slice(0,10).map(date => {
+            const tot = totalsFor(date);
+            return `<div class="history-item"><span><strong>${formatDisplayDate(date)}</strong></span> <span>P:${tot.pushups} S:${tot.squats} C:${tot.calves}</span></div>`;
+        }).join('');
+        document.getElementById("history").innerHTML = historyHtml || "No history yet.";
+
+        drawChart(animate);
+    }
+
+    function drawChart(animate) {
+        const canvas = document.getElementById("chart");
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        const days = [];
+        for(let i=6; i>=0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            days.push(getLocalDate(d));
+        }
+
+        const chartData = days.map(d => totalsFor(d).pushups);
+        const max = Math.max(...chartData, 10);
+        const selected = document.getElementById("active-date").value;
+        
+        let start = null;
+        function render(p) {
+            ctx.clearRect(0,0,400,200);
+            days.forEach((day, i) => {
+                const val = totalsFor(day).pushups;
+                const h = (val / max) * 140 * p;
+                const x = i * 55 + 15;
+                ctx.fillStyle = (day === selected) ? "#4CAF50" : "#A9DFBF";
+                ctx.fillRect(x, 170 - h, 35, h);
+                ctx.fillStyle = "#333";
+                ctx.textAlign = "center";
+                ctx.font = "12px sans-serif";
+                if(val > 0) ctx.fillText(val, x + 17, 165 - h);
+                const label = new Date(day.replace(/-/g, '/')).toLocaleDateString(undefined, {weekday:'narrow'});
+                ctx.fillText(label, x + 17, 190);
+            });
+        }
+        if(!animate) render(1);
+        else {
+            const step = (ts) => {
+                if(!start) start = ts;
+                const progress = Math.min(1, (ts - start) / 400);
+                render(progress);
+                if(progress < 1) requestAnimationFrame(step);
+            };
+            requestAnimationFrame(step);
+        }
+    }
+
+    // Backup/Restore
+    function exportData() {
+        navigator.clipboard.writeText(JSON.stringify(data)).then(() => alert("Copied!"));
+    }
+    function importData() {
+        const input = prompt("Paste data:");
+        if (input) { try { data = JSON.parse(input); save(); } catch(e){ alert("Error"); } }
+    }
+    function clearAllData() {
+        if(confirm("Delete all?")) { data = {}; save(); }
+    }
+
+    // INITIALIZATION
+    document.addEventListener("DOMContentLoaded", () => {
+        const dateInput = document.getElementById("active-date");
+        dateInput.value = getLocalDate();
+        dateInput.addEventListener("change", () => updateUI(false));
+        
+        updateUI();
+
+        // 1-second force-hide for splash screen
+        setTimeout(() => {
+            const s = document.getElementById("splash");
+            if(s) s.classList.add("hidden");
+        }, 1000);
+    });
+
+    window.addEventListener('focus', () => updateUI());
+</script>
+</body>
+</html>
