@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Dashboard v1.2.6</title>
+    <title>Debt Destroyer v1.2.7</title>
     <script id="chart-js" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --bg: #f4f7f6; --card: #ffffff; --primary: #2ecc71; --accent: #3498db; --text: #2c3e50; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 15px; overscroll-behavior-y: contain; padding-bottom: 60px; }
+        :root { --bg: #f4f7f6; --card: #ffffff; --primary: #2ecc71; --accent: #3498db; --danger: #e74c3c; --text: #2c3e50; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 15px; overscroll-behavior-y: contain; padding-bottom: 80px; }
 
         .dashboard { 
             background: linear-gradient(135deg, #2c3e50, #000); 
@@ -19,29 +19,33 @@
 
         .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; }
 
-        /* New Chart Container */
-        .chart-box { background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px; display: none; }
+        .analytics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .chart-box { background: white; border-radius: 15px; padding: 15px; text-align: center; display: none; }
 
         .card-box { background: var(--card); border-radius: 15px; padding: 18px; margin-bottom: 15px; border: 1px solid #e0e0e0; }
         .input-row { display: grid; grid-template-columns: 1.5fr 1fr 1.2fr; gap: 10px; margin: 10px 0; }
         label { font-size: 10px; font-weight: bold; color: #95a5a6; display: block; margin-bottom: 4px; }
         input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; background: #fdfdfd; }
         button { width: 100%; background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 14px; margin-top: 5px; }
-        .interest-label { font-size: 11px; font-weight: bold; color: #e74c3c; background: #fff5f5; padding: 4px 8px; border-radius: 6px; }
-        .footer { text-align: center; padding: 20px; font-size: 10px; color: #aaa; }
+        
+        .badge { font-size: 10px; font-weight: bold; padding: 4px 8px; border-radius: 6px; }
+        .int-red { color: var(--danger); background: #fff5f5; }
+        .pay-green { color: var(--primary); background: #f0fff4; }
+        
+        .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--bg); text-align: center; padding: 15px 0; font-size: 10px; color: #aaa; border-top: 1px solid #ddd; }
     </style>
 </head>
 <body>
 
 <div class="dashboard">
-    <div style="font-size: 11px; text-transform: uppercase; opacity: 0.6; letter-spacing: 1px;">Total Debt</div>
+    <div style="font-size: 11px; text-transform: uppercase; opacity: 0.6; letter-spacing: 1px;">Debt Portfolio</div>
     <div id="main-debt" style="font-size: 36px; font-weight: 800; margin: 5px 0;">$0.00</div>
-    <div id="main-freedom" style="font-size: 14px; color: var(--primary); font-weight: 600;">--</div>
+    <div id="main-freedom" style="font-size: 14px; color: var(--primary); font-weight: 600;">LOADING...</div>
     
     <div class="stat-grid">
         <div class="stat-item">
             <span id="stat-interest" style="font-size: 18px; font-weight: bold; display: block;">$0</span>
-            <span style="font-size: 10px; opacity: 0.6; text-transform: uppercase;">Interest</span>
+            <span style="font-size: 10px; opacity: 0.6; text-transform: uppercase;">Total Interest</span>
         </div>
         <div class="stat-item">
             <span id="stat-apr" style="font-size: 18px; font-weight: bold; display: block;">0%</span>
@@ -50,64 +54,73 @@
     </div>
 </div>
 
-<div id="chart-container" class="chart-box">
-    <canvas id="debtChart" height="180"></canvas>
+<div class="analytics-grid">
+    <div id="chart-container-1" class="chart-box">
+        <label>BALANCE SPLIT</label>
+        <canvas id="debtChart" height="150"></canvas>
+    </div>
+    <div id="chart-container-2" class="chart-box">
+        <label>INTEREST VS PRINCIPAL</label>
+        <canvas id="ratioChart" height="150"></canvas>
+    </div>
 </div>
 
 <div id="card-list"></div>
 
 <div class="footer">
-    DEBT DESTROYER • v1.2.6 • <span onclick="nuke()">Reset Data</span>
+    DEBT DESTROYER • v1.2.7 • <span onclick="nuke()">Reset Data</span>
 </div>
 
 <script>
-    const KEY = 'debt_v125'; // Keeping the same key so your data carries over
-    let debtChart;
+    const KEY = 'debt_v125'; 
+    let debtChart, ratioChart;
 
     let cards = JSON.parse(localStorage.getItem(KEY)) || [
-        { name: "Card 1", bal: 0, apr: 24, pay: 0 },
-        { name: "Card 2", bal: 0, apr: 18, pay: 0 },
-        { name: "Card 3", bal: 0, apr: 22, pay: 0 },
-        { name: "Card 4", bal: 0, apr: 27, pay: 0 }
+        { name: "Sapphire", bal: 0, apr: 24, pay: 0 },
+        { name: "Freedom", bal: 0, apr: 18, pay: 0 },
+        { name: "Apple Card", bal: 0, apr: 22, pay: 0 },
+        { name: "Discover", bal: 0, apr: 27, pay: 0 }
     ];
 
     function render() {
         const list = document.getElementById('card-list');
         list.innerHTML = '';
         let totalDebt = 0, totalInt = 0, maxMonths = 0, aprSum = 0;
-        let chartData = [], chartLabels = [];
+        let bData = [], labels = [];
 
         cards.forEach((c, i) => {
-            totalDebt += parseFloat(c.bal || 0);
+            let bal = parseFloat(c.bal || 0);
+            totalDebt += bal;
             aprSum += parseFloat(c.apr || 0);
             
             let mRate = (c.apr / 100) / 12;
             let months = 0, interest = 0;
 
-            if (c.bal > 0 && c.pay > (c.bal * mRate)) {
-                months = Math.ceil(-Math.log(1 - (mRate * c.bal) / c.pay) / Math.log(1 + mRate));
-                interest = (c.pay * months) - c.bal;
+            if (bal > 0 && c.pay > (bal * mRate)) {
+                months = Math.ceil(-Math.log(1 - (mRate * bal) / c.pay) / Math.log(1 + mRate));
+                interest = (c.pay * months) - bal;
                 if (months > maxMonths) maxMonths = months;
                 totalInt += interest;
             }
 
-            chartData.push(c.bal);
-            chartLabels.push(c.name);
+            bData.push(bal);
+            labels.push(c.name);
 
             list.innerHTML += `
                 <div class="card-box">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                         <input type="text" id="n-${i}" value="${c.name}" style="border:none; font-weight:bold; font-size:18px; background:none; width:60%;">
-                        ${interest > 0 ? `<span class="interest-label">+$${Math.round(interest)} Int</span>` : ''}
+                        <span class="badge ${interest > 0 ? 'int-red' : ''}">${interest > 0 ? '+$' + Math.round(interest) + ' Int' : 'No Int'}</span>
                     </div>
                     <div class="input-row">
                         <div><label>BALANCE</label><input type="number" id="b-${i}" value="${c.bal || ''}" placeholder="0.00"></div>
                         <div><label>APR %</label><input type="number" id="a-${i}" value="${c.apr || ''}"></div>
                         <div><label>PAYMENT</label><input type="number" id="p-${i}" value="${c.pay || ''}" placeholder="Opt."></div>
                     </div>
-                    <button id="btn-${i}" onclick="saveCard(${i})">UPDATE THIS CARD</button>
-                    <div style="font-size:11px; color:#95a5a6; text-align:right; margin-top:8px;">
-                        ${months > 0 ? months + ' months left' : (c.bal > 0 ? 'Log payment for ETA' : 'Paid')}
+                    <button id="btn-${i}" onclick="saveCard(${i})">SAVE CARD</button>
+                    <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:11px; color:#95a5a6;">
+                        <span>${c.apr}% APR</span>
+                        <span style="font-weight:bold; color:var(--text);">${months > 0 ? months + ' months left' : 'N/A'}</span>
                     </div>
                 </div>`;
         });
@@ -119,35 +132,36 @@
         if (maxMonths > 0) {
             let d = new Date();
             d.setMonth(d.getMonth() + maxMonths);
-            document.getElementById('main-freedom').innerText = "FREEDOM: " + d.toLocaleDateString('en-US', {month:'long', year:'numeric'}).toUpperCase();
+            document.getElementById('main-freedom').innerText = "EST. FREEDOM: " + d.toLocaleDateString('en-US', {month:'long', year:'numeric'}).toUpperCase();
+        } else {
+            document.getElementById('main-freedom').innerText = totalDebt > 0 ? "ADD PAYMENTS TO SEE ETA" : "DEBT FREE!";
         }
 
-        updateChart(chartLabels, chartData);
+        updateCharts(labels, bData, totalDebt, totalInt);
     }
 
-    function updateChart(labels, data) {
-        // FAIL-SAFE: Check if Chart.js is actually loaded before running
+    function updateCharts(labels, bData, totalDebt, totalInt) {
         if (typeof Chart === 'undefined') return;
 
-        document.getElementById('chart-container').style.display = 'block';
-        const ctx = document.getElementById('debtChart').getContext('2d');
-        
+        document.getElementById('chart-container-1').style.display = 'block';
+        document.getElementById('chart-container-2').style.display = 'block';
+
+        // Chart 1: Balance Split
+        const ctx1 = document.getElementById('debtChart').getContext('2d');
         if (debtChart) debtChart.destroy();
-        
-        debtChart = new Chart(ctx, {
+        debtChart = new Chart(ctx1, {
             type: 'doughnut',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: data,
-                    backgroundColor: ['#2ecc71', '#3498db', '#9b59b6', '#f1c40f'],
-                    borderWidth: 0
-                }]
-            },
-            options: { 
-                cutout: '80%',
-                plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } } 
-            }
+            data: { labels: labels, datasets: [{ data: bData, backgroundColor: ['#2ecc71', '#3498db', '#9b59b6', '#f1c40f'], borderWidth: 0 }] },
+            options: { cutout: '70%', plugins: { legend: { display: false } } }
+        });
+
+        // Chart 2: Interest Ratio
+        const ctx2 = document.getElementById('ratioChart').getContext('2d');
+        if (ratioChart) ratioChart.destroy();
+        ratioChart = new Chart(ctx2, {
+            type: 'pie',
+            data: { labels: ['Principal', 'Interest'], datasets: [{ data: [totalDebt, totalInt], backgroundColor: ['#34495e', '#e74c3c'], borderWidth: 0 }] },
+            options: { plugins: { legend: { display: false } } }
         });
     }
 
@@ -160,12 +174,12 @@
         render();
         const b = document.getElementById(`btn-${i}`);
         b.innerText = "SAVED ✓";
-        setTimeout(() => { b.innerText = "UPDATE THIS CARD"; }, 1000);
+        b.style.background = "var(--primary)";
+        setTimeout(() => { b.innerText = "SAVE CARD"; b.style.background = "var(--accent)"; }, 1000);
     }
 
     function nuke() { if(confirm("Clear data?")) { localStorage.clear(); location.reload(); } }
 
-    // Start
     render();
 </script>
 </body>
