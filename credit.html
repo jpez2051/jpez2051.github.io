@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Dashboard v1.2.1</title>
+    <title>Debt Dashboard v1.2.2</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #f0f2f5; --card: #ffffff; --primary: #2ecc71; --accent: #3498db; --danger: #e74c3c; --text: #1a1a1a; --gray: #95a5a6; }
@@ -17,12 +17,10 @@
             margin: 0; 
             padding: 15px; 
             padding-bottom: 80px;
-            /* CRITICAL: Disables pull-to-refresh bounce */
             overscroll-behavior-y: contain;
             overflow-x: hidden;
         }
         
-        /* Dashboard Header */
         .dashboard { 
             background: linear-gradient(135deg, #2c3e50, #000); 
             color: white; 
@@ -30,12 +28,98 @@
             padding: 20px; 
             margin-bottom: 20px; 
             box-shadow: 0 10px 20px rgba(0,0,0,0.1); 
-            margin-top: env(safe-area-inset-top); /* Supports Dynamic Island */
+            margin-top: env(safe-area-inset-top);
         }
         .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; }
         .stat-item { text-align: center; }
         .stat-val { font-size: 18px; font-weight: bold; display: block; }
         .stat-lbl { font-size: 11px; opacity: 0.7; text-transform: uppercase; }
 
-        /* Card Styling */
-        .card-entry { background: var(--card); border-radius: 15px; padding: 18px; margin-bottom: 12px; border: 1px solid #
+        .card-entry { background: var(--card); border-radius: 15px; padding: 18px; margin-bottom: 12px; border: 1px solid #e0e0e0; position: relative; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        input { border: 1px solid #ddd; padding: 10px; border-radius: 8px; font-size: 16px; width: 100%; box-sizing: border-box; background: #f9f9f9; -webkit-appearance: none; }
+        .input-row { display: grid; grid-template-columns: 1.5fr 1fr 1.2fr; gap: 8px; margin-bottom: 10px; }
+        label { font-size: 10px; font-weight: 700; color: var(--gray); margin-bottom: 4px; display: block; }
+        
+        .update-btn { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; font-size: 14px; font-weight: bold; width: 100%; margin-top: 5px; }
+        .update-btn:active { background: #2980b9; transform: scale(0.98); }
+
+        .analytics-pane { background: white; border-radius: 15px; padding: 15px; margin-bottom: 20px; }
+        .interest-badge { background: #f1f2f6; color: #7f8c8d; padding: 5px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; }
+        .interest-badge.active { background: #fff5f5; color: var(--danger); }
+        
+        .version-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--bg); text-align: center; padding: 10px 0; font-size: 10px; color: var(--gray); border-top: 1px solid #ddd; z-index: 100; }
+        canvas { max-width: 100%; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+    <div style="text-align: right; margin-bottom: 5px;">
+        <span onclick="window.location.reload()" style="cursor:pointer; opacity:0.5; font-size:10px;">↻ SYNC DASHBOARD</span>
+    </div>
+    <div style="text-align: center;">
+        <span class="stat-lbl">Total Debt</span>
+        <div id="total-debt" style="font-size: 36px; font-weight: 800;">$0</div>
+        <div id="freedom-date" style="font-size: 13px; color: var(--primary); margin-top: 5px; font-weight: 600;">LOADING...</div>
+    </div>
+    <div class="stat-grid">
+        <div class="stat-item">
+            <span class="stat-val" id="total-interest" style="color: #ff7675;">$0</span>
+            <span class="stat-lbl">Future Interest</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-val" id="avg-apr">0%</span>
+            <span class="stat-lbl">Avg. APR</span>
+        </div>
+    </div>
+</div>
+
+<div class="analytics-pane">
+    <canvas id="interestChart" height="180"></canvas>
+</div>
+
+<div id="cards-container"></div>
+
+<div class="version-footer">
+    DEBT DESTROYER DASHBOARD • v1.2.2 • Last Log: <span id="sync-time">--</span>
+</div>
+
+<script>
+    let interestChart;
+    const DB_KEY = 'cc_ledger_v122';
+
+    let cards = JSON.parse(localStorage.getItem(DB_KEY)) || [
+        { name: "Sapphire", balance: 0, apr: 24, payment: 0 },
+        { name: "Freedom", balance: 0, apr: 18, payment: 0 },
+        { name: "Apple Card", balance: 0, apr: 22, payment: 0 },
+        { name: "Discover", balance: 0, apr: 27, payment: 0 }
+    ];
+
+    function renderCards() {
+        const container = document.getElementById('cards-container');
+        container.innerHTML = '';
+        cards.forEach((card, index) => {
+            container.innerHTML += `
+                <div class="card-entry">
+                    <div class="card-header">
+                        <input type="text" id="name-${index}" value="${card.name}" style="border:none; width: 60%; font-weight: bold; font-size: 18px; background:none;">
+                        <span id="int-label-${index}" class="interest-badge">$0 Int.</span>
+                    </div>
+                    <div class="input-row">
+                        <div><label>BALANCE</label><input type="number" id="bal-${index}" value="${card.balance || ''}" placeholder="0.00" step="0.01"></div>
+                        <div><label>APR %</label><input type="number" id="apr-${index}" value="${card.apr || ''}" placeholder="0.0" step="0.1"></div>
+                        <div><label>PAYMENT</label><input type="number" id="pay-${index}" value="${card.payment || ''}" placeholder="Optional" step="0.01"></div>
+                    </div>
+                    <button class="update-btn" onclick="updateSingleCard(${index})">LOG UPDATES</button>
+                    <div id="months-${index}" style="font-size: 11px; color: #7f8c8d; text-align: right; margin-top:8px;">Ready</div>
+                </div>
+            `;
+        });
+    }
+
+    function updateSingleCard(index) {
+        cards[index].name = document.getElementById(`name-${index}`).value;
+        cards[index].balance = parseFloat(document.getElementById(`bal-${index}`).value) || 0;
+        cards[index].apr = parseFloat(document.getElementById(`apr-${index}`).value) || 0;
+        cards[index].payment = parseFloat(document.getElementById(`pay-${index}`).
