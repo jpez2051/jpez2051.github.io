@@ -1,50 +1,219 @@
-// --- Updated Logic Snippet for v1.3.1 ---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Debt Destroyer v1.3.1</title>
+    <script id="chart-js" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --bg: #f8fafd; --card: #ffffff; --primary: #2ecc71; --accent: #3498db; --danger: #ff4757; --text: #2f3542; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 15px; overscroll-behavior-y: contain; padding-bottom: 100px; color: var(--text); }
 
-function render() {
-    const list = document.getElementById('card-list');
-    list.innerHTML = '';
-    let totalDebt = 0, totalInt = 0, maxMonths = 0;
+        .dashboard { 
+            background: linear-gradient(135deg, #2c3e50, #000); 
+            color: white; border-radius: 25px; padding: 25px 20px; margin-bottom: 20px; text-align: center;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+        }
 
-    cards.forEach((c, i) => {
-        let bal = parseFloat(c.bal || 0);
-        totalDebt += bal;
+        .progress-container { width: 100%; background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; margin: 15px 0; overflow: hidden; }
+        #progress-bar { width: 0%; height: 100%; background: var(--primary); transition: width 1s ease-in-out; }
+
+        .chart-viewport { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 10px; margin-bottom: 20px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+        .chart-viewport::-webkit-scrollbar { display: none; }
+        .chart-slide { flex: 0 0 100%; scroll-snap-align: start; background: white; border-radius: 20px; padding: 15px; box-sizing: border-box; box-shadow: 0 4px 12px rgba(0,0,0,0.03); text-align: center; display: none; }
+        .swipe-hint { font-size: 9px; color: #a4b0be; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; }
+
+        .card-box { background: var(--card); border-radius: 20px; padding: 20px; margin-bottom: 15px; border: 1px solid #edf2f7; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+        .input-row { display: grid; grid-template-columns: 1.5fr 1fr 1.2fr; gap: 10px; margin: 12px 0; }
+        label { font-size: 10px; font-weight: 800; color: #a4b0be; display: block; margin-bottom: 5px; text-transform: uppercase; }
+        input { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; box-sizing: border-box; font-size: 16px; background: #fcfcfc; }
         
-        let mRate = (c.apr / 100) / 12;
-        let months = 0, interest = 0, tempBal = bal;
+        button { width: 100%; background: var(--accent); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 14px; margin-top: 5px; }
+        .badge { font-size: 10px; font-weight: 700; padding: 5px 10px; border-radius: 8px; }
+        .int-red { color: var(--danger); background: #fff5f5; }
+        
+        .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(248, 250, 253, 0.9); backdrop-filter: blur(10px); text-align: center; padding: 15px 0; font-size: 10px; color: #a4b0be; border-top: 1px solid #e2e8f0; z-index: 100; }
+    </style>
+</head>
+<body>
 
-        // NEW: If the payment box is empty, use the 'lastPay' memory 
-        // so the interest badge doesn't disappear.
-        let calcPay = parseFloat(document.getElementById(`p-${i}`)?.value) || c.lastPay || 0;
+<div class="dashboard">
+    <div id="main-debt" style="font-size: 38px; font-weight: 800; margin: 5px 0;">$0.00</div>
+    <div class="progress-container"><div id="progress-bar"></div></div>
+    <div id="main-freedom" style="font-size: 13px; color: var(--primary); font-weight: 700;">READY</div>
+    
+    <div class="stat-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+        <div class="stat-item">
+            <span id="stat-interest" style="font-size: 20px; font-weight: 800; display: block;">$0</span>
+            <span style="font-size: 10px; opacity: 0.6; text-transform: uppercase;">Est. Interest</span>
+        </div>
+        <div class="stat-item">
+            <span id="stat-apr" style="font-size: 20px; font-weight: 800; display: block;">0%</span>
+            <span style="font-size: 10px; opacity: 0.6; text-transform: uppercase;">Avg APR</span>
+        </div>
+    </div>
+</div>
 
-        if (bal > 0 && calcPay > (bal * mRate)) {
-            while (tempBal > 0 && months < 600) {
-                let monthlyInt = tempBal * mRate;
-                interest += monthlyInt;
-                tempBal = (tempBal + monthlyInt) - calcPay;
-                months++;
+<div class="chart-viewport">
+    <div id="slide-1" class="chart-slide">
+        <label>Balance Split</label>
+        <canvas id="debtChart" height="150"></canvas>
+        <div class="swipe-hint">Swipe for Ratio ➜</div>
+    </div>
+    <div id="slide-2" class="chart-slide">
+        <label>Principal vs Interest</label>
+        <canvas id="ratioChart" height="150"></canvas>
+        <div class="swipe-hint">⬅ Swipe for Balances</div>
+    </div>
+</div>
+
+<div id="card-list"></div>
+
+<div class="footer">
+    BUILD v1.3.1 • <span onclick="nuke()" style="color:var(--danger)">Reset</span>
+</div>
+
+<script>
+    const KEY = 'debt_v125'; 
+    let debtChart, ratioChart;
+
+    let cards = JSON.parse(localStorage.getItem(KEY)) || [
+        { name: "Card 1", bal: 0, apr: 24, lastPay: 0 },
+        { name: "Card 2", bal: 0, apr: 18, lastPay: 0 },
+        { name: "Card 3", bal: 0, apr: 22, lastPay: 0 },
+        { name: "Card 4", bal: 0, apr: 27, lastPay: 0 }
+    ];
+
+    function render() {
+        const list = document.getElementById('card-list');
+        list.innerHTML = '';
+        let totalDebt = 0, totalInt = 0, maxMonths = 0, aprSum = 0;
+        let bData = [], labels = [];
+
+        cards.forEach((c, i) => {
+            let bal = parseFloat(c.bal || 0);
+            totalDebt += bal;
+            aprSum += parseFloat(c.apr || 0);
+            
+            let mRate = (c.apr / 100) / 12;
+            let months = 0, interest = 0, tempBal = bal;
+
+            // Use live input OR last saved payment for the projection
+            let liveInput = document.getElementById(`p-${i}`)?.value;
+            let calcPay = (liveInput && liveInput !== "") ? parseFloat(liveInput) : (c.lastPay || 0);
+
+            if (bal > 0 && calcPay > (bal * mRate)) {
+                while (tempBal > 0 && months < 600) {
+                    let monthlyInt = tempBal * mRate;
+                    interest += monthlyInt;
+                    tempBal = (tempBal + monthlyInt) - calcPay;
+                    months++;
+                }
+                if (months > maxMonths) maxMonths = months;
+                totalInt += interest;
             }
-            if (months > maxMonths) maxMonths = months;
-            totalInt += interest;
+
+            bData.push(bal);
+            labels.push(c.name);
+
+            list.innerHTML += `
+                <div class="card-box">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <input type="text" id="n-${i}" onchange="updateMeta(${i})" value="${c.name}" style="border:none; font-weight:800; font-size:20px; background:none; width:60%; color:var(--text);">
+                        <span class="badge ${interest > 0 ? 'int-red' : ''}">${interest > 0 ? '+$' + Math.round(interest) : '$0'} Int</span>
+                    </div>
+                    <div class="input-row">
+                        <div><label>Balance</label><input type="number" inputmode="decimal" id="b-${i}" oninput="renderChartsOnly()" value="${c.bal || ''}" placeholder="0.00"></div>
+                        <div><label>APR %</label><input type="number" inputmode="decimal" id="a-${i}" oninput="renderChartsOnly()" value="${c.apr || ''}"></div>
+                        <div><label>Payment</label><input type="number" inputmode="decimal" id="p-${i}" oninput="render()" placeholder="${c.lastPay || '0'}"></div>
+                    </div>
+                    <button id="btn-${i}" onclick="applyPayment(${i})">Log Update</button>
+                    <div style="display:flex; justify-content:space-between; margin-top:12px; font-size:11px; font-weight:600; color:#a4b0be;">
+                        <span>APR: ${c.apr}%</span>
+                        <span style="color:var(--text);">${months > 0 ? months + ' months left' : (bal > 0 ? 'Set Payment' : 'Paid!')}</span>
+                    </div>
+                </div>`;
+        });
+
+        document.getElementById('main-debt').innerText = '$' + totalDebt.toLocaleString(undefined, {minimumFractionDigits: 2});
+        document.getElementById('stat-interest').innerText = '$' + Math.round(totalInt).toLocaleString();
+        document.getElementById('stat-apr').innerText = Math.round(aprSum / cards.length) + '%';
+        
+        const progress = totalDebt > 0 ? Math.max(5, 100 - (totalInt / (totalDebt + totalInt) * 100)) : 100;
+        document.getElementById('progress-bar').style.width = progress + '%';
+
+        if (maxMonths > 0) {
+            let d = new Date();
+            d.setMonth(d.getMonth() + maxMonths);
+            document.getElementById('main-freedom').innerText = "EST. FREEDOM: " + d.toLocaleDateString('en-US', {month:'long', year:'numeric'}).toUpperCase();
+        } else {
+            document.getElementById('main-freedom').innerText = totalDebt > 0 ? "CALCULATING..." : "DEBT FREE!";
+        }
+
+        updateCharts(labels, bData, totalDebt, totalInt);
+    }
+
+    function applyPayment(i) {
+        let currentBal = parseFloat(document.getElementById(`b-${i}`).value) || 0;
+        let paymentAmount = parseFloat(document.getElementById(`p-${i}`).value) || 0;
+        
+        if (paymentAmount > 0) {
+            cards[i].bal = Math.max(0, currentBal - paymentAmount);
+            cards[i].lastPay = paymentAmount; // This "remembers" it for future badges
         }
         
-        // ... rest of render logic ...
-    });
-}
+        cards[i].name = document.getElementById(`n-${i}`).value;
+        cards[i].apr = parseFloat(document.getElementById(`a-${i}`).value) || 0;
 
-function applyPayment(i) {
-    let currentBal = parseFloat(document.getElementById(`b-${i}`).value) || 0;
-    let paymentAmount = parseFloat(document.getElementById(`p-${i}`).value) || 0;
-    
-    if (paymentAmount > 0) {
-        cards[i].bal = Math.max(0, currentBal - paymentAmount);
-        cards[i].lastPay = paymentAmount; // Store this so interest stays visible
+        localStorage.setItem(KEY, JSON.stringify(cards));
+        render();
+
+        const b = document.getElementById(`btn-${i}`);
+        b.innerText = "PAID & UPDATED ✓";
+        b.style.background = "var(--primary)";
+        setTimeout(() => { b.innerText = "Log Update"; b.style.background = "var(--accent)"; }, 1500);
     }
-    
-    localStorage.setItem(KEY, JSON.stringify(cards));
+
+    function updateMeta(i) {
+        cards[i].name = document.getElementById(`n-${i}`).value;
+        localStorage.setItem(KEY, JSON.stringify(cards));
+    }
+
+    function renderChartsOnly() {
+        // Just updates the data array without full re-render of HTML to keep focus
+        cards.forEach((c, i) => {
+            c.bal = parseFloat(document.getElementById(`b-${i}`).value) || 0;
+            c.apr = parseFloat(document.getElementById(`a-${i}`).value) || 0;
+        });
+        localStorage.setItem(KEY, JSON.stringify(cards));
+        render();
+    }
+
+    function updateCharts(labels, bData, totalDebt, totalInt) {
+        if (typeof Chart === 'undefined') return;
+        document.getElementById('slide-1').style.display = 'block';
+        document.getElementById('slide-2').style.display = 'block';
+        const ctx1 = document.getElementById('debtChart').getContext('2d');
+        if (debtChart) debtChart.destroy();
+        debtChart = new Chart(ctx1, {
+            type: 'doughnut',
+            data: { labels: labels, datasets: [{ data: bData, backgroundColor: ['#2ecc71', '#3498db', '#9b59b6', '#f1c40f'], borderWidth: 0 }] },
+            options: { cutout: '75%', plugins: { legend: { display: false } } }
+        });
+        const ctx2 = document.getElementById('ratioChart').getContext('2d');
+        if (ratioChart) ratioChart.destroy();
+        ratioChart = new Chart(ctx2, {
+            type: 'pie',
+            data: { labels: ['Principal', 'Interest'], datasets: [{ data: [totalDebt, totalInt], backgroundColor: ['#2f3542', '#ff4757'], borderWidth: 0 }] },
+            options: { plugins: { legend: { display: false } } }
+        });
+    }
+
+    function nuke() { if(confirm("Wipe all data?")) { localStorage.clear(); location.reload(); } }
+
     render();
-    
-    // Clear the input field visually
-    document.getElementById(`p-${i}`).value = ''; 
-    
-    // ... button feedback ...
-}
+</script>
+</body>
+</html>
