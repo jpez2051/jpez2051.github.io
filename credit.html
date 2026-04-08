@@ -3,111 +3,196 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Debt Tracker</title>
+    <title>Debt Dashboard v1.2.5</title>
     <style>
-        body { font-family: -apple-system, sans-serif; background: #f0f2f5; margin: 0; padding: 15px; overscroll-behavior-y: contain; }
-        .box { background: #fff; border-radius: 15px; padding: 15px; margin-bottom: 15px; border: 1px solid #ddd; }
-        .header { background: #2c3e50; color: white; text-align: center; }
-        .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-top: 10px; }
-        input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
-        label { font-size: 10px; font-weight: bold; color: #777; }
-        button { width: 100%; background: #3498db; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; margin-top: 10px; }
-        .int-tag { font-size: 10px; background: #eee; padding: 2px 5px; border-radius: 4px; }
+        :root { --bg: #f4f7f6; --card: #ffffff; --primary: #2ecc71; --accent: #3498db; --text: #2c3e50; }
+        
+        body { 
+            font-family: -apple-system, sans-serif; 
+            background: var(--bg); 
+            margin: 0; 
+            padding: 15px; 
+            overscroll-behavior-y: contain; 
+        }
+
+        /* The Professional Header */
+        .dashboard { 
+            background: linear-gradient(135deg, #2c3e50, #000); 
+            color: white; 
+            border-radius: 20px; 
+            padding: 25px 20px; 
+            margin-bottom: 20px; 
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .stat-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 15px; 
+            margin-top: 15px; 
+            border-top: 1px solid rgba(255,255,255,0.1); 
+            padding-top: 15px; 
+        }
+
+        /* Each Card Container */
+        .card-box { 
+            background: var(--card); 
+            border-radius: 15px; 
+            padding: 18px; 
+            margin-bottom: 15px; 
+            border: 1px solid #e0e0e0; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+
+        .input-row { 
+            display: grid; 
+            grid-template-columns: 1.5fr 1fr 1.2fr; 
+            gap: 10px; 
+            margin: 10px 0; 
+        }
+
+        label { font-size: 10px; font-weight: bold; color: #95a5a6; display: block; margin-bottom: 4px; }
+        
+        input { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 8px; 
+            box-sizing: border-box; 
+            font-size: 16px; 
+            background: #fdfdfd;
+        }
+
+        button { 
+            width: 100%; 
+            background: var(--accent); 
+            color: white; 
+            border: none; 
+            padding: 12px; 
+            border-radius: 10px; 
+            font-weight: bold; 
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .interest-label { font-size: 11px; font-weight: bold; color: #e74c3c; background: #fff5f5; padding: 4px 8px; border-radius: 6px; }
+        
+        .footer { text-align: center; padding: 20px; font-size: 10px; color: #aaa; }
     </style>
 </head>
 <body>
 
-<div class="box header">
-    <div style="font-size: 10px; opacity: 0.7;">TOTAL DEBT</div>
-    <div id="total-val" style="font-size: 32px; font-weight: bold;">$0.00</div>
-    <div id="freedom-val" style="font-size: 12px; margin-top: 5px; color: #2ecc71;">--</div>
+<div class="dashboard">
+    <div style="font-size: 11px; text-transform: uppercase; opacity: 0.6; letter-spacing: 1px;">Total Balances</div>
+    <div id="main-debt" style="font-size: 36px; font-weight: 800; margin: 5px 0;">$0.00</div>
+    <div id="main-freedom" style="font-size: 14px; color: var(--primary); font-weight: 600;">--</div>
+    
+    <div class="stat-grid">
+        <div class="stat-item">
+            <span id="stat-interest" style="font-size: 18px; font-weight: bold; display: block;">$0</span>
+            <span style="font-size: 10px; opacity: 0.6; text-transform: uppercase;">Total Interest</span>
+        </div>
+        <div class="stat-item">
+            <span id="stat-apr" style="font-size: 18px; font-weight: bold; display: block;">0%</span>
+            <span style="font-size: 10px; opacity: 0.6; text-transform: uppercase;">Avg APR</span>
+        </div>
+    </div>
 </div>
 
-<div id="card-list">
-    </div>
+<div id="card-list"></div>
 
-<div style="text-align: center; font-size: 10px; color: #aaa; margin-top: 20px;">
-    VERSION 1.2.4 • <span onclick="clearEverything()">Nuke Data & Restart</span>
+<div class="footer">
+    DEBT DESTROYER • v1.2.5 • <span onclick="nuke()">Reset Data</span>
 </div>
 
 <script>
-    const STORAGE_NAME = 'debt_final_v1';
+    const KEY = 'debt_v125';
 
-    // 1. CLEAR OLD KEYS (to prevent the "nothing loading" bug)
-    if (!localStorage.getItem('v1_fix')) {
-        localStorage.removeItem('cc_ledger_v1');
-        localStorage.removeItem('cc_ledger_v121');
-        localStorage.removeItem('cc_dashboard_data');
-        localStorage.setItem('v1_fix', 'true');
-    }
-
-    let myCards = JSON.parse(localStorage.getItem(STORAGE_NAME)) || [
-        { n: "Card 1", b: 0, a: 24, p: 0 },
-        { n: "Card 2", b: 0, a: 18, p: 0 },
-        { n: "Card 3", b: 0, a: 22, p: 0 },
-        { n: "Card 4", b: 0, a: 27, p: 0 }
+    // Data Load
+    let cards = JSON.parse(localStorage.getItem(KEY)) || [
+        { name: "Card 1", bal: 0, apr: 24, pay: 0 },
+        { name: "Card 2", bal: 0, apr: 18, pay: 0 },
+        { name: "Card 3", bal: 0, apr: 22, pay: 0 },
+        { name: "Card 4", bal: 0, apr: 27, pay: 0 }
     ];
 
-    function draw() {
+    function render() {
         const list = document.getElementById('card-list');
         list.innerHTML = '';
         let totalDebt = 0;
+        let totalInt = 0;
         let maxMonths = 0;
+        let aprSum = 0;
 
-        myCards.forEach((c, i) => {
-            totalDebt += parseFloat(c.b || 0);
+        cards.forEach((c, i) => {
+            totalDebt += parseFloat(c.bal || 0);
+            aprSum += parseFloat(c.apr || 0);
             
-            // Calc logic
-            let mRate = (c.a / 100) / 12;
+            let mRate = (c.apr / 100) / 12;
             let months = 0;
-            if (c.b > 0 && c.p > (c.b * mRate)) {
-                months = Math.ceil(-Math.log(1 - (mRate * c.b) / c.p) / Math.log(1 + mRate));
+            let interest = 0;
+
+            if (c.bal > 0 && c.pay > (c.bal * mRate)) {
+                months = Math.ceil(-Math.log(1 - (mRate * c.bal) / c.pay) / Math.log(1 + mRate));
+                interest = (c.pay * months) - c.bal;
                 if (months > maxMonths) maxMonths = months;
+                totalInt += interest;
             }
 
             list.innerHTML += `
-                <div class="box">
-                    <div style="display:flex; justify-content:space-between;">
-                        <input type="text" value="${c.n}" onchange="upd(${i},'n',this.value)" style="border:none; font-weight:bold; width:60%;">
-                        <span class="int-tag">${months > 0 ? months + ' mo' : '--'}</span>
+                <div class="card-box">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <input type="text" id="n-${i}" value="${c.name}" style="border:none; font-weight:bold; font-size:18px; background:none; width:60%;">
+                        ${interest > 0 ? `<span class="interest-label">+$${Math.round(interest)} Int</span>` : ''}
                     </div>
-                    <div class="row">
-                        <div><label>BAL</label><input type="number" value="${c.b}" onchange="upd(${i},'b',this.value)"></div>
-                        <div><label>APR</label><input type="number" value="${c.a}" onchange="upd(${i},'a',this.value)"></div>
-                        <div><label>PAY</label><input type="number" value="${c.p}" onchange="upd(${i},'p',this.value)"></div>
+                    <div class="input-row">
+                        <div><label>BALANCE</label><input type="number" id="b-${i}" value="${c.bal || ''}" placeholder="0.00"></div>
+                        <div><label>APR %</label><input type="number" id="a-${i}" value="${c.apr || ''}"></div>
+                        <div><label>PAYMENT</label><input type="number" id="p-${i}" value="${c.pay || ''}" placeholder="Opt."></div>
                     </div>
-                    <button onclick="save()">SAVE CARD</button>
+                    <button id="btn-${i}" onclick="saveCard(${i})">UPDATE THIS CARD</button>
+                    <div style="font-size:11px; color:#95a5a6; text-align:right; margin-top:8px;">
+                        ${months > 0 ? months + ' months remaining' : (c.bal > 0 ? 'Log payment to see payoff' : 'Paid')}
+                    </div>
                 </div>`;
         });
 
-        document.getElementById('total-val').innerText = '$' + totalDebt.toLocaleString();
+        // Dashboard Updates
+        document.getElementById('main-debt').innerText = '$' + totalDebt.toLocaleString(undefined, {minimumFractionDigits: 2});
+        document.getElementById('stat-interest').innerText = '$' + Math.round(totalInt).toLocaleString();
+        document.getElementById('stat-apr').innerText = Math.round(aprSum / cards.length) + '%';
         
         if (maxMonths > 0) {
             let d = new Date();
             d.setMonth(d.getMonth() + maxMonths);
-            document.getElementById('freedom-val').innerText = "FREEDOM: " + d.toLocaleDateString();
+            document.getElementById('main-freedom').innerText = "FREEDOM: " + d.toLocaleDateString('en-US', {month:'long', year:'numeric'}).toUpperCase();
+        } else {
+            document.getElementById('main-freedom').innerText = totalDebt > 0 ? "TRACKING BALANCES" : "DEBT FREE!";
         }
     }
 
-    function upd(index, key, val) {
-        myCards[index][key] = key === 'n' ? val : parseFloat(val || 0);
+    function saveCard(i) {
+        cards[i].name = document.getElementById(`n-${i}`).value;
+        cards[i].bal = parseFloat(document.getElementById(`b-${i}`).value) || 0;
+        cards[i].apr = parseFloat(document.getElementById(`a-${i}`).value) || 0;
+        cards[i].pay = parseFloat(document.getElementById(`p-${i}`).value) || 0;
+        
+        localStorage.setItem(KEY, JSON.stringify(cards));
+        render(); // Full refresh to update dashboard stats
+        
+        // Button feedback
+        const b = document.getElementById(`btn-${i}`);
+        b.innerText = "SAVED ✓";
+        b.style.background = "#2ecc71";
+        setTimeout(() => { b.innerText = "UPDATE THIS CARD"; b.style.background = "#3498db"; }, 1000);
     }
 
-    function save() {
-        localStorage.setItem(STORAGE_NAME, JSON.stringify(myCards));
-        draw();
+    function nuke() {
+        if(confirm("Clear all data?")) { localStorage.clear(); location.reload(); }
     }
 
-    function clearEverything() {
-        if(confirm("Wipe all data?")) {
-            localStorage.clear();
-            location.reload();
-        }
-    }
-
-    // Initial Start
-    draw();
+    render();
 </script>
-
 </body>
 </html>
