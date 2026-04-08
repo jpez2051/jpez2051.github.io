@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Debt Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --bg: #f0f2f5; --card: #ffffff; --primary: #2ecc71; --accent: #3498db; --danger: #e74c3c; --text: #1a1a1a; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; padding-bottom: 50px; }
+        
+        /* Dashboard Header */
+        .dashboard { background: linear-gradient(135deg, #2c3e50, #000); color: white; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); pt: 15px; }
+        .stat-item { text-align: center; }
+        .stat-val { font-size: 18px; font-weight: bold; display: block; }
+        .stat-lbl { font-size: 11px; opacity: 0.7; text-transform: uppercase; }
+
+        /* Card Styling */
+        .card-entry { background: var(--card); border-radius: 15px; padding: 18px; margin-bottom: 12px; border: 1px solid #e0e0e0; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        input { border: 1px solid #ddd; padding: 12px; border-radius: 10px; font-size: 16px; width: 100%; box-sizing: border-box; }
+        .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        label { font-size: 11px; font-weight: 700; color: #95a5a6; margin-bottom: 4px; display: block; }
+        
+        /* Analytics */
+        .analytics-pane { background: white; border-radius: 15px; padding: 15px; margin-bottom: 20px; }
+        .interest-badge { background: #fff5f5; color: var(--danger); padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; }
+        
+        button { width: 100%; background: var(--primary); color: white; border: none; padding: 18px; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:active { transform: scale(0.98); opacity: 0.9; }
+        canvas { max-width: 100%; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+    <div style="text-align: center;">
+        <span class="stat-lbl">Total Debt</span>
+        <div id="total-debt" style="font-size: 36px; font-weight: 800;">$0</div>
+        <div id="freedom-date" style="font-size: 14px; color: var(--primary); margin-top: 5px; font-weight: 500;">Calculating...</div>
+    </div>
+    <div class="stat-grid">
+        <div class="stat-item">
+            <span class="stat-val" id="total-interest" style="color: #ff7675;">$0</span>
+            <span class="stat-lbl">Future Interest</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-val" id="avg-apr">0%</span>
+            <span class="stat-lbl">Avg. APR</span>
+        </div>
+    </div>
+</div>
+
+<div class="analytics-pane">
+    <label style="text-align: center;">Interest Distribution</label>
+    <canvas id="interestChart" height="200"></canvas>
+</div>
+
+<div id="cards-container"></div>
+
+<button onclick="saveAndCalculate()">Update Dashboard</button>
+
+<script>
+    let interestChart;
+    let cards = JSON.parse(localStorage.getItem('cc_dashboard_data')) || [
+        { name: "Sapphire", balance: 1200, apr: 24, payment: 100 },
+        { name: "Freedom", balance: 500, apr: 18, payment: 50 },
+        { name: "Apple Card", balance: 2000, apr: 22, payment: 150 },
+        { name: "Discover", balance: 300, apr: 27, payment: 40 }
+    ];
+
+    function renderCards() {
+        const container = document.getElementById('cards-container');
+        container.innerHTML = '';
+        cards.forEach((card, index) => {
+            container.innerHTML += `
+                <div class="card-entry">
+                    <div class="card-header">
+                        <input type="text" value="${card.name}" onchange="updateCard(${index}, 'name', this.value)" style="border:none; width: 60%; font-weight: bold; font-size: 18px;">
+                        <span id="int-label-${index}" class="interest-badge">$0 Interest</span>
+                    </div>
+                    <div class="input-row">
+                        <div style="flex:2"><label>Balance</label><input type="number" value="${card.balance}" onchange="updateCard(${index}, 'balance', this.value)"></div>
+                        <div style="flex:1"><label>APR%</label><input type="number" value="${card.apr}" onchange="updateCard(${index}, 'apr', this.value)"></div>
+                        <div style="flex:1.5"><label>Payment</label><input type="number" value="${card.payment}" onchange="updateCard(${index}, 'payment', this.value)"></div>
+                    </div>
+                    <div id="months-${index}" style="font-size: 12px; color: #7f8c8d; text-align: right;">-- months remaining</div>
+                </div>
+            `;
+        });
+    }
+
+    function updateCard(index, key, value) {
+        cards[index][key] = (key === 'name') ? value : parseFloat(value) || 0;
+    }
+
+    function saveAndCalculate() {
+        localStorage.setItem('cc_dashboard_data', JSON.stringify(cards));
+        let totalDebt = 0;
+        let totalInterestVal = 0;
+        let maxMonths = 0;
+        let aprSum = 0;
+        let interestData = [];
+        let cardNames = [];
+
+        cards.forEach((card, index) => {
+            totalDebt += card.balance;
+            aprSum += card.apr;
+            
+            let monthlyRate = (card.apr / 100) / 12;
+            let months = 0;
+            let interestPaid = 0;
+
+            if (card.balance > 0 && card.payment > (card.balance * monthlyRate)) {
+                months = -Math.log(1 - (monthlyRate * card.balance) / card.payment) / Math.log(1 + monthlyRate);
+                months = Math.ceil(months);
+                interestPaid = (card.payment * months) - card.balance;
+            } else if (card.balance > 0) {
+                months = Infinity;
+            }
+
+            totalInterestVal += interestPaid;
+            interestData.push(interestPaid.toFixed(2));
+            cardNames.push(card.name);
+
+            document.getElementById(`int-label-${index}`).innerText = `+$${interestPaid.toFixed(0)} Interest`;
+            document.getElementById(`months-${index}`).innerText = months === Infinity ? "⚠️ Payment too low!" : `${months} months left`;
+            if (months !== Infinity && months > maxMonths) maxMonths = months;
+        });
+
+        // UI Updates
+        document.getElementById('total-debt').innerText = `$${totalDebt.toLocaleString()}`;
+        document.getElementById('total-interest').innerText = `$${totalInterestVal.toLocaleString(undefined, {maximumFractionDigits: 0})}`;
+        document.getElementById('avg-apr').innerText = `${(aprSum / cards.length).toFixed(1)}%`;
+
+        if (maxMonths > 0) {
+            const d = new Date();
+            d.setMonth(d.setMonth(d.getMonth() + maxMonths));
+            document.getElementById('freedom-date').innerText = `DEBT FREE BY ${d.toLocaleDateString('en-US', {month: 'long', year: 'numeric'}).toUpperCase()}`;
+        }
+
+        updateChart(cardNames, interestData);
+    }
+
+    function updateChart(labels, data) {
+        const ctx = document.getElementById('interestChart').getContext('2d');
+        if (interestChart) interestChart.destroy();
+        interestChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: ['#ff7675', '#74b9ff', '#55efc4', '#ffeaa7'],
+                    borderWidth: 0
+                }]
+            },
+            options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } } }
+        });
+    }
+
+    renderCards();
+    saveAndCalculate();
+</script>
+</body>
+</html>
