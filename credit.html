@@ -5,39 +5,52 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Destroyer v1.3.6</title>
+    <title>Debt Destroyer v1.3.7</title>
     <script id="chart-js" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #f4f7f6; --card: #ffffff; --primary: #2ecc71; --accent: #3498db; --danger: #ff4757; --text: #2f3542; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 10px; padding-bottom: 100px; color: var(--text); }
         
-        /* Compact Dashboard */
+        /* Dashboard Header */
         .dashboard { 
             background: linear-gradient(135deg, #1e272e, #000); 
-            color: white; border-radius: 20px; padding: 15px; margin-bottom: 15px; 
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            color: white; border-radius: 18px; padding: 18px; margin-bottom: 12px; 
+            text-align: center; box-shadow: 0 8px 16px rgba(0,0,0,0.1);
         }
-        .main-total { font-size: 32px; font-weight: 800; margin-bottom: 5px; }
+        .main-total { font-size: 34px; font-weight: 800; margin-bottom: 5px; }
         .progress-container { width: 100%; background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; margin: 10px 0; overflow: hidden; }
         #progress-bar { width: 0%; height: 100%; background: var(--primary); transition: width 0.5s; }
 
-        /* Compact Chart Section */
-        .chart-viewport { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 8px; margin-bottom: 15px; scrollbar-width: none; }
+        /* Chart Viewport Styled as a Card Box */
+        .chart-card { 
+            background: var(--card); border-radius: 18px; padding: 15px; 
+            margin-bottom: 12px; border: 1px solid #e1e8ed; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        }
+        .chart-viewport { 
+            display: flex; overflow-x: auto; scroll-snap-type: x mandatory; 
+            gap: 15px; scrollbar-width: none; 
+        }
         .chart-viewport::-webkit-scrollbar { display: none; }
         .chart-slide { 
-            flex: 0 0 100%; scroll-snap-align: start; background: white; 
-            border-radius: 15px; padding: 10px; box-sizing: border-box; 
-            display: none; height: 140px; /* Force smaller height */
+            flex: 0 0 100%; scroll-snap-align: start; 
+            height: 120px; /* Aligns with card height feel */
+            display: none; 
         }
-        canvas { max-height: 110px !important; }
 
-        /* Compact Cards */
-        .card-box { background: var(--card); border-radius: 18px; padding: 15px; margin-bottom: 10px; border: 1px solid #e1e8ed; position: relative; }
+        /* Debt Cards */
+        .card-box { 
+            background: var(--card); border-radius: 18px; padding: 15px; 
+            margin-bottom: 10px; border: 1px solid #e1e8ed; 
+            position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.03); 
+        }
         .input-row { display: grid; grid-template-columns: 1.2fr 0.8fr 1fr; gap: 8px; margin: 10px 0; }
         label { font-size: 9px; font-weight: 800; color: #a4b0be; text-transform: uppercase; margin-bottom: 3px; display: block; }
-        input { width: 100%; padding: 10px; border: 1px solid #eceff1; border-radius: 8px; font-size: 15px; background: #fbfcfc; }
+        input { width: 100%; padding: 10px; border: 1px solid #eceff1; border-radius: 8px; font-size: 15px; background: #fbfcfc; -webkit-appearance: none; }
         
-        button { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 13px; width: 100%; }
+        button { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 13px; width: 100%; transition: 0.2s; }
+        button:active { transform: scale(0.98); opacity: 0.9; }
+        
         .badge { font-size: 9px; font-weight: 700; padding: 4px 8px; border-radius: 6px; }
         .int-red { color: var(--danger); background: #fff5f5; }
         .priority-tag { position: absolute; top: -8px; right: 15px; background: #f1c40f; color: #000; font-size: 8px; font-weight: 800; padding: 3px 6px; border-radius: 4px; text-transform: uppercase; z-index: 10; }
@@ -58,13 +71,17 @@
     </div>
 </div>
 
-<div class="chart-viewport">
-    <div id="slide-1" class="chart-slide"><canvas id="debtChart"></canvas></div>
-    <div id="slide-2" class="chart-slide"><canvas id="ratioChart"></canvas></div>
+<div class="chart-card">
+    <div class="chart-viewport">
+        <div id="slide-1" class="chart-slide"><canvas id="debtChart"></canvas></div>
+        <div id="slide-2" class="chart-slide"><canvas id="ratioChart"></canvas></div>
+    </div>
+    <div style="text-align: center; font-size: 8px; color: #a4b0be; margin-top: 8px; text-transform: uppercase; letter-spacing: 1px;">Swipe to toggle visuals ➜</div>
 </div>
 
 <div id="card-list"></div>
-<div class="footer">BUILD v1.3.6 • <span onclick="nuke()" style="color:var(--danger)">Clear All Data</span></div>
+
+<div class="footer">BUILD v1.3.7 • <span onclick="nuke()" style="color:var(--danger)">Reset App Data</span></div>
 
 <script>
     const KEY = 'debt_v125';
@@ -88,11 +105,11 @@
                     <div class="input-row">
                         <div><label>Balance</label><input type="number" inputmode="decimal" id="b-${i}" oninput="updateData(${i})" value="${c.bal || ''}"></div>
                         <div><label>APR %</label><input type="number" inputmode="decimal" id="a-${i}" oninput="updateData(${i})" value="${c.apr || ''}"></div>
-                        <div><label>Pay</label><input type="number" inputmode="decimal" id="p-${i}" oninput="updateData(${i})"></div>
+                        <div><label>Payment</label><input type="number" inputmode="decimal" id="p-${i}" oninput="updateData(${i})"></div>
                     </div>
                     <button id="btn-${i}" onclick="applyPayment(${i})">Log Update</button>
                     <div class="history-row">
-                        <span id="history-${i}">Last: $${c.lastPay || 0} (${c.lastDate || '--'})</span>
+                        <span id="history-${i}">Last Pay: $${c.lastPay || 0} (${c.lastDate || '--'})</span>
                         <span id="freedom-label-${i}" style="color:var(--text); font-weight:700;">--</span>
                     </div>
                 </div>`;
@@ -115,14 +132,14 @@
         cards.forEach((c, i) => {
             let bal = c.bal; totalDebt += bal; aprSum += c.apr;
             let mRate = (c.apr / 100) / 12;
-            let currentMonthlyInt = bal * mRate;
-            if (currentMonthlyInt > highestMonthlyInt) { highestMonthlyInt = currentMonthlyInt; highIntIndex = i; }
+            let curInt = bal * mRate;
+            if (curInt > highestMonthlyInt) { highestMonthlyInt = curInt; highIntIndex = i; }
 
             let pInput = document.getElementById(`p-${i}`).value;
             let calcPay = (pInput !== "") ? parseFloat(pInput) : (c.lastPay || 0);
 
             let months = 0, interest = 0, tempBal = bal;
-            if (bal > 0 && calcPay > currentMonthlyInt) {
+            if (bal > 0 && calcPay > curInt) {
                 while (tempBal > 0 && months < 600) {
                     let mInt = tempBal * mRate;
                     interest += mInt;
@@ -142,13 +159,14 @@
         document.getElementById('main-debt').innerText = '$' + totalDebt.toLocaleString(undefined, {minimumFractionDigits: 2});
         document.getElementById('stat-interest').innerText = '$' + Math.round(totalInt).toLocaleString();
         document.getElementById('stat-apr').innerText = cards.length ? Math.round(aprSum / cards.length) + '%' : '0%';
-        
         const progress = totalDebt > 0 ? Math.max(5, 100 - (totalInt / (totalDebt + totalInt) * 100)) : 100;
         document.getElementById('progress-bar').style.width = progress + '%';
 
         if (maxMonths > 0) {
             let d = new Date(); d.setMonth(d.getMonth() + maxMonths);
             document.getElementById('main-freedom').innerText = "FREEDOM: " + d.toLocaleDateString('en-US', {month:'short', year:'numeric'}).toUpperCase();
+        } else {
+            document.getElementById('main-freedom').innerText = totalDebt > 0 ? "SET PAYMENTS" : "DEBT FREE!";
         }
         updateCharts(labels, bData, totalDebt, totalInt);
     }
@@ -163,7 +181,7 @@
             const dateStr = (now.getMonth()+1).toString().padStart(2,'0')+'/'+now.getDate().toString().padStart(2,'0')+'/'+now.getFullYear();
             cards[i].lastDate = dateStr;
             document.getElementById(`b-${i}`).value = cards[i].bal;
-            document.getElementById(`history-${i}`).innerText = `Last: $${amt} (${dateStr})`;
+            document.getElementById(`history-${i}`).innerText = `Last Pay: $${amt} (${dateStr})`;
             pInput.value = '';
             localStorage.setItem(KEY, JSON.stringify(cards));
             calculate();
