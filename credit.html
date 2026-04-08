@@ -5,40 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Destroyer v1.3.8</title>
+    <title>Debt Destroyer v1.3.9</title>
     <script id="chart-js" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #f4f7f6; --card: #ffffff; --primary: #2ecc71; --accent: #3498db; --danger: #ff4757; --text: #2f3542; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 10px; padding-bottom: 100px; color: var(--text); overscroll-behavior-y: contain; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 10px; padding-bottom: 120px; color: var(--text); overscroll-behavior-y: contain; }
         
-        /* Pull to Refresh Spinner */
         #ptr { position: absolute; top: 0; left: 0; width: 100%; height: 50px; display: flex; align-items: center; justify-content: center; transform: translateY(-50px); transition: transform 0.2s; z-index: 1000; }
         .spinner { width: 20px; height: 20px; border: 2px solid rgba(0,0,0,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Dashboard Header */
-        .dashboard { 
-            background: linear-gradient(135deg, #1e272e, #000); 
-            color: white; border-radius: 18px; padding: 18px; margin-bottom: 12px; 
-            text-align: center; box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-        }
+        .dashboard { background: linear-gradient(135deg, #1e272e, #000); color: white; border-radius: 18px; padding: 18px; margin-bottom: 12px; text-align: center; box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
         .main-total { font-size: 34px; font-weight: 800; margin-bottom: 5px; }
         .progress-container { width: 100%; background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; margin: 10px 0; overflow: hidden; }
         #progress-bar { width: 0%; height: 100%; background: var(--primary); transition: width 0.5s; }
 
-        /* Chart Card */
         .chart-card { background: var(--card); border-radius: 18px; padding: 15px; margin-bottom: 12px; border: 1px solid #e1e8ed; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
         .chart-viewport { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px; scrollbar-width: none; }
         .chart-viewport::-webkit-scrollbar { display: none; }
         .chart-slide { flex: 0 0 100%; scroll-snap-align: start; height: 120px; display: none; }
 
-        /* Debt Cards */
         .card-box { background: var(--card); border-radius: 18px; padding: 15px; margin-bottom: 10px; border: 1px solid #e1e8ed; position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
         .input-row { display: grid; grid-template-columns: 1.2fr 0.8fr 1fr; gap: 8px; margin: 10px 0; }
         label { font-size: 9px; font-weight: 800; color: #a4b0be; text-transform: uppercase; margin-bottom: 3px; display: block; }
-        input { width: 100%; padding: 10px; border: 1px solid #eceff1; border-radius: 8px; font-size: 15px; background: #fbfcfc; }
+        input { width: 100%; padding: 10px; border: 1px solid #eceff1; border-radius: 8px; font-size: 15px; background: #fbfcfc; -webkit-appearance: none; }
         
         button { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 13px; width: 100%; transition: 0.2s; }
+        .add-btn { background: #2f3542; margin-top: 10px; margin-bottom: 20px; font-size: 12px; padding: 15px; }
+        
         .badge { font-size: 9px; font-weight: 700; padding: 4px 8px; border-radius: 6px; }
         .int-red { color: var(--danger); background: #fff5f5; }
         .priority-tag { position: absolute; top: -8px; right: 15px; background: #f1c40f; color: #000; font-size: 8px; font-weight: 800; padding: 3px 6px; border-radius: 4px; text-transform: uppercase; z-index: 10; }
@@ -66,22 +60,21 @@
         <div id="slide-1" class="chart-slide"><canvas id="debtChart"></canvas></div>
         <div id="slide-2" class="chart-slide"><canvas id="ratioChart"></canvas></div>
     </div>
-    <div style="text-align: center; font-size: 8px; color: #a4b0be; margin-top: 8px; text-transform: uppercase; letter-spacing: 1px;">Swipe to toggle visuals ➜</div>
 </div>
 
 <div id="card-list"></div>
+<button class="add-btn" onclick="addCard()">+ ADD NEW CARD</button>
 
-<div class="footer">BUILD v1.3.8 • <span onclick="nuke()" style="color:var(--danger)">Reset Data</span></div>
+<div class="footer">BUILD v1.3.9 • <span onclick="nuke()" style="color:var(--danger)">Reset</span></div>
 
 <script>
     const KEY = 'debt_v125';
     let debtChart, ratioChart;
     let cards = JSON.parse(localStorage.getItem(KEY)) || [
-        { name: "Card 1", bal: 0, apr: 24, lastPay: 0, lastDate: "--" },
-        { name: "Card 2", bal: 0, apr: 18, lastPay: 0, lastDate: "--" }
+        { name: "New Card", bal: 0, apr: 0, lastPay: 0, lastDate: "--" }
     ];
 
-    // --- Pull to Refresh Logic ---
+    // Pull to Refresh Logic
     let startY = 0;
     const ptr = document.getElementById('ptr');
     window.addEventListener('touchstart', e => { if (window.scrollY === 0) startY = e.touches[0].pageY; });
@@ -90,18 +83,11 @@
         if (window.scrollY === 0 && y > startY) {
             const diff = Math.min(y - startY, 60);
             ptr.style.transform = `translateY(${diff - 50}px)`;
-            if (diff >= 60) ptr.style.opacity = "1";
         }
     });
     window.addEventListener('touchend', e => {
-        if (ptr.style.transform.includes('10px')) { // Trigger point
-            ptr.style.transform = `translateY(0px)`;
-            setTimeout(() => {
-                location.reload(); // Hard refresh to reset all UI states
-            }, 600);
-        } else {
-            ptr.style.transform = `translateY(-50px)`;
-        }
+        if (ptr.style.transform.includes('10px')) { ptr.style.transform = `translateY(0px)`; setTimeout(() => { location.reload(); }, 600); }
+        else { ptr.style.transform = `translateY(-50px)`; }
     });
 
     function initUI() {
@@ -130,6 +116,12 @@
         calculate();
     }
 
+    function addCard() {
+        cards.push({ name: "New Card", bal: 0, apr: 0, lastPay: 0, lastDate: "--" });
+        localStorage.setItem(KEY, JSON.stringify(cards));
+        initUI();
+    }
+
     function updateData(i) {
         cards[i].name = document.getElementById(`n-${i}`).value;
         cards[i].bal = parseFloat(document.getElementById(`b-${i}`).value) || 0;
@@ -146,7 +138,7 @@
             let bal = c.bal; totalDebt += bal; aprSum += c.apr;
             let mRate = (c.apr / 100) / 12;
             let curInt = bal * mRate;
-            if (curInt > highestMonthlyInt) { highestMonthlyInt = curInt; highIntIndex = i; }
+            if (curInt > highestMonthlyInt && bal > 0) { highestMonthlyInt = curInt; highIntIndex = i; }
 
             let pInput = document.getElementById(`p-${i}`).value;
             let calcPay = (pInput !== "") ? parseFloat(pInput) : (c.lastPay || 0);
@@ -154,10 +146,8 @@
             let months = 0, interest = 0, tempBal = bal;
             if (bal > 0 && calcPay > curInt) {
                 while (tempBal > 0 && months < 600) {
-                    let mInt = tempBal * mRate;
-                    interest += mInt;
-                    tempBal = (tempBal + mInt) - calcPay;
-                    months++;
+                    let mInt = tempBal * mRate; interest += mInt;
+                    tempBal = (tempBal + mInt) - calcPay; months++;
                 }
                 if (months > maxMonths) maxMonths = months;
                 totalInt += interest;
@@ -165,7 +155,7 @@
 
             document.getElementById(`badge-${i}`).innerText = `+$${Math.round(interest)} Int`;
             document.getElementById(`freedom-label-${i}`).innerText = months > 0 ? `${months} mo` : (bal > 0 ? "Infinite" : "Paid");
-            document.getElementById(`tag-${i}`).style.display = (i === highIntIndex && bal > 0) ? "block" : "none";
+            document.getElementById(`tag-${i}`).style.display = (i === highIntIndex) ? "block" : "none";
             bData.push(bal); labels.push(c.name);
         });
 
