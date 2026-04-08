@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Destroyer v1.4.12</title>
+    <title>Debt Destroyer v1.4.13</title>
     <script id="chart-js" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #f4f7f6; --card: #ffffff; --primary: #2ecc71; --accent: #3498db; --danger: #ff4757; --warning: #f1c40f; --text: #2f3542; }
@@ -20,29 +20,26 @@
         .progress-container { width: 100%; background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; margin: 10px 0; overflow: hidden; }
         #progress-bar { width: 0%; height: 100%; background: var(--primary); transition: width 0.5s; }
 
-        .chart-card { background: var(--card); border-radius: 18px; padding: 15px; margin-bottom: 12px; border: 1px solid #e1e8ed; box-shadow: 0 4px 12px rgba(0,0,0,0.03); position: relative; }
-        .chart-title { font-size: 10px; font-weight: 800; text-transform: uppercase; color: #a4b0be; text-align: center; margin-bottom: 5px; letter-spacing: 1px; }
-        .swipe-hint { font-size: 8px; color: #ced6e0; text-align: center; margin-top: 10px; font-weight: 600; text-transform: uppercase; }
+        /* Bigger container, but charts remain reasonable */
+        .chart-card { background: var(--card); border-radius: 18px; padding: 20px; margin-bottom: 12px; border: 1px solid #e1e8ed; box-shadow: 0 4px 12px rgba(0,0,0,0.03); min-height: 220px; }
+        .chart-title { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #a4b0be; text-align: center; margin-bottom: 15px; letter-spacing: 1px; }
         
-        /* Increased viewport height to prevent chart compression */
-        .chart-viewport { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px; scrollbar-width: none; height: 180px; }
+        .chart-viewport { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px; scrollbar-width: none; }
         .chart-viewport::-webkit-scrollbar { display: none; }
-        .chart-slide { flex: 0 0 100%; scroll-snap-align: start; height: 100%; display: flex; flex-direction: column; }
+        
+        /* Fixed chart height so they don't over-expand */
+        .chart-slide { flex: 0 0 100%; scroll-snap-align: start; height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        canvas { max-height: 150px !important; max-width: 150px !important; margin: 0 auto; }
 
-        .card-box { background: var(--card); border-radius: 18px; padding: 15px; margin-bottom: 10px; border: 1px solid #e1e8ed; position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.03); transition: 0.3s; border-left: 6px solid #ddd; }
-        .paid-this-month { background: #fafffa; }
-        .paid-off { opacity: 0.5; background: #f9f9f9; border-left-color: #ddd !important; }
-
+        .card-box { background: var(--card); border-radius: 18px; padding: 15px; margin-bottom: 10px; border: 1px solid #e1e8ed; position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.03); border-left: 6px solid #ddd; }
         .input-row { display: grid; grid-template-columns: 1fr 0.7fr 1.3fr 0.7fr; gap: 6px; margin: 10px 0; }
         label { font-size: 8px; font-weight: 800; color: #a4b0be; text-transform: uppercase; margin-bottom: 3px; display: block; }
         input { width: 100%; padding: 10px 6px; border: 1px solid #eceff1; border-radius: 8px; font-size: 12px; background: #fbfcfc; -webkit-appearance: none; box-sizing: border-box; }
         
-        button { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 13px; width: 100%; transition: 0.2s; margin-top: 5px; }
+        button { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 13px; width: 100%; margin-top: 5px; }
         .add-btn { background: #2f3542; margin-bottom: 10px; padding: 15px; color: white; border-radius: 12px; width: 100%; border: none; font-weight: 700; }
         
-        .priority-tag { position: absolute; top: -8px; right: 15px; background: var(--warning); color: #000; font-size: 8px; font-weight: 800; padding: 3px 6px; border-radius: 4px; text-transform: uppercase; z-index: 10; }
-        .history-row { display: flex; justify-content: space-between; margin-top: 10px; padding-top: 8px; border-top: 1px dashed #f1f2f6; font-size: 9px; color: #95a5a6; }
-        
+        .swipe-hint { font-size: 9px; color: #ced6e0; text-align: center; margin-top: 15px; font-weight: 700; text-transform: uppercase; }
         .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); text-align: center; padding: 15px 0; font-size: 9px; color: #bdc3c7; border-top: 1px solid #eee; z-index: 100; display: flex; justify-content: space-around; }
     </style>
 </head>
@@ -64,14 +61,14 @@
     <div class="chart-viewport">
         <div class="chart-slide">
             <div class="chart-title">Balance Split</div>
-            <div style="flex-grow:1; position:relative;"><canvas id="debtChart"></canvas></div>
+            <canvas id="debtChart"></canvas>
         </div>
         <div class="chart-slide">
             <div class="chart-title">Principal vs Interest</div>
-            <div style="flex-grow:1; position:relative;"><canvas id="ratioChart"></canvas></div>
+            <canvas id="ratioChart"></canvas>
         </div>
     </div>
-    <div class="swipe-hint">Swipe for Ratio</div>
+    <div class="swipe-hint">Swipe for Ratio Details</div>
 </div>
 
 <div id="card-list"></div>
@@ -79,7 +76,7 @@
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight:bold;">Backup CSV</span>
-    <span>v1.4.12</span>
+    <span>v1.4.13</span>
     <span onclick="nuke()" style="color:var(--danger)">Reset App</span>
 </div>
 
@@ -106,19 +103,8 @@
             const hasPaidThisMonth = c.lastPaidMonth === curMonthYear;
             const themeColor = COLORS[i % COLORS.length];
             
-            let statusClass = '';
-            if (isPaidOff) statusClass = 'paid-off';
-            else if (hasPaidThisMonth) statusClass = 'paid-this-month';
-            else if (c.dueDate) {
-                const dateParts = c.dueDate.split('-');
-                const dueDayOnly = parseInt(dateParts[2]);
-                const todayDay = now.getDate();
-                if (todayDay >= dueDayOnly) statusClass = 'overdue';
-            }
-
             list.innerHTML += `
-                <div class="card-box ${statusClass}" style="border-left-color: ${themeColor}">
-                    <div class="priority-tag" style="display: ${i === 0 && !isPaidOff ? 'block' : 'none'}">Avalanche Target</div>
+                <div class="card-box" style="border-left-color: ${themeColor}; opacity: ${isPaidOff ? 0.5 : 1}">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <input type="text" oninput="updateData(${i}, 'name', this.value)" value="${c.name}" style="border:none; font-weight:800; font-size:16px; background:none; width:65%; color:var(--text);">
                         <span style="font-size: 9px; font-weight: 800; color: ${hasPaidThisMonth ? 'var(--primary)' : '#a4b0be'}">${hasPaidThisMonth ? 'PAID ✓' : 'UNPAID'}</span>
@@ -201,7 +187,7 @@
 
     function updateCharts(labels, bData, totalDebt, totalInt) {
         if (typeof Chart === 'undefined') return;
-        const opt = { cutout: '70%', animation: false, plugins: { legend: { display: false } }, maintainAspectRatio: false, responsive: true };
+        const opt = { cutout: '70%', animation: false, plugins: { legend: { display: false } }, maintainAspectRatio: false };
         
         const ctx1 = document.getElementById('debtChart').getContext('2d');
         if (debtChart) debtChart.destroy();
@@ -219,7 +205,7 @@
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.setAttribute('href', url);
-        a.setAttribute('download', `Backup_${new Date().toLocaleDateString()}.csv`);
+        a.setAttribute('download', `Debt_Backup_${new Date().toLocaleDateString()}.csv`);
         a.click();
     }
 
