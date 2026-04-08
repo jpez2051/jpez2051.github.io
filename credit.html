@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Destroyer v1.4.11</title>
+    <title>Debt Destroyer v1.4.12</title>
     <script id="chart-js" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #f4f7f6; --card: #ffffff; --primary: #2ecc71; --accent: #3498db; --danger: #ff4757; --warning: #f1c40f; --text: #2f3542; }
@@ -21,16 +21,15 @@
         #progress-bar { width: 0%; height: 100%; background: var(--primary); transition: width 0.5s; }
 
         .chart-card { background: var(--card); border-radius: 18px; padding: 15px; margin-bottom: 12px; border: 1px solid #e1e8ed; box-shadow: 0 4px 12px rgba(0,0,0,0.03); position: relative; }
-        .chart-title { font-size: 10px; font-weight: 800; text-transform: uppercase; color: #a4b0be; text-align: center; margin-bottom: 10px; letter-spacing: 1px; }
-        .swipe-hint { font-size: 8px; color: #ced6e0; text-align: center; margin-top: 5px; font-weight: 600; }
+        .chart-title { font-size: 10px; font-weight: 800; text-transform: uppercase; color: #a4b0be; text-align: center; margin-bottom: 5px; letter-spacing: 1px; }
+        .swipe-hint { font-size: 8px; color: #ced6e0; text-align: center; margin-top: 10px; font-weight: 600; text-transform: uppercase; }
         
-        .chart-viewport { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px; scrollbar-width: none; }
+        /* Increased viewport height to prevent chart compression */
+        .chart-viewport { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px; scrollbar-width: none; height: 180px; }
         .chart-viewport::-webkit-scrollbar { display: none; }
-        .chart-slide { flex: 0 0 100%; scroll-snap-align: start; height: 140px; }
+        .chart-slide { flex: 0 0 100%; scroll-snap-align: start; height: 100%; display: flex; flex-direction: column; }
 
         .card-box { background: var(--card); border-radius: 18px; padding: 15px; margin-bottom: 10px; border: 1px solid #e1e8ed; position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.03); transition: 0.3s; border-left: 6px solid #ddd; }
-        .due-soon { background: #fffdf5; }
-        .overdue { background: #fff5f5; }
         .paid-this-month { background: #fafffa; }
         .paid-off { opacity: 0.5; background: #f9f9f9; border-left-color: #ddd !important; }
 
@@ -65,14 +64,14 @@
     <div class="chart-viewport">
         <div class="chart-slide">
             <div class="chart-title">Balance Split</div>
-            <canvas id="debtChart"></canvas>
+            <div style="flex-grow:1; position:relative;"><canvas id="debtChart"></canvas></div>
         </div>
         <div class="chart-slide">
             <div class="chart-title">Principal vs Interest</div>
-            <canvas id="ratioChart"></canvas>
+            <div style="flex-grow:1; position:relative;"><canvas id="ratioChart"></canvas></div>
         </div>
     </div>
-    <div class="swipe-hint">← SWIPE TO TOGGLE VIEW →</div>
+    <div class="swipe-hint">Swipe for Ratio</div>
 </div>
 
 <div id="card-list"></div>
@@ -80,7 +79,7 @@
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight:bold;">Backup CSV</span>
-    <span>v1.4.11</span>
+    <span>v1.4.12</span>
     <span onclick="nuke()" style="color:var(--danger)">Reset App</span>
 </div>
 
@@ -108,17 +107,13 @@
             const themeColor = COLORS[i % COLORS.length];
             
             let statusClass = '';
-            let borderOveride = themeColor;
-
             if (isPaidOff) statusClass = 'paid-off';
             else if (hasPaidThisMonth) statusClass = 'paid-this-month';
             else if (c.dueDate) {
                 const dateParts = c.dueDate.split('-');
                 const dueDayOnly = parseInt(dateParts[2]);
                 const todayDay = now.getDate();
-                
                 if (todayDay >= dueDayOnly) statusClass = 'overdue';
-                else if (dueDayOnly - todayDay <= 3) statusClass = 'due-soon';
             }
 
             list.innerHTML += `
@@ -131,10 +126,10 @@
                     <div class="input-row">
                         <div><label>Balance</label><input type="number" inputmode="decimal" oninput="updateData(${i}, 'bal', this.value)" value="${c.bal || ''}"></div>
                         <div><label>APR %</label><input type="number" inputmode="decimal" oninput="updateData(${i}, 'apr', this.value)" value="${c.apr || ''}"></div>
-                        <div><label>Due Date</label><input type="date" onblur="updateData(${i}, 'dueDate', this.value)" onchange="updateData(${i}, 'dueDate', this.value)" value="${c.dueDate || ''}"></div>
+                        <div><label>Due Date</label><input type="date" onblur="updateData(${i}, 'dueDate', this.value)" value="${c.dueDate || ''}"></div>
                         <div><label>Pay $</label><input type="number" inputmode="decimal" id="p-${i}"></div>
                     </div>
-                    <button id="btn-${i}" onclick="applyPayment(${i})">${isPaidOff ? 'LOGGED: $0' : 'Log Payment'}</button>
+                    <button onclick="applyPayment(${i})">${isPaidOff ? 'LOGGED: $0' : 'Log Payment'}</button>
                     <div class="history-row">
                         <span>Last: $${c.lastPay || 0} (${c.lastDate || '--'})</span>
                         <span id="freedom-label-${i}" style="color:var(--text); font-weight:700;">--</span>
@@ -153,11 +148,8 @@
         if (field === 'dueDate' && !value) return; 
         cards[i][field] = (field === 'name' || field === 'dueDate') ? value : (parseFloat(value) || 0);
         localStorage.setItem(KEY, JSON.stringify(cards));
-        if (field === 'apr' || field === 'bal' || field === 'dueDate') {
-            initUI();
-        } else {
-            calculate();
-        }
+        if (field === 'apr' || field === 'bal' || field === 'dueDate') initUI();
+        else calculate();
     }
 
     function applyPayment(i) {
@@ -171,17 +163,6 @@
             cards[i].lastPaidMonth = `${now.getMonth()}-${now.getFullYear()}`;
             saveAndRefresh();
         }
-    }
-
-    function exportCSV() {
-        let csv = "Card Name,Balance,APR,Due Date,Last Payment,Last Date\n";
-        cards.forEach(c => { csv += `${c.name},${c.bal},${c.apr},${c.dueDate},${c.lastPay},${c.lastDate}\n`; });
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.setAttribute('href', url);
-        a.setAttribute('download', `Debt_Destroyer_Backup_${new Date().toLocaleDateString()}.csv`);
-        a.click();
     }
 
     function saveAndRefresh() { localStorage.setItem(KEY, JSON.stringify(cards)); initUI(); }
@@ -220,47 +201,29 @@
 
     function updateCharts(labels, bData, totalDebt, totalInt) {
         if (typeof Chart === 'undefined') return;
-        const opt = { cutout: '75%', animation: false, plugins: { legend: { display: false } }, maintainAspectRatio: false };
+        const opt = { cutout: '70%', animation: false, plugins: { legend: { display: false } }, maintainAspectRatio: false, responsive: true };
         
         const ctx1 = document.getElementById('debtChart').getContext('2d');
         if (debtChart) debtChart.destroy();
-        debtChart = new Chart(ctx1, { 
-            type: 'doughnut', 
-            data: { 
-                labels: labels, 
-                datasets: [{ 
-                    data: bData, 
-                    backgroundColor: COLORS, 
-                    borderWidth: 0 
-                }] 
-            }, 
-            options: opt 
-        });
+        debtChart = new Chart(ctx1, { type: 'doughnut', data: { labels: labels, datasets: [{ data: bData, backgroundColor: COLORS, borderWidth: 0 }] }, options: opt });
 
         const ctx2 = document.getElementById('ratioChart').getContext('2d');
         if (ratioChart) ratioChart.destroy();
-        ratioChart = new Chart(ctx2, { 
-            type: 'pie', 
-            data: { 
-                labels: ['Principal', 'Interest'], 
-                datasets: [{ 
-                    data: [totalDebt, totalInt], 
-                    backgroundColor: ['#2f3542', '#ff4757'], 
-                    borderWidth: 0 
-                }] 
-            }, 
-            options: opt 
-        });
+        ratioChart = new Chart(ctx2, { type: 'pie', data: { labels: ['Principal', 'Interest'], datasets: [{ data: [totalDebt, totalInt], backgroundColor: ['#2f3542', '#ff4757'], borderWidth: 0 }] }, options: opt });
+    }
+
+    function exportCSV() {
+        let csv = "Card Name,Balance,APR,Due Date,Last Payment,Last Date\n";
+        cards.forEach(c => { csv += `${c.name},${c.bal},${c.apr},${c.dueDate},${c.lastPay},${c.lastDate}\n`; });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('href', url);
+        a.setAttribute('download', `Backup_${new Date().toLocaleDateString()}.csv`);
+        a.click();
     }
 
     function nuke() { if(confirm("Wipe all data?")) { localStorage.clear(); location.reload(); } }
-    
-    let startY = 0;
-    const ptr = document.getElementById('ptr');
-    window.addEventListener('touchstart', e => { if (window.scrollY === 0) startY = e.touches[0].pageY; });
-    window.addEventListener('touchmove', e => { if (window.scrollY === 0 && e.touches[0].pageY > startY) ptr.style.transform = `translateY(${Math.min(e.touches[0].pageY - startY, 60) - 50}px)`; });
-    window.addEventListener('touchend', e => { if (ptr.style.transform.includes('10px')) { ptr.style.transform = `translateY(0px)`; setTimeout(() => location.reload(), 600); } else ptr.style.transform = `translateY(-50px)`; });
-
     initUI();
 </script>
 </body>
