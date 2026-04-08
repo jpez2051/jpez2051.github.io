@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Destroyer v1.4.6</title>
+    <title>Debt Destroyer v1.4.8</title>
     <script id="chart-js" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #f4f7f6; --card: #ffffff; --primary: #2ecc71; --accent: #3498db; --danger: #ff4757; --warning: #f1c40f; --text: #2f3542; }
@@ -65,7 +65,7 @@
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight:bold;">Backup CSV</span>
-    <span>v1.4.6</span>
+    <span>v1.4.8</span>
     <span onclick="nuke()" style="color:var(--danger)">Reset App</span>
 </div>
 
@@ -94,24 +94,24 @@
             if (isPaidOff) statusClass = 'paid-off';
             else if (hasPaidThisMonth) statusClass = 'paid-this-month';
             else if (c.dueDate) {
-                const due = new Date(c.dueDate);
-                const dueDay = due.getDate();
-                const today = now.getDate();
+                const dateParts = c.dueDate.split('-');
+                const dueDayOnly = parseInt(dateParts[2]);
+                const todayDay = now.getDate();
                 
-                if (today >= dueDay) statusClass = 'overdue';
-                else if (dueDay - today <= 3) statusClass = 'due-soon';
+                if (todayDay >= dueDayOnly) statusClass = 'overdue';
+                else if (dueDayOnly - todayDay <= 3) statusClass = 'due-soon';
             }
 
             list.innerHTML += `
                 <div class="card-box ${statusClass}">
                     <div class="priority-tag" style="display: ${i === 0 && !isPaidOff ? 'block' : 'none'}">Avalanche Target</div>
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <input type="text" onchange="updateData(${i}, 'name', this.value)" value="${c.name}" style="border:none; font-weight:800; font-size:16px; background:none; width:65%; color:var(--text);">
+                        <input type="text" oninput="updateData(${i}, 'name', this.value)" value="${c.name}" style="border:none; font-weight:800; font-size:16px; background:none; width:65%; color:var(--text);">
                         <span style="font-size: 9px; font-weight: 800; color: ${hasPaidThisMonth ? 'var(--primary)' : '#a4b0be'}">${hasPaidThisMonth ? 'PAID ✓' : 'UNPAID'}</span>
                     </div>
                     <div class="input-row">
-                        <div><label>Balance</label><input type="number" inputmode="decimal" onchange="updateData(${i}, 'bal', this.value)" value="${c.bal || ''}"></div>
-                        <div><label>APR %</label><input type="number" inputmode="decimal" onchange="updateData(${i}, 'apr', this.value)" value="${c.apr || ''}"></div>
+                        <div><label>Balance</label><input type="number" inputmode="decimal" oninput="updateData(${i}, 'bal', this.value)" value="${c.bal || ''}"></div>
+                        <div><label>APR %</label><input type="number" inputmode="decimal" oninput="updateData(${i}, 'apr', this.value)" value="${c.apr || ''}"></div>
                         <div><label>Due Date</label><input type="date" onchange="updateData(${i}, 'dueDate', this.value)" value="${c.dueDate || ''}"></div>
                         <div><label>Pay $</label><input type="number" inputmode="decimal" id="p-${i}"></div>
                     </div>
@@ -132,7 +132,13 @@
 
     function updateData(i, field, value) {
         cards[i][field] = (field === 'name' || field === 'dueDate') ? value : (parseFloat(value) || 0);
-        saveAndRefresh();
+        localStorage.setItem(KEY, JSON.stringify(cards));
+        // If it's a critical field that triggers a re-sort, refresh UI
+        if (field === 'apr' || field === 'bal' || field === 'dueDate') {
+            initUI();
+        } else {
+            calculate(); // Just update charts/math
+        }
     }
 
     function applyPayment(i) {
