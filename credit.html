@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Destroyer v1.3.9</title>
+    <title>Debt Destroyer v1.4.1</title>
     <script id="chart-js" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #f4f7f6; --card: #ffffff; --primary: #2ecc71; --accent: #3498db; --danger: #ff4757; --text: #2f3542; }
@@ -25,13 +25,15 @@
         .chart-viewport::-webkit-scrollbar { display: none; }
         .chart-slide { flex: 0 0 100%; scroll-snap-align: start; height: 120px; display: none; }
 
-        .card-box { background: var(--card); border-radius: 18px; padding: 15px; margin-bottom: 10px; border: 1px solid #e1e8ed; position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+        .card-box { background: var(--card); border-radius: 18px; padding: 15px; margin-bottom: 10px; border: 1px solid #e1e8ed; position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.03); transition: all 0.3s ease; }
+        .paid-off { opacity: 0.6; background: #f9f9f9; border: 1px dashed #cbd5e0; }
+        
         .input-row { display: grid; grid-template-columns: 1.2fr 0.8fr 1fr; gap: 8px; margin: 10px 0; }
         label { font-size: 9px; font-weight: 800; color: #a4b0be; text-transform: uppercase; margin-bottom: 3px; display: block; }
         input { width: 100%; padding: 10px; border: 1px solid #eceff1; border-radius: 8px; font-size: 15px; background: #fbfcfc; -webkit-appearance: none; }
         
         button { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 13px; width: 100%; transition: 0.2s; }
-        .add-btn { background: #2f3542; margin-top: 10px; margin-bottom: 20px; font-size: 12px; padding: 15px; }
+        .add-btn { background: #2f3542; margin-top: 10px; margin-bottom: 20px; font-size: 12px; padding: 15px; color: white; border-radius: 12px; width: 100%; border: none; font-weight: 700; }
         
         .badge { font-size: 9px; font-weight: 700; padding: 4px 8px; border-radius: 6px; }
         .int-red { color: var(--danger); background: #fff5f5; }
@@ -48,9 +50,9 @@
 <div class="dashboard">
     <div class="main-total" id="main-debt">$0.00</div>
     <div class="progress-container"><div id="progress-bar"></div></div>
-    <div id="main-freedom" style="font-size: 10px; color: var(--primary); font-weight: 700; letter-spacing: 0.5px;">DASHBOARD</div>
+    <div id="main-freedom" style="font-size: 10px; color: var(--primary); font-weight: 700; letter-spacing: 0.5px;">AVALANCHE MODE</div>
     <div style="display: flex; justify-content: space-around; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
-        <div style="text-align: center;"><span id="stat-interest" style="font-size: 18px; font-weight: 800;">$0</span><br><span style="font-size: 8px; opacity: 0.6; text-transform: uppercase;">Interest</span></div>
+        <div style="text-align: center;"><span id="stat-interest" style="font-size: 18px; font-weight: 800;">$0</span><br><span style="font-size: 8px; opacity: 0.6; text-transform: uppercase;">Est. Interest</span></div>
         <div style="text-align: center;"><span id="stat-apr" style="font-size: 18px; font-weight: 800;">0%</span><br><span style="font-size: 8px; opacity: 0.6; text-transform: uppercase;">Avg APR</span></div>
     </div>
 </div>
@@ -65,16 +67,14 @@
 <div id="card-list"></div>
 <button class="add-btn" onclick="addCard()">+ ADD NEW CARD</button>
 
-<div class="footer">BUILD v1.3.9 • <span onclick="nuke()" style="color:var(--danger)">Reset</span></div>
+<div class="footer">BUILD v1.4.1 • <span onclick="nuke()" style="color:var(--danger)">Reset</span></div>
 
 <script>
     const KEY = 'debt_v125';
     let debtChart, ratioChart;
-    let cards = JSON.parse(localStorage.getItem(KEY)) || [
-        { name: "New Card", bal: 0, apr: 0, lastPay: 0, lastDate: "--" }
-    ];
+    let cards = JSON.parse(localStorage.getItem(KEY)) || [{ name: "New Card", bal: 0, apr: 0, lastPay: 0, lastDate: "--", id: Date.now() }];
 
-    // Pull to Refresh Logic
+    // Handle Pull to Refresh
     let startY = 0;
     const ptr = document.getElementById('ptr');
     window.addEventListener('touchstart', e => { if (window.scrollY === 0) startY = e.touches[0].pageY; });
@@ -93,22 +93,33 @@
     function initUI() {
         const list = document.getElementById('card-list');
         list.innerHTML = '';
+        
+        // --- AUTO SORT LOGIC ---
+        // 1. Paid off ($0 bal) always at the bottom
+        // 2. Others sorted by APR (Highest to Lowest)
+        cards.sort((a, b) => {
+            if (a.bal === 0 && b.bal > 0) return 1;
+            if (a.bal > 0 && b.bal === 0) return -1;
+            return b.apr - a.apr;
+        });
+
         cards.forEach((c, i) => {
+            const isPaid = c.bal === 0;
             list.innerHTML += `
-                <div class="card-box">
-                    <div class="priority-tag" id="tag-${i}">High Interest</div>
+                <div class="card-box ${isPaid ? 'paid-off' : ''}">
+                    <div class="priority-tag" id="tag-${i}" style="display: ${i === 0 && !isPaid ? 'block' : 'none'}">Avalanche Target</div>
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                        <input type="text" id="n-${i}" oninput="updateData(${i})" value="${c.name}" style="border:none; font-weight:800; font-size:18px; background:none; width:60%; color:var(--text);">
+                        <input type="text" onchange="updateData(${i}, 'name', this.value)" value="${c.name}" style="border:none; font-weight:800; font-size:18px; background:none; width:60%; color:var(--text);">
                         <span class="badge int-red" id="badge-${i}">$0 Int</span>
                     </div>
                     <div class="input-row">
-                        <div><label>Balance</label><input type="number" inputmode="decimal" id="b-${i}" oninput="updateData(${i})" value="${c.bal || ''}"></div>
-                        <div><label>APR %</label><input type="number" inputmode="decimal" id="a-${i}" oninput="updateData(${i})" value="${c.apr || ''}"></div>
-                        <div><label>Payment</label><input type="number" inputmode="decimal" id="p-${i}" oninput="updateData(${i})"></div>
+                        <div><label>Balance</label><input type="number" inputmode="decimal" onchange="updateData(${i}, 'bal', this.value)" value="${c.bal || ''}"></div>
+                        <div><label>APR %</label><input type="number" inputmode="decimal" onchange="updateData(${i}, 'apr', this.value)" value="${c.apr || ''}"></div>
+                        <div><label>Payment</label><input type="number" inputmode="decimal" id="p-${i}"></div>
                     </div>
-                    <button id="btn-${i}" onclick="applyPayment(${i})">Log Update</button>
+                    <button id="btn-${i}" onclick="applyPayment(${i})">${isPaid ? 'PAID OFF' : 'Log Update'}</button>
                     <div class="history-row">
-                        <span id="history-${i}">Last Pay: $${c.lastPay || 0} (${c.lastDate || '--'})</span>
+                        <span>Last Pay: $${c.lastPay || 0} (${c.lastDate || '--'})</span>
                         <span id="freedom-label-${i}" style="color:var(--text); font-weight:700;">--</span>
                     </div>
                 </div>`;
@@ -117,31 +128,41 @@
     }
 
     function addCard() {
-        cards.push({ name: "New Card", bal: 0, apr: 0, lastPay: 0, lastDate: "--" });
-        localStorage.setItem(KEY, JSON.stringify(cards));
-        initUI();
+        cards.push({ name: "New Card", bal: 0, apr: 0, lastPay: 0, lastDate: "--", id: Date.now() });
+        saveAndRefresh();
     }
 
-    function updateData(i) {
-        cards[i].name = document.getElementById(`n-${i}`).value;
-        cards[i].bal = parseFloat(document.getElementById(`b-${i}`).value) || 0;
-        cards[i].apr = parseFloat(document.getElementById(`a-${i}`).value) || 0;
+    function updateData(i, field, value) {
+        cards[i][field] = field === 'name' ? value : (parseFloat(value) || 0);
+        saveAndRefresh();
+    }
+
+    function applyPayment(i) {
+        const pInput = document.getElementById(`p-${i}`);
+        const amt = parseFloat(pInput.value) || 0;
+        if (amt > 0) {
+            cards[i].bal = Math.max(0, cards[i].bal - amt);
+            cards[i].lastPay = amt;
+            const now = new Date();
+            cards[i].lastDate = (now.getMonth()+1).toString().padStart(2,'0')+'/'+now.getDate().toString().padStart(2,'0')+'/'+now.getFullYear();
+            saveAndRefresh();
+        }
+    }
+
+    function saveAndRefresh() {
         localStorage.setItem(KEY, JSON.stringify(cards));
-        calculate();
+        initUI(); // This triggers the re-sort and re-render
     }
 
     function calculate() {
-        let totalDebt = 0, totalInt = 0, maxMonths = 0, aprSum = 0, highestMonthlyInt = -1, highIntIndex = -1;
+        let totalDebt = 0, totalInt = 0, maxMonths = 0, aprSum = 0;
         let bData = [], labels = [];
 
         cards.forEach((c, i) => {
             let bal = c.bal; totalDebt += bal; aprSum += c.apr;
             let mRate = (c.apr / 100) / 12;
             let curInt = bal * mRate;
-            if (curInt > highestMonthlyInt && bal > 0) { highestMonthlyInt = curInt; highIntIndex = i; }
-
-            let pInput = document.getElementById(`p-${i}`).value;
-            let calcPay = (pInput !== "") ? parseFloat(pInput) : (c.lastPay || 0);
+            let calcPay = c.lastPay || 0;
 
             let months = 0, interest = 0, tempBal = bal;
             if (bal > 0 && calcPay > curInt) {
@@ -153,9 +174,12 @@
                 totalInt += interest;
             }
 
-            document.getElementById(`badge-${i}`).innerText = `+$${Math.round(interest)} Int`;
-            document.getElementById(`freedom-label-${i}`).innerText = months > 0 ? `${months} mo` : (bal > 0 ? "Infinite" : "Paid");
-            document.getElementById(`tag-${i}`).style.display = (i === highIntIndex) ? "block" : "none";
+            const badge = document.getElementById(`badge-${i}`);
+            if(badge) badge.innerText = `+$${Math.round(interest)} Int`;
+            
+            const freedom = document.getElementById(`freedom-label-${i}`);
+            if(freedom) freedom.innerText = months > 0 ? `${months} mo` : (bal > 0 ? "Infinite" : "Paid");
+            
             bData.push(bal); labels.push(c.name);
         });
 
@@ -168,29 +192,8 @@
         if (maxMonths > 0) {
             let d = new Date(); d.setMonth(d.getMonth() + maxMonths);
             document.getElementById('main-freedom').innerText = "FREEDOM: " + d.toLocaleDateString('en-US', {month:'short', year:'numeric'}).toUpperCase();
-        } else {
-            document.getElementById('main-freedom').innerText = totalDebt > 0 ? "SET PAYMENTS" : "DEBT FREE!";
         }
         updateCharts(labels, bData, totalDebt, totalInt);
-    }
-
-    function applyPayment(i) {
-        let pInput = document.getElementById(`p-${i}`);
-        let amt = parseFloat(pInput.value) || 0;
-        if (amt > 0) {
-            cards[i].bal = Math.max(0, cards[i].bal - amt);
-            cards[i].lastPay = amt;
-            const now = new Date();
-            const dateStr = (now.getMonth()+1).toString().padStart(2,'0')+'/'+now.getDate().toString().padStart(2,'0')+'/'+now.getFullYear();
-            cards[i].lastDate = dateStr;
-            document.getElementById(`b-${i}`).value = cards[i].bal;
-            document.getElementById(`history-${i}`).innerText = `Last Pay: $${amt} (${dateStr})`;
-            pInput.value = '';
-            localStorage.setItem(KEY, JSON.stringify(cards));
-            calculate();
-        }
-        const b = document.getElementById(`btn-${i}`);
-        b.innerText = "UPDATED ✓"; b.style.background = "var(--primary)";
     }
 
     function updateCharts(labels, bData, totalDebt, totalInt) {
