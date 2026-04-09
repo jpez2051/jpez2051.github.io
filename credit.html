@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Destroyer v1.6.9</title>
+    <title>Debt Destroyer v1.7.0</title>
     <script id="chart-js" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { 
@@ -33,13 +33,11 @@
         .splash-title { color: white; font-size: 14px; font-weight: 800; letter-spacing: 4px; text-transform: uppercase; }
         .splash-hidden { opacity: 0; visibility: hidden; }
 
-        /* DASHBOARD */
         .dashboard { background: linear-gradient(135deg, #1e272e, #000); color: white; border-radius: 18px; padding: 18px; margin-bottom: 12px; text-align: center; }
         .main-total { font-size: 34px; font-weight: 800; }
         .prog-bg { width: 100%; background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; margin: 10px 0; overflow: hidden; }
         .prog-fill { width: 0%; height: 100%; background: var(--primary); transition: width 0.5s; }
 
-        /* FLIP CARD SYSTEM */
         .card-container { perspective: 1000px; margin-bottom: 15px; min-height: 250px; position: relative; }
         .card-inner { 
             position: relative; width: 100%; height: 100%; min-height: 250px;
@@ -59,7 +57,6 @@
         .card-back { transform: rotateY(180deg); display: flex; flex-direction: column; z-index: 1; }
         .card-front { z-index: 2; }
 
-        /* UI ELEMENTS */
         .mini-prog-container { height: 4px; background: #eee; border-radius: 2px; margin: 8px 0; overflow: hidden; width: 100%; }
         .mini-prog-fill { height: 100%; transition: width 0.6s ease; }
         .input-row { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 8px; margin: 10px 0; }
@@ -67,17 +64,22 @@
         input { width: 100%; padding: 10px 6px; border: 1px solid #eceff1; border-radius: 8px; font-size: 13px; background: #fbfcfc; -webkit-appearance: none; box-sizing: border-box; }
         button { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 700; width: 100%; }
         
-        .done-btn { background: #ced6e0; color: #2f3542; font-size: 10px; padding: 6px 10px; border-radius: 6px; width: auto; font-weight: 800; border: none; transition: background 0.3s; }
+        .done-btn { background: #ced6e0; color: #2f3542; font-size: 10px; padding: 6px 10px; border-radius: 6px; width: auto; font-weight: 800; border: none; }
         .done-btn.active-paid { background: var(--primary); color: white; }
         
         .history-list { margin-top: 10px; border-top: 1px solid #eee; padding-top: 8px; flex-grow: 1; overflow-y: auto; max-height: 85px; }
         .history-item { display: flex; justify-content: space-between; font-size: 11px; padding: 4px 0; border-bottom: 1px dotted #f1f2f6; }
         
+        /* New Back Balance Display */
+        .back-balance-display { background: #f8fafb; padding: 10px; border-radius: 12px; margin-bottom: 10px; text-align: center; }
+        .delta-pill { font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
+        .delta-neg { color: var(--primary); background: rgba(46, 204, 113, 0.1); }
+        .delta-pos { color: var(--danger); background: rgba(255, 71, 87, 0.1); }
+
         .priority-tag-front { position: absolute; top: 8px; right: 15px; background: var(--danger); color: white; font-size: 8px; font-weight: 900; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; z-index: 20; }
         .priority-tag-back { position: absolute; top: 8px; left: 15px; background: var(--danger); color: white; font-size: 8px; font-weight: 900; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; z-index: 20; }
         
         .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); text-align: center; padding: 15px 0; font-size: 9px; border-top: 1px solid #eee; z-index: 100; display: flex; justify-content: space-around; }
-
         .chart-card { background: var(--card); border-radius: 20px; padding: 25px 20px; margin-bottom: 12px; border: 1px solid #e1e8ed; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px; scrollbar-width: none; }
         .chart-slide { flex: 0 0 100%; scroll-snap-align: start; text-align: center; }
         canvas { max-height: 150px !important; margin: 0 auto; }
@@ -110,7 +112,7 @@
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight:bold;">Backup CSV</span>
-    <span>v1.6.9</span>
+    <span>v1.7.0</span>
     <span onclick="nuke()" style="color:var(--danger)">Reset App</span>
 </div>
 
@@ -132,10 +134,8 @@ function initUI() {
     const targetIndex = cards.findIndex(c => c.bal > 0);
 
     cards.forEach((c, i) => {
-        // Force migration and array initialization
-        if (!Array.isArray(c.history)) {
-            c.history = (c.lastPay && c.lastPay > 0) ? [{amt: c.lastPay, date: c.lastDate || 'Recent'}] : [];
-        }
+        if (!Array.isArray(c.history)) c.history = [];
+        if (c.prevBal === undefined) c.prevBal = c.bal;
 
         const isPaidOff = c.bal === 0;
         const themeColor = COLORS[i % COLORS.length];
@@ -143,6 +143,12 @@ function initUI() {
         const percentPaid = Math.max(0, Math.min(100, 100 - ((c.bal / c.limit) * 100)));
         const isTarget = (i === targetIndex && !isPaidOff);
         const isThisMonthPaid = c.lastPaidMonth === curMonthYear;
+
+        // Calculate Delta
+        const diff = c.bal - c.prevBal;
+        let deltaHtml = '';
+        if (diff < 0) deltaHtml = `<span class="delta-pill delta-neg">-${Math.abs(diff).toLocaleString()}</span>`;
+        else if (diff > 0) deltaHtml = `<span class="delta-pill delta-pos">+${diff.toLocaleString()}</span>`;
 
         let historyHtml = c.history.slice(-5).reverse().map(h => `
             <div class="history-item">
@@ -174,12 +180,20 @@ function initUI() {
                     </div>
                     <div class="card-back" onclick="toggleFlip(this)" style="border-left: 6px solid ${themeColor};">
                         ${isTarget ? '<div class="priority-tag-back">Target</div>' : ''}
+                        
+                        <div class="back-balance-display">
+                            <label>Current Balance</label>
+                            <span style="font-size:18px; font-weight:800;">$${c.bal.toLocaleString()}</span>
+                            ${deltaHtml}
+                        </div>
+
                         <div style="text-align:center;">
-                            <div style="font-size: 16px; font-weight: 800; color: var(--text);">${percentPaid.toFixed(1)}% Paid</div>
+                            <div style="font-size: 14px; font-weight: 800; color: #a4b0be;">${percentPaid.toFixed(1)}% PROGRESS</div>
                             <div class="mini-prog-container">
                                 <div class="mini-prog-fill" style="width: ${percentPaid}%; background: ${themeColor}"></div>
                             </div>
                         </div>
+                        
                         <div style="display:flex; justify-content:space-around; margin-top:5px;" onclick="event.stopPropagation()">
                             <div style="text-align:center;"><label>APR %</label><input type="number" style="width:50px; text-align:center; padding:5px;" oninput="updateData(${i}, 'apr', this.value)" value="${c.apr || 0}"></div>
                             <div style="text-align:center;"><label>Freedom</label><span id="freedom-label-${i}" style="font-weight:800; font-size:12px;">--</span></div>
@@ -198,17 +212,24 @@ function initUI() {
 function applyPayment(i) {
     const amt = parseFloat(document.getElementById(`p-${i}`).value) || 0;
     if (amt > 0) {
+        cards[i].prevBal = cards[i].bal; // Save current as old before updating
         cards[i].bal = Math.max(0, cards[i].bal - amt);
         const now = new Date();
         const dateStr = (now.getMonth()+1)+'/'+now.getDate();
-        
-        // Ensure history exists before pushing
         if (!Array.isArray(cards[i].history)) cards[i].history = [];
         cards[i].history.push({amt: amt, date: dateStr});
-        
         cards[i].lastPaidMonth = now.getMonth()+'-'+now.getFullYear();
         saveAndRefresh();
     }
+}
+
+function updateData(i, field, value) { 
+    if (field === 'bal') cards[i].prevBal = cards[i].bal; // Update logic for direct typing
+    cards[i][field] = (field === 'name' || field === 'dueDate') ? value : (parseFloat(value) || 0); 
+    if (field === 'bal' && (!cards[i].limit || cards[i].limit < cards[i].bal)) cards[i].limit = cards[i].bal; 
+    localStorage.setItem(KEY, JSON.stringify(cards)); 
+    if (['apr', 'bal', 'dueDate'].includes(field)) initUI(); 
+    else calculate(); 
 }
 
 function forceMarkPaid(i) {
@@ -218,16 +239,8 @@ function forceMarkPaid(i) {
 }
 
 function addCard() { 
-    cards.push({ name: "New Card", bal: 0, min: 0, apr: 0, limit: 0, lastPay: 0, lastDate: "", dueDate: "", lastPaidMonth: "", history: [] }); 
+    cards.push({ name: "New Card", bal: 0, min: 0, apr: 0, limit: 0, prevBal: 0, history: [] }); 
     saveAndRefresh(); 
-}
-
-function updateData(i, field, value) { 
-    cards[i][field] = (field === 'name' || field === 'dueDate') ? value : (parseFloat(value) || 0); 
-    if (field === 'bal' && (!cards[i].limit || cards[i].limit < cards[i].bal)) cards[i].limit = cards[i].bal; 
-    localStorage.setItem(KEY, JSON.stringify(cards)); 
-    if (['apr', 'bal', 'dueDate'].includes(field)) initUI(); 
-    else calculate(); 
 }
 
 function saveAndRefresh() { localStorage.setItem(KEY, JSON.stringify(cards)); initUI(); }
