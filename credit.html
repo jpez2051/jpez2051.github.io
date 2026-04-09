@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Destroyer v1.6.6</title>
+    <title>Debt Destroyer v1.6.7</title>
     <script id="chart-js" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { 
@@ -18,6 +18,20 @@
             padding: 10px; padding-bottom: 140px; color: var(--text); 
             overscroll-behavior-y: contain; overflow-x: hidden; 
         }
+
+        /* SPLASH SCREEN */
+        #splash-screen {
+            position: fixed; inset: 0; background: #1e272e; z-index: 3000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.5s ease-out, visibility 0.5s;
+        }
+        .splash-logo {
+            width: 80px; height: 80px; border: 4px solid var(--primary); border-radius: 18px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 40px; font-weight: 900; margin-bottom: 20px;
+        }
+        .splash-title { color: white; font-size: 14px; font-weight: 800; letter-spacing: 4px; text-transform: uppercase; }
+        .splash-hidden { opacity: 0; visibility: hidden; }
 
         /* DASHBOARD */
         .dashboard { background: linear-gradient(135deg, #1e272e, #000); color: white; border-radius: 18px; padding: 18px; margin-bottom: 12px; text-align: center; }
@@ -58,7 +72,6 @@
         button { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 700; width: 100%; }
         .done-btn { background: #ced6e0; color: #2f3542; font-size: 10px; padding: 4px 8px; border-radius: 6px; width: auto; font-weight: 800; }
         
-        /* HISTORY STYLES */
         .history-list { margin-top: 10px; border-top: 1px solid #eee; padding-top: 8px; flex-grow: 1; overflow-y: auto; max-height: 85px; }
         .history-item { display: flex; justify-content: space-between; font-size: 11px; padding: 4px 0; border-bottom: 1px dotted #f1f2f6; }
         
@@ -73,6 +86,11 @@
     </style>
 </head>
 <body>
+
+<div id="splash-screen">
+    <div class="splash-logo">$</div>
+    <div class="splash-title">Avalanche Pro</div>
+</div>
 
 <div class="dashboard">
     <div class="main-total" id="main-debt">$0.00</div>
@@ -94,7 +112,7 @@
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight:bold;">Backup CSV</span>
-    <span>v1.6.6</span>
+    <span>v1.6.7</span>
     <span onclick="nuke()" style="color:var(--danger)">Reset App</span>
 </div>
 
@@ -116,7 +134,6 @@ function initUI() {
     const targetIndex = cards.findIndex(c => c.bal > 0);
 
     cards.forEach((c, i) => {
-        // Migration logic: move single lastPay to history array if history is empty
         if ((!c.history || c.history.length === 0) && c.lastPay && c.lastPay > 0) {
             c.history = [{amt: c.lastPay, date: c.lastDate || 'Recent'}];
         } else if (!c.history) {
@@ -186,8 +203,6 @@ function applyPayment(i) {
         const dateStr = (now.getMonth()+1)+'/'+now.getDate();
         if (!cards[i].history) cards[i].history = [];
         cards[i].history.push({amt: amt, date: dateStr});
-        cards[i].lastPay = amt; // Keep for legacy compatibility
-        cards[i].lastDate = dateStr;
         cards[i].lastPaidMonth = now.getMonth()+'-'+now.getFullYear();
         saveAndRefresh();
     }
@@ -260,6 +275,8 @@ function exportCSV() {
 }
 
 function nuke() { if(confirm("Wipe all data?")) { localStorage.clear(); location.reload(); } }
+
+setTimeout(() => document.getElementById('splash-screen').classList.add('splash-hidden'), 1000);
 initUI();
 </script>
 </body>
