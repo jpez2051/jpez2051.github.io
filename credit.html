@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Destroyer v1.6.8</title>
+    <title>Debt Destroyer v1.6.9</title>
     <script id="chart-js" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { 
@@ -51,11 +51,9 @@
         .card-front, .card-back { 
             position: absolute; width: 100%; height: 100%; 
             -webkit-backface-visibility: hidden; backface-visibility: hidden; 
-            border-radius: 18px; 
-            padding: 30px 15px 15px 15px;
-            border: 1px solid #e1e8ed; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03); background: var(--card);
-            box-sizing: border-box; top: 0; left: 0;
+            border-radius: 18px; padding: 30px 15px 15px 15px;
+            border: 1px solid #e1e8ed; box-shadow: 0 4px 12px rgba(0,0,0,0.03); 
+            background: var(--card); box-sizing: border-box; top: 0; left: 0;
         }
         
         .card-back { transform: rotateY(180deg); display: flex; flex-direction: column; z-index: 1; }
@@ -64,14 +62,11 @@
         /* UI ELEMENTS */
         .mini-prog-container { height: 4px; background: #eee; border-radius: 2px; margin: 8px 0; overflow: hidden; width: 100%; }
         .mini-prog-fill { height: 100%; transition: width 0.6s ease; }
-        
         .input-row { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 8px; margin: 10px 0; }
         label { font-size: 8px; font-weight: 800; color: #a4b0be; text-transform: uppercase; margin-bottom: 3px; display: block; }
         input { width: 100%; padding: 10px 6px; border: 1px solid #eceff1; border-radius: 8px; font-size: 13px; background: #fbfcfc; -webkit-appearance: none; box-sizing: border-box; }
-        
         button { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 700; width: 100%; }
         
-        /* DONE BUTTON STATES */
         .done-btn { background: #ced6e0; color: #2f3542; font-size: 10px; padding: 6px 10px; border-radius: 6px; width: auto; font-weight: 800; border: none; transition: background 0.3s; }
         .done-btn.active-paid { background: var(--primary); color: white; }
         
@@ -115,7 +110,7 @@
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight:bold;">Backup CSV</span>
-    <span>v1.6.8</span>
+    <span>v1.6.9</span>
     <span onclick="nuke()" style="color:var(--danger)">Reset App</span>
 </div>
 
@@ -137,7 +132,10 @@ function initUI() {
     const targetIndex = cards.findIndex(c => c.bal > 0);
 
     cards.forEach((c, i) => {
-        if (!c.history) c.history = [];
+        // Force migration and array initialization
+        if (!Array.isArray(c.history)) {
+            c.history = (c.lastPay && c.lastPay > 0) ? [{amt: c.lastPay, date: c.lastDate || 'Recent'}] : [];
+        }
 
         const isPaidOff = c.bal === 0;
         const themeColor = COLORS[i % COLORS.length];
@@ -203,8 +201,11 @@ function applyPayment(i) {
         cards[i].bal = Math.max(0, cards[i].bal - amt);
         const now = new Date();
         const dateStr = (now.getMonth()+1)+'/'+now.getDate();
-        if (!cards[i].history) cards[i].history = [];
+        
+        // Ensure history exists before pushing
+        if (!Array.isArray(cards[i].history)) cards[i].history = [];
         cards[i].history.push({amt: amt, date: dateStr});
+        
         cards[i].lastPaidMonth = now.getMonth()+'-'+now.getFullYear();
         saveAndRefresh();
     }
@@ -238,7 +239,7 @@ function calculate() {
         totalDebt += c.bal; aprSum += c.apr; totalMin += (c.min || 0);
         let mRate = (c.apr / 100) / 12; 
         let months = 0;
-        let payEstimate = (c.history && c.history.length) ? 
+        let payEstimate = (Array.isArray(c.history) && c.history.length) ? 
             c.history.reduce((a, b) => a + b.amt, 0) / c.history.length : c.min;
 
         if (c.bal > 0 && payEstimate > (c.bal * mRate)) { 
