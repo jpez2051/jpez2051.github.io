@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Destroyer v1.6.5</title>
+    <title>Debt Destroyer v1.6.6</title>
     <script id="chart-js" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { 
@@ -38,14 +38,14 @@
             position: absolute; width: 100%; height: 100%; 
             -webkit-backface-visibility: hidden; backface-visibility: hidden; 
             border-radius: 18px; 
-            padding: 30px 15px 15px 15px; /* Increased top padding to 30px */
+            padding: 30px 15px 15px 15px;
             border: 1px solid #e1e8ed; 
             box-shadow: 0 4px 12px rgba(0,0,0,0.03); background: var(--card);
             box-sizing: border-box; top: 0; left: 0;
         }
         
-        .card-back { transform: rotateY(180deg); border-left: 6px solid var(--accent); display: flex; flex-direction: column; z-index: 1; }
-        .card-front { border-left: 6px solid #ddd; z-index: 2; }
+        .card-back { transform: rotateY(180deg); display: flex; flex-direction: column; z-index: 1; }
+        .card-front { z-index: 2; }
 
         /* UI ELEMENTS */
         .mini-prog-container { height: 4px; background: #eee; border-radius: 2px; margin: 8px 0; overflow: hidden; width: 100%; }
@@ -59,7 +59,7 @@
         .done-btn { background: #ced6e0; color: #2f3542; font-size: 10px; padding: 4px 8px; border-radius: 6px; width: auto; font-weight: 800; }
         
         /* HISTORY STYLES */
-        .history-list { margin-top: 10px; border-top: 1px solid #eee; padding-top: 8px; flex-grow: 1; overflow-y: auto; max-height: 80px; }
+        .history-list { margin-top: 10px; border-top: 1px solid #eee; padding-top: 8px; flex-grow: 1; overflow-y: auto; max-height: 85px; }
         .history-item { display: flex; justify-content: space-between; font-size: 11px; padding: 4px 0; border-bottom: 1px dotted #f1f2f6; }
         
         .priority-tag-front { position: absolute; top: 8px; right: 15px; background: var(--danger); color: white; font-size: 8px; font-weight: 900; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; z-index: 20; }
@@ -94,7 +94,7 @@
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight:bold;">Backup CSV</span>
-    <span>v1.6.5</span>
+    <span>v1.6.6</span>
     <span onclick="nuke()" style="color:var(--danger)">Reset App</span>
 </div>
 
@@ -116,25 +116,30 @@ function initUI() {
     const targetIndex = cards.findIndex(c => c.bal > 0);
 
     cards.forEach((c, i) => {
+        // Migration logic: move single lastPay to history array if history is empty
+        if ((!c.history || c.history.length === 0) && c.lastPay && c.lastPay > 0) {
+            c.history = [{amt: c.lastPay, date: c.lastDate || 'Recent'}];
+        } else if (!c.history) {
+            c.history = [];
+        }
+
         const isPaidOff = c.bal === 0;
         const themeColor = COLORS[i % COLORS.length];
         if(!c.limit || c.limit < c.bal) c.limit = c.bal || 100;
         const percentPaid = Math.max(0, Math.min(100, 100 - ((c.bal / c.limit) * 100)));
         const isTarget = (i === targetIndex && !isPaidOff);
-        
-        if (!c.history) c.history = [];
 
         let historyHtml = c.history.slice(-5).reverse().map(h => `
             <div class="history-item">
                 <span style="color:#747d8c">${h.date}</span>
                 <span style="font-weight:700; color:var(--primary)">+$${h.amt.toLocaleString()}</span>
             </div>
-        `).join('') || '<div style="font-size:10px; color:#ccc; text-align:center; margin-top:10px;">No payments yet</div>';
+        `).join('') || '<div style="font-size:10px; color:#ccc; text-align:center; margin-top:10px;">No history logged yet</div>';
 
         list.innerHTML += `
             <div class="card-container">
                 <div class="card-inner">
-                    <div class="card-front" onclick="toggleFlip(this)" style="border-left-color: ${themeColor}; opacity: ${isPaidOff ? 0.6 : 1}">
+                    <div class="card-front" onclick="toggleFlip(this)" style="border-left: 6px solid ${themeColor}; opacity: ${isPaidOff ? 0.6 : 1}">
                         ${isTarget ? '<div class="priority-tag-front">Target</div>' : ''}
                         <div style="display:flex; justify-content:space-between; align-items:center;" onclick="event.stopPropagation()">
                             <input type="text" oninput="updateData(${i}, 'name', this.value)" value="${c.name}" style="border:none; font-weight:800; font-size:16px; background:none; color:var(--text); width: 60%;">
@@ -150,7 +155,7 @@ function initUI() {
                             <button style="flex:1" onclick="applyPayment(${i})">Apply</button>
                         </div>
                     </div>
-                    <div class="card-back" onclick="toggleFlip(this)">
+                    <div class="card-back" onclick="toggleFlip(this)" style="border-left: 6px solid ${themeColor};">
                         ${isTarget ? '<div class="priority-tag-back">Target</div>' : ''}
                         <div style="text-align:center;">
                             <div style="font-size: 16px; font-weight: 800; color: var(--text);">${percentPaid.toFixed(1)}% Paid</div>
@@ -163,7 +168,7 @@ function initUI() {
                             <div style="text-align:center;"><label>Freedom</label><span id="freedom-label-${i}" style="font-weight:800; font-size:12px;">--</span></div>
                         </div>
                         <div class="history-list" onclick="event.stopPropagation()">
-                            <label>Recent Payments</label>
+                            <label>Recent History</label>
                             ${historyHtml}
                         </div>
                     </div>
@@ -181,6 +186,8 @@ function applyPayment(i) {
         const dateStr = (now.getMonth()+1)+'/'+now.getDate();
         if (!cards[i].history) cards[i].history = [];
         cards[i].history.push({amt: amt, date: dateStr});
+        cards[i].lastPay = amt; // Keep for legacy compatibility
+        cards[i].lastDate = dateStr;
         cards[i].lastPaidMonth = now.getMonth()+'-'+now.getFullYear();
         saveAndRefresh();
     }
