@@ -63,13 +63,22 @@
         .detail-row:last-child { border-bottom: none; }
         .detail-total-row { margin-top: 8px; padding-top: 8px; border-top: 1px solid #ddd; font-weight: bold; display: flex; justify-content: space-between; color: #666; font-size: 11px; }
         
-        /* Pull to Refresh */
+        /* Pull to Refresh Visuals */
         #ptr-element {
-            position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+            position: fixed; top: 0; left: 0; width: 100%; height: 70px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 12px; color: #bbb; transform: translateY(-60px);
-            transition: transform 0.2s ease; z-index: 100; background: var(--bg);
+            font-size: 13px; font-weight: 600; color: #888; 
+            transform: translateY(-70px);
+            transition: transform 0.15s ease-out; z-index: 100; 
+            background: #fff; border-bottom: 1px solid #eee;
         }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
+        .refreshing-text { animation: pulse 1s infinite; color: var(--s); }
 
         footer { width: 100%; padding: 20px 0; text-align: center; font-size: 10px; color: #bbb; letter-spacing: 1px; text-transform: uppercase; }
     </style>
@@ -132,7 +141,7 @@
     </div>
 </div>
 
-<footer>Workout Tracker Pro — v3.2</footer>
+<footer>Workout Tracker Pro — v3.3</footer>
 
 <script>
     var workouts = {};
@@ -146,21 +155,37 @@
         if(saved) workouts = JSON.parse(saved);
     } catch(e) { workouts = {}; }
 
-    // Pull to Refresh Logic
+    // Pull to Refresh Logic with Visual Indicator
     let touchStart = 0;
+    const ptr = document.getElementById('ptr-element');
+
     document.addEventListener('touchstart', e => { touchStart = e.touches[0].pageY; }, {passive: true});
+    
     document.addEventListener('touchmove', e => {
         let touchDiff = e.touches[0].pageY - touchStart;
         if (window.scrollY === 0 && touchDiff > 0) {
-            let offset = Math.min(touchDiff / 2, 60);
-            document.getElementById('ptr-element').style.transform = `translateY(${offset - 60}px)`;
-            if (offset >= 60) document.getElementById('ptr-element').innerText = "Release to refresh";
+            let offset = Math.min(touchDiff / 2.5, 70);
+            ptr.style.transform = `translateY(${offset - 70}px)`;
+            
+            if (offset >= 65) {
+                ptr.innerText = "Release to refresh";
+                ptr.style.color = "var(--s)";
+            } else {
+                ptr.innerText = "Pull to refresh...";
+                ptr.style.color = "#888";
+            }
         }
     }, {passive: true});
+
     document.addEventListener('touchend', e => {
         let touchDiff = e.changedTouches[0].pageY - touchStart;
-        if (window.scrollY === 0 && touchDiff > 120) location.reload();
-        document.getElementById('ptr-element').style.transform = `translateY(-60px)`;
+        if (window.scrollY === 0 && touchDiff > 160) {
+            ptr.innerHTML = '<span class="refreshing-text">Refreshing...</span>';
+            ptr.style.transform = `translateY(0px)`;
+            setTimeout(() => location.reload(), 500);
+        } else {
+            ptr.style.transform = `translateY(-70px)`;
+        }
     }, {passive: true});
 
     function toggleCustomInput() {
@@ -203,11 +228,9 @@
 
     function handleHistoryTap(day) {
         if (expandedDay === day) {
-            // If already open, close it and reset to TODAY
             expandedDay = null;
             document.getElementById("active-date").value = new Date().toISOString().split('T')[0];
         } else {
-            // Open it and set calendar to that day
             expandedDay = day;
             document.getElementById("active-date").value = day;
         }
@@ -238,7 +261,6 @@
         var label = document.getElementById("date-label");
         label.innerHTML = (workouts[active] && workouts[active].length > 0) ? 'Workout Date <span style="color:var(--p); font-size:9px;">(Logged)</span>' : 'Workout Date';
 
-        // HISTORY SECTION
         var hist = "";
         var sortedDays = Object.keys(workouts).sort().reverse().slice(0,10);
         sortedDays.forEach(day => {
