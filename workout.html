@@ -26,7 +26,7 @@
             font-size: 16px; box-sizing: border-box; background: white;
         }
         
-        .entry-group { display: flex; gap: 10px; align-items: flex-start; flex-direction: column; }
+        .entry-group { display: flex; gap: 10px; flex-direction: column; }
         .row-wrap { display: flex; width: 100%; gap: 10px; }
         .row-wrap select { flex: 2; }
         .row-wrap input { flex: 1; }
@@ -40,9 +40,15 @@
         
         .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; text-align: center; gap: 5px; }
         .stat-val { font-size: 1.2em; font-weight: bold; display: block; }
+        
+        /* Carousel/Chart Styles */
+        .chart-container { position: relative; overflow: hidden; touch-action: pan-y; }
+        .chart-title { margin: 0 0 5px 0; font-size: 1.1em; text-align: center; }
+        .dots { display: flex; justify-content: center; gap: 5px; margin-top: 5px; }
+        .dot { width: 6px; height: 6px; background: #ddd; border-radius: 50%; }
+        .dot.active { background: #999; }
+
         .history-item { border-bottom: 1px solid #eee; padding: 8px 0; display: flex; justify-content: space-between; font-size: 0.9em; align-items: center; }
-        .hist-label { font-weight: bold; }
-        .hist-details { color: #666; font-size: 0.85em; }
         
         #ptr-element {
             position: absolute; top: 0; left: 0; width: 100%; height: 50px;
@@ -92,9 +98,15 @@
         <div id="day-details" style="margin-top:10px; font-size:0.85em; color:#666; border-top:1px solid #eee; padding-top:10px;"></div>
     </div>
 
-    <div class="card">
-        <h3 style="margin:0 0 10px 0; font-size: 1.1em;">Weekly Trends (P/S/C)</h3>
+    <div class="card chart-container" id="chart-card">
+        <h3 class="chart-title" id="chart-view-title">Weekly Comparison</h3>
         <canvas id="chart" width="400" height="200" style="width:100%; height:auto;"></canvas>
+        <div class="dots" id="chart-dots">
+            <div class="dot active"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
+        <p style="font-size:9px; color:#ccc; text-align:center; margin:5px 0 0 0;">Swipe to change view</p>
     </div>
 
     <div class="card">
@@ -108,10 +120,11 @@
     </div>
 </div>
 
-<footer>Workout Tracker Pro — v2.5</footer>
+<footer>Workout Tracker Pro — v2.6</footer>
 
 <script>
     var workouts = {};
+    var currentChartView = 0; 
     const labelMap = { p: "Pushups", s: "Squats", c: "Calves", mp: "Modified Pushups", bc: "Band Curls" };
 
     try {
@@ -126,24 +139,46 @@
         if(select.value === "custom") customInput.focus();
     }
 
-    var startY = 0;
+    // Chart Swipe Interaction
+    var chartStart = 0;
+    var chartCard = document.getElementById('chart-card');
+    chartCard.addEventListener('touchstart', e => { chartStart = e.touches[0].pageX; }, {passive: true});
+    chartCard.addEventListener('touchend', e => {
+        var diff = e.changedTouches[0].pageX - chartStart;
+        if (Math.abs(diff) > 50) {
+            if (diff > 0) currentChartView = (currentChartView > 0) ? currentChartView - 1 : 2;
+            else currentChartView = (currentChartView < 2) ? currentChartView + 1 : 0;
+            updateDots();
+            draw();
+        }
+    });
+
+    function updateDots() {
+        const dots = document.querySelectorAll('.dot');
+        dots.forEach((d, i) => d.classList.toggle('active', i === currentChartView));
+        const titles = ["Weekly Comparison", "Daily Total Volume", "Custom Exercises"];
+        document.getElementById('chart-view-title').innerText = titles[currentChartView];
+    }
+
+    // PTR Logic
+    var ptrStartY = 0;
     var ptr = document.getElementById('ptr-element');
     var content = document.getElementById('main-content');
-    window.addEventListener('touchstart', function(e) { if (window.scrollY === 0) startY = e.touches[0].pageY; }, {passive: true});
-    window.addEventListener('touchmove', function(e) {
+    window.addEventListener('touchstart', e => { if (window.scrollY === 0) ptrStartY = e.touches[0].pageY; }, {passive: true});
+    window.addEventListener('touchmove', e => {
         var y = e.touches[0].pageY;
-        if (window.scrollY === 0 && y > startY) {
-            var diff = y - startY;
+        if (window.scrollY === 0 && y > ptrStartY) {
+            var diff = y - ptrStartY;
             if (diff > 10 && diff < 80) {
-                ptr.style.transform = 'translateY(' + (diff - 50) + 'px)';
-                content.style.transform = 'translateY(' + diff/2 + 'px)';
+                ptr.style.transform = `translateY(${diff - 50}px)`;
+                content.style.transform = `translateY(${diff/2}px)`;
                 ptr.innerText = diff > 60 ? "Release to refresh..." : "Pull to refresh...";
             }
         }
     }, {passive: true});
-    window.addEventListener('touchend', function(e) {
+    window.addEventListener('touchend', e => {
         var y = e.changedTouches[0].pageY;
-        if (window.scrollY === 0 && (y - startY) > 60) { location.reload(); } 
+        if (window.scrollY === 0 && (y - ptrStartY) > 60) { location.reload(); } 
         else { ptr.style.transform = 'translateY(-50px)'; content.style.transform = 'translateY(0px)'; }
     });
 
@@ -152,15 +187,17 @@
     
     function getTots(day) {
         var list = workouts[day] || [];
-        var res = { p: 0, s: 0, c: 0, others: [] };
+        var res = { p: 0, s: 0, c: 0, total: 0, others: [] };
         list.forEach(e => {
             let key = Object.keys(e)[0];
-            if(key === 'p') res.p += e.p;
-            else if(key === 's') res.s += e.s;
-            else if(key === 'c') res.c += e.c;
+            let val = parseInt(e[key]) || 0;
+            res.total += val;
+            if(key === 'p') res.p += val;
+            else if(key === 's') res.s += val;
+            else if(key === 'c') res.c += val;
             else {
                 let name = labelMap[key] || key;
-                res.others.push({name: name, val: e[key]});
+                res.others.push({name: name, val: val});
             }
         });
         return res;
@@ -170,19 +207,16 @@
         var active = document.getElementById("active-date").value;
         if(!active) return;
         var label = document.getElementById("date-label");
-        label.innerHTML = (workouts[active] && workouts[active].length > 0) 
-            ? 'Select Workout Date: <span style="color:var(--p)">✅ Logged</span>' 
-            : 'Select Workout Date:';
+        label.innerHTML = (workouts[active] && workouts[active].length > 0) ? 'Select Workout Date: <span style="color:var(--p)">✅ Logged</span>' : 'Select Workout Date:';
         var t = getTots(active);
-        document.getElementById("label-date").innerText = "Summary for " + fmtDate(active);
-        document.getElementById("totals").innerHTML = '<div><span class="stat-val">'+t.p+'</span>P</div><div><span class="stat-val">'+t.s+'</span>S</div><div><span class="stat-val">'+t.c+'</span>C</div>';
+        document.getElementById("totals").innerHTML = `<div><span class="stat-val">${t.p}</span>P</div><div><span class="stat-val">${t.s}</span>S</div><div><span class="stat-val">${t.c}</span>C</div>`;
         let otherText = t.others.map(o => `<b>${o.name}</b>: ${o.val}`).join(" | ");
         document.getElementById("day-details").innerHTML = otherText || "No additional exercises.";
         var hist = "";
         var sortedDays = Object.keys(workouts).sort().reverse().slice(0,7);
         sortedDays.forEach(day => {
             let dayT = getTots(day);
-            hist += `<div class="history-item"><div><span class="hist-label">${fmtDate(day)}</span><br><span class="hist-details">P:${dayT.p} S:${dayT.s} C:${dayT.c}</span></div><div style="text-align:right; font-size:10px; color:#bbb;">${dayT.others.length} custom</div></div>`;
+            hist += `<div class="history-item"><div><strong>${fmtDate(day)}</strong><br><span style="color:#666;font-size:10px;">Vol: ${dayT.total}</span></div><div style="text-align:right; font-size:10px; color:#bbb;">${dayT.others.length} custom</div></div>`;
         });
         document.getElementById("history").innerHTML = hist || '<p style="color:#999;text-align:center;">No history.</p>';
         draw();
@@ -193,19 +227,49 @@
         var ctx = can.getContext("2d");
         ctx.clearRect(0,0,400,200);
         var days = [];
-        for(var i=6; i>=0; i--) { var d = new Date(); d.setDate(d.getDate()-i); days.push(d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0')); }
-        var max = 10;
-        days.forEach(day => { var t = getTots(day); max = Math.max(max, t.p, t.s, t.c); });
+        for(var i=6; i>=0; i--) { 
+            var d = new Date(); d.setDate(d.getDate()-i); 
+            days.push(d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0')); 
+        }
         var sel = document.getElementById("active-date").value;
-        days.forEach((day, k) => {
-            var t = getTots(day); var x = k * 55 + 15;
-            ctx.globalAlpha = (day === sel) ? 1.0 : 0.3;
-            var bar = (val, col, off) => { var h = (val/max) * 150; ctx.fillStyle = col; ctx.fillRect(x+off, 170-h, 10, h); };
-            bar(t.p, "#4CAF50", 0); bar(t.s, "#2196F3", 12); bar(t.c, "#FF9800", 24);
-            ctx.globalAlpha = 1; ctx.fillStyle = "#333"; ctx.font = "10px sans-serif"; ctx.textAlign="center";
-            var lbl = new Date(day.replace(/-/g,'/')).toLocaleDateString(undefined, {weekday:'narrow'});
-            ctx.fillText(lbl, x+17, 190);
-        });
+
+        if (currentChartView === 0) { 
+            var max = 10;
+            days.forEach(day => { var t = getTots(day); max = Math.max(max, t.p, t.s, t.c); });
+            days.forEach((day, k) => {
+                var t = getTots(day); var x = k * 55 + 15;
+                ctx.globalAlpha = (day === sel) ? 1.0 : 0.3;
+                var bar = (val, col, off) => { var h = (val/max) * 140; ctx.fillStyle = col; ctx.fillRect(x+off, 170-h, 10, h); };
+                bar(t.p, "#4CAF50", 0); bar(t.s, "#2196F3", 12); bar(t.c, "#FF9800", 24);
+                ctx.globalAlpha = 1; ctx.fillStyle = "#333"; ctx.font = "10px sans-serif"; ctx.textAlign="center";
+                ctx.fillText(new Date(day.replace(/-/g,'/')).toLocaleDateString(undefined, {weekday:'narrow'}), x+17, 190);
+            });
+        } else if (currentChartView === 1) { 
+            var maxV = 10;
+            days.forEach(day => { maxV = Math.max(maxV, getTots(day).total); });
+            days.forEach((day, k) => {
+                var t = getTots(day); var x = k * 55 + 15;
+                ctx.globalAlpha = (day === sel) ? 1.0 : 0.4;
+                var h = (t.total/maxV) * 140;
+                ctx.fillStyle = "#607d8b";
+                ctx.fillRect(x, 170-h, 34, h);
+                ctx.globalAlpha = 1; ctx.fillStyle = "#333";
+                ctx.fillText(new Date(day.replace(/-/g,'/')).toLocaleDateString(undefined, {weekday:'narrow'}), x+17, 190);
+                if(t.total > 0) ctx.fillText(t.total, x+17, 165-h);
+            });
+        } else { 
+            days.forEach((day, k) => {
+                var t = getTots(day); var x = k * 55 + 15;
+                var count = t.others.length;
+                ctx.globalAlpha = (day === sel) ? 1.0 : 0.4;
+                var h = (count / 5) * 140; 
+                ctx.fillStyle = "#9c27b0";
+                ctx.fillRect(x, 170-h, 34, h);
+                ctx.globalAlpha = 1; ctx.fillStyle = "#333";
+                ctx.fillText(new Date(day.replace(/-/g,'/')).toLocaleDateString(undefined, {weekday:'narrow'}), x+17, 190);
+                ctx.fillText(count, x+17, 165-h);
+            });
+        }
     }
 
     function addEntry() {
@@ -213,7 +277,7 @@
         var type = document.getElementById("workout-type").value;
         var custom = document.getElementById("custom-name").value.trim();
         var val = parseInt(document.getElementById("reps-val").value) || 0;
-        if(!type || (type === "custom" && !custom) || val <= 0) { alert("Please check your entry!"); return; }
+        if(!type || (type === "custom" && !custom) || val <= 0) { alert("Invalid entry!"); return; }
         if(!workouts[d]) workouts[d] = [];
         var key = (type === "custom") ? custom : type;
         var entry = {}; entry[key] = val;
