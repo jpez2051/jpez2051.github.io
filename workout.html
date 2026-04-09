@@ -2,40 +2,48 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Workout Tracker</title>
+    <title>Workout Tracker Pro</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <style>
-        :root { --bg: #f8f9fa; --card: #fff; --p: #4CAF50; --s: #2196F3; --a: #FF9800; }
+        :root { --bg: #f8f9fa; --card: #fff; --p: #4CAF50; --s: #2196F3; --a: #FF9800; --other: #9c27b0; }
         
         html, body { 
             overscroll-behavior-y: contain; 
             font-family: -apple-system, sans-serif; 
             background: var(--bg); 
-            margin: 0; 
-            padding: 0;
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            min-height: 100vh;
+            margin: 0; padding: 0;
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
         }
 
         .container { width: 100%; max-width: 400px; padding: 15px; box-sizing: border-box; flex: 1; }
         .card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        input { width: 100%; padding: 12px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+        
+        input, select { 
+            width: 100%; padding: 12px; margin: 8px 0; 
+            border: 1px solid #ddd; border-radius: 8px; 
+            font-size: 16px; box-sizing: border-box; background: white;
+        }
+        
+        .entry-group { display: flex; gap: 10px; align-items: flex-start; flex-direction: column; }
+        .row-wrap { display: flex; width: 100%; gap: 10px; }
+        .row-wrap select { flex: 2; }
+        .row-wrap input { flex: 1; }
+
         .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
         button { padding: 12px; border: none; border-radius: 8px; font-weight: bold; color: white; cursor: pointer; }
         button:active { opacity: 0.7; }
         .btn-add { background: var(--p); grid-column: span 2; }
         .btn-rep { background: var(--s); }
         .btn-del { background: #ff4444; }
+        
         .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; text-align: center; gap: 5px; }
         .stat-val { font-size: 1.2em; font-weight: bold; display: block; }
-        .history-item { border-bottom: 1px solid #eee; padding: 8px 0; display: flex; justify-content: space-between; font-size: 0.9em; }
-        .chart-legend { display: flex; justify-content: center; gap: 10px; font-size: 11px; margin-bottom: 8px; color: #666; }
-        .legend-item span { width: 10px; height: 10px; display: inline-block; margin-right: 4px; border-radius: 2px; }
-
+        .history-item { border-bottom: 1px solid #eee; padding: 8px 0; display: flex; justify-content: space-between; font-size: 0.9em; align-items: center; }
+        .hist-label { font-weight: bold; }
+        .hist-details { color: #666; font-size: 0.85em; }
+        
         #ptr-element {
             position: absolute; top: 0; left: 0; width: 100%; height: 50px;
             display: flex; align-items: center; justify-content: center;
@@ -43,16 +51,7 @@
             transition: transform 0.2s ease; z-index: 10;
         }
 
-        /* NEW FOOTER STYLE */
-        footer {
-            width: 100%;
-            padding: 20px 0;
-            text-align: center;
-            font-size: 10px;
-            color: #bbb;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
+        footer { width: 100%; padding: 20px 0; text-align: center; font-size: 10px; color: #bbb; letter-spacing: 1px; text-transform: uppercase; }
     </style>
 </head>
 <body>
@@ -61,13 +60,25 @@
 
 <div class="container" id="main-content">
     <div class="card">
-        <label style="font-size:12px; font-weight:bold; color:#666;">Select Workout Date:</label>
+        <label id="date-label" style="font-size:12px; font-weight:bold; color:#666;">Select Workout Date:</label>
         <input type="date" id="active-date">
-        <div style="display:flex; gap:8px;">
-            <input id="in-p" type="number" pattern="\d*" placeholder="Pushups">
-            <input id="in-s" type="number" pattern="\d*" placeholder="Squats">
-            <input id="in-c" type="number" pattern="\d*" placeholder="Calves">
+        
+        <div class="entry-group">
+            <div class="row-wrap">
+                <select id="workout-type" onchange="toggleCustomInput()">
+                    <option value="" disabled selected>Select Workout</option>
+                    <option value="p">Pushups</option>
+                    <option value="s">Squats</option>
+                    <option value="c">Calves</option>
+                    <option value="mp">Modified Pushups</option>
+                    <option value="bc">Band Curls</option>
+                    <option value="custom">Other...</option>
+                </select>
+                <input id="reps-val" type="number" pattern="\d*" placeholder="Reps">
+            </div>
+            <input id="custom-name" type="text" placeholder="Workout Name (e.g. Plank)" style="display:none;">
         </div>
+
         <div class="btn-row">
             <button class="btn-add" onclick="addEntry()">Add Entry</button>
             <button class="btn-rep" onclick="repeatLast()">Repeat Last</button>
@@ -76,17 +87,13 @@
     </div>
 
     <div class="card">
-        <h3 id="label-date" style="margin:0 0 10px 0; font-size: 1.1em;">Totals</h3>
+        <h3 id="label-date" style="margin:0 0 10px 0; font-size: 1.1em;">Daily Summary</h3>
         <div id="totals" class="stat-grid"></div>
+        <div id="day-details" style="margin-top:10px; font-size:0.85em; color:#666; border-top:1px solid #eee; padding-top:10px;"></div>
     </div>
 
     <div class="card">
-        <h3 style="margin:0 0 10px 0; font-size: 1.1em;">Weekly Trends</h3>
-        <div class="chart-legend">
-            <div class="legend-item"><span style="background:var(--p)"></span>Pushups</div>
-            <div class="legend-item"><span style="background:var(--s)"></span>Squats</div>
-            <div class="legend-item"><span style="background:var(--a)"></span>Calves</div>
-        </div>
+        <h3 style="margin:0 0 10px 0; font-size: 1.1em;">Weekly Trends (P/S/C)</h3>
         <canvas id="chart" width="400" height="200" style="width:100%; height:auto;"></canvas>
     </div>
 
@@ -94,25 +101,31 @@
         <h3 style="margin:0 0 10px 0; font-size: 1.1em;">History</h3>
         <div id="history"></div>
         <div style="margin-top:20px; border-top:1px solid #eee; padding-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
-            <button onclick="exportData()" style="background:#f0f0f0; color:#666; font-size:11px; flex:1;">Export</button>
-            <button onclick="importData()" style="background:#f0f0f0; color:#666; font-size:11px; flex:1;">Import</button>
+            <button onclick="downloadCSV()" style="background:#f0f0f0; color:#444; font-size:11px; flex:1; border:1px solid #ddd;">Download CSV</button>
+            <button onclick="importData()" style="background:#f0f0f0; color:#666; font-size:11px; flex:1;">Restore JSON</button>
             <button onclick="clearAll()" style="background:none; color:#ccc; font-size:10px; border:none; width:100%;">Clear Everything</button>
         </div>
     </div>
 </div>
 
-<footer>
-    Workout Tracker Pro — v2.2
-</footer>
+<footer>Workout Tracker Pro — v2.5</footer>
 
 <script>
     var workouts = {};
+    const labelMap = { p: "Pushups", s: "Squats", c: "Calves", mp: "Modified Pushups", bc: "Band Curls" };
+
     try {
         var saved = localStorage.getItem("workouts");
         if(saved) workouts = JSON.parse(saved);
     } catch(e) { workouts = {}; }
 
-    // PTR LOGIC
+    function toggleCustomInput() {
+        var select = document.getElementById("workout-type");
+        var customInput = document.getElementById("custom-name");
+        customInput.style.display = (select.value === "custom") ? "block" : "none";
+        if(select.value === "custom") customInput.focus();
+    }
+
     var startY = 0;
     var ptr = document.getElementById('ptr-element');
     var content = document.getElementById('main-content');
@@ -134,73 +147,87 @@
         else { ptr.style.transform = 'translateY(-50px)'; content.style.transform = 'translateY(0px)'; }
     });
 
-    // HELPERS
     function getToday() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
     function fmtDate(iso) { if(!iso) return ""; var p = iso.split('-'); return p[1] + '/' + p[2] + '/' + p[0]; }
+    
     function getTots(day) {
         var list = workouts[day] || [];
-        var res = { p: 0, s: 0, c: 0 };
-        for(var i=0; i<list.length; i++) {
-            var e = list[i];
-            res.p += (e.p || e.pushups || 0);
-            res.s += (e.s || e.squats || 0);
-            res.c += (e.c || e.calves || 0);
-        }
+        var res = { p: 0, s: 0, c: 0, others: [] };
+        list.forEach(e => {
+            let key = Object.keys(e)[0];
+            if(key === 'p') res.p += e.p;
+            else if(key === 's') res.s += e.s;
+            else if(key === 'c') res.c += e.c;
+            else {
+                let name = labelMap[key] || key;
+                res.others.push({name: name, val: e[key]});
+            }
+        });
         return res;
     }
 
     function update() {
         var active = document.getElementById("active-date").value;
         if(!active) return;
+        var label = document.getElementById("date-label");
+        label.innerHTML = (workouts[active] && workouts[active].length > 0) 
+            ? 'Select Workout Date: <span style="color:var(--p)">✅ Logged</span>' 
+            : 'Select Workout Date:';
         var t = getTots(active);
-        document.getElementById("label-date").innerText = "Totals for " + fmtDate(active);
+        document.getElementById("label-date").innerText = "Summary for " + fmtDate(active);
         document.getElementById("totals").innerHTML = '<div><span class="stat-val">'+t.p+'</span>P</div><div><span class="stat-val">'+t.s+'</span>S</div><div><span class="stat-val">'+t.c+'</span>C</div>';
+        let otherText = t.others.map(o => `<b>${o.name}</b>: ${o.val}`).join(" | ");
+        document.getElementById("day-details").innerHTML = otherText || "No additional exercises.";
         var hist = "";
         var sortedDays = Object.keys(workouts).sort().reverse().slice(0,7);
-        for(var i=0; i<sortedDays.length; i++) {
-            var dayT = getTots(sortedDays[i]);
-            hist += '<div class="history-item"><strong>'+fmtDate(sortedDays[i])+'</strong> <span>P:'+dayT.p+' S:'+dayT.s+' C:'+dayT.c+'</span></div>';
-        }
+        sortedDays.forEach(day => {
+            let dayT = getTots(day);
+            hist += `<div class="history-item"><div><span class="hist-label">${fmtDate(day)}</span><br><span class="hist-details">P:${dayT.p} S:${dayT.s} C:${dayT.c}</span></div><div style="text-align:right; font-size:10px; color:#bbb;">${dayT.others.length} custom</div></div>`;
+        });
         document.getElementById("history").innerHTML = hist || '<p style="color:#999;text-align:center;">No history.</p>';
         draw();
     }
 
     function draw() {
         var can = document.getElementById("chart");
-        if(!can) return;
         var ctx = can.getContext("2d");
         ctx.clearRect(0,0,400,200);
         var days = [];
-        for(var i=6; i>=0; i--) { var d = new Date(); d.setDate(d.getDate()-i); days.push(getToday().split('-')[0] + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0')); }
+        for(var i=6; i>=0; i--) { var d = new Date(); d.setDate(d.getDate()-i); days.push(d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0')); }
         var max = 10;
-        for(var j=0; j<days.length; j++) { var t = getTots(days[j]); max = Math.max(max, t.p, t.s, t.c); }
+        days.forEach(day => { var t = getTots(day); max = Math.max(max, t.p, t.s, t.c); });
         var sel = document.getElementById("active-date").value;
-        for(var k=0; k<days.length; k++) {
-            var day = days[k]; var t = getTots(day); var x = k * 55 + 15;
+        days.forEach((day, k) => {
+            var t = getTots(day); var x = k * 55 + 15;
             ctx.globalAlpha = (day === sel) ? 1.0 : 0.3;
-            var bar = function(val, col, off) { var h = (val/max) * 150; ctx.fillStyle = col; ctx.fillRect(x+off, 170-h, 10, h); };
+            var bar = (val, col, off) => { var h = (val/max) * 150; ctx.fillStyle = col; ctx.fillRect(x+off, 170-h, 10, h); };
             bar(t.p, "#4CAF50", 0); bar(t.s, "#2196F3", 12); bar(t.c, "#FF9800", 24);
             ctx.globalAlpha = 1; ctx.fillStyle = "#333"; ctx.font = "10px sans-serif"; ctx.textAlign="center";
             var lbl = new Date(day.replace(/-/g,'/')).toLocaleDateString(undefined, {weekday:'narrow'});
             ctx.fillText(lbl, x+17, 190);
-        }
+        });
     }
 
     function addEntry() {
         var d = document.getElementById("active-date").value;
+        var type = document.getElementById("workout-type").value;
+        var custom = document.getElementById("custom-name").value.trim();
+        var val = parseInt(document.getElementById("reps-val").value) || 0;
+        if(!type || (type === "custom" && !custom) || val <= 0) { alert("Please check your entry!"); return; }
         if(!workouts[d]) workouts[d] = [];
-        workouts[d].push({ p: parseInt(document.getElementById("in-p").value) || 0, s: parseInt(document.getElementById("in-s").value) || 0, c: parseInt(document.getElementById("in-c").value) || 0 });
-        document.getElementById("in-p").value = ""; document.getElementById("in-s").value = ""; document.getElementById("in-c").value = "";
+        var key = (type === "custom") ? custom : type;
+        var entry = {}; entry[key] = val;
+        workouts[d].push(entry);
+        document.getElementById("workout-type").value = ""; 
+        document.getElementById("reps-val").value = "";
+        document.getElementById("custom-name").value = "";
+        toggleCustomInput();
         save();
     }
 
     function repeatLast() {
         var d = document.getElementById("active-date").value;
-        if(workouts[d] && workouts[d].length > 0) {
-            var l = workouts[d][workouts[d].length-1];
-            workouts[d].push({p: (l.p||l.pushups||0), s: (l.s||l.squats||0), c: (l.c||l.calves||0)});
-            save();
-        }
+        if(workouts[d] && workouts[d].length > 0) { workouts[d].push({...workouts[d][workouts[d].length-1]}); save(); }
     }
 
     function deleteLast() {
@@ -209,9 +236,24 @@
     }
 
     function save() { localStorage.setItem("workouts", JSON.stringify(workouts)); update(); }
-    function exportData() { navigator.clipboard.writeText(JSON.stringify(workouts)).then(function(){ alert("Exported!"); }); }
-    function importData() { var s = prompt("Paste data:"); if(s){ try{workouts=JSON.parse(s);save();}catch(e){alert("Error");} } }
-    function clearAll() { if(confirm("Delete all history?")){workouts={};save();} }
+
+    function downloadCSV() {
+        let csv = "Date,Workout,Reps\n";
+        Object.keys(workouts).sort().forEach(day => {
+            workouts[day].forEach(entry => {
+                let key = Object.keys(entry)[0];
+                let name = labelMap[key] || key;
+                csv += `${fmtDate(day)},${name},${entry[key]}\n`;
+            });
+        });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `workout_history.csv`; a.click();
+    }
+
+    function importData() { var s = prompt("Paste JSON backup data:"); if(s){ try{workouts=JSON.parse(s);save();}catch(e){alert("Error");} } }
+    function clearAll() { if(confirm("Delete everything?")){workouts={};save();} }
 
     window.onload = function() {
         document.getElementById("active-date").value = getToday();
