@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Destroyer v1.6.1</title>
+    <title>Debt Destroyer v1.6.2</title>
     <script id="chart-js" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { 
@@ -68,7 +68,10 @@
         
         button { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 700; width: 100%; }
         .done-btn { background: #ced6e0; color: #2f3542; font-size: 10px; padding: 4px 8px; border-radius: 6px; width: auto; font-weight: 800; }
-        .priority-tag { position: absolute; top: -8px; right: 15px; background: var(--danger); color: white; font-size: 8px; font-weight: 900; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; z-index: 10; }
+        
+        /* Tags for each side */
+        .priority-tag-front { position: absolute; top: -8px; right: 15px; background: var(--danger); color: white; font-size: 8px; font-weight: 900; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; z-index: 10; }
+        .priority-tag-back { position: absolute; top: -8px; left: 15px; background: var(--danger); color: white; font-size: 8px; font-weight: 900; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; z-index: 10; }
         
         .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); text-align: center; padding: 15px 0; font-size: 9px; border-top: 1px solid #eee; z-index: 100; display: flex; justify-content: space-around; }
 
@@ -104,7 +107,7 @@
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight:bold;">Backup CSV</span>
-    <span>v1.6.1</span>
+    <span>v1.6.2</span>
     <span onclick="nuke()" style="color:var(--danger)">Reset App</span>
 </div>
 
@@ -130,12 +133,13 @@ function initUI() {
         const themeColor = COLORS[i % COLORS.length];
         if(!c.limit || c.limit < c.bal) c.limit = c.bal || 100;
         const percentPaid = Math.max(0, Math.min(100, 100 - ((c.bal / c.limit) * 100)));
+        const isTarget = (i === targetIndex && !isPaidOff);
 
         list.innerHTML += `
             <div class="card-container">
                 <div class="card-inner">
                     <div class="card-front" onclick="toggleFlip(this)" style="border-left-color: ${themeColor}; opacity: ${isPaidOff ? 0.6 : 1}">
-                        ${i === targetIndex && !isPaidOff ? '<div class="priority-tag">Target</div>' : ''}
+                        ${isTarget ? '<div class="priority-tag-front">Target</div>' : ''}
                         <div style="display:flex; justify-content:space-between; align-items:center;" onclick="event.stopPropagation()">
                             <input type="text" oninput="updateData(${i}, 'name', this.value)" value="${c.name}" style="border:none; font-weight:800; font-size:16px; background:none; color:var(--text);">
                             <button class="done-btn" onclick="forceMarkPaid(${i})">${c.lastPaidMonth === curMonthYear ? 'PAID ✓' : 'MARK PAID'}</button>
@@ -151,13 +155,14 @@ function initUI() {
                         </div>
                     </div>
                     <div class="card-back" onclick="toggleFlip(this)">
+                        ${isTarget ? '<div class="priority-tag-back">Target</div>' : ''}
                         <div style="text-align:center;">
                             <div style="font-weight:800; text-transform:uppercase; font-size:10px; color:#a4b0be; margin-bottom:5px;">Debt Progress</div>
                             <div style="font-size: 18px; font-weight: 800; color: var(--text);">${percentPaid.toFixed(1)}% Paid</div>
                             <div class="mini-prog-container"><div class="mini-prog-fill" style="width: ${percentPaid}%; background: ${themeColor}"></div></div>
                         </div>
                         <div style="display:flex; justify-content:space-around; margin-top:15px; border-top: 1px solid #eee; padding-top:15px;" onclick="event.stopPropagation()">
-                            <div style="text-align:center;"><label>APR</label><input type="number" style="width:50px; text-align:center; padding:5px;" oninput="updateData(${i}, 'apr', this.value)" value="${c.apr || 0}"></div>
+                            <div style="text-align:center;"><label>APR %</label><input type="number" style="width:50px; text-align:center; padding:5px;" oninput="updateData(${i}, 'apr', this.value)" value="${c.apr || 0}"></div>
                             <div style="text-align:center;"><label>Freedom</label><span id="freedom-label-${i}" style="font-weight:800; font-size:12px;">--</span></div>
                         </div>
                     </div>
@@ -190,7 +195,7 @@ function addCard() { cards.push({ name: "New Card", bal: 0, min: 0, apr: 0, limi
 
 function updateData(i, field, value) { 
     cards[i][field] = (field === 'name' || field === 'dueDate') ? value : (parseFloat(value) || 0); 
-    if (field === 'bal' && cards[i].limit < cards[i].bal) cards[i].limit = cards[i].bal; 
+    if (field === 'bal' && (!cards[i].limit || cards[i].limit < cards[i].bal)) cards[i].limit = cards[i].bal; 
     localStorage.setItem(KEY, JSON.stringify(cards)); 
     if (['apr', 'bal', 'dueDate'].includes(field)) initUI(); 
     else calculate(); 
