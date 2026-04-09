@@ -58,7 +58,7 @@
         .prog-bg { width: 100%; background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; margin: 10px 0; overflow: hidden; }
         .prog-fill { width: 0%; height: 100%; background: var(--primary); transition: width 0.5s; }
         
-        .card-prog-container { height: 4px; background: #eee; border-radius: 2px; margin: 8px 0; overflow: hidden; }
+        .card-prog-container { height: 8px; background: #eee; border-radius: 4px; margin: 12px 0; overflow: hidden; }
         .card-prog-fill { height: 100%; transition: width 0.6s ease; }
 
         .chart-card { background: var(--card); border-radius: 20px; padding: 25px 20px; margin-bottom: 12px; border: 1px solid #e1e8ed; box-shadow: 0 4px 12px rgba(0,0,0,0.03); min-height: 260px; display: flex; flex-direction: column; }
@@ -73,7 +73,7 @@
         .due-soon { background: #fffdf5; border-color: #fcf8e3; }
         .overdue { background: #fff5f5; border-color: #f2dede; }
 
-        .input-row { display: grid; grid-template-columns: 1fr 0.7fr 1.3fr 0.7fr; gap: 6px; margin: 10px 0; }
+        .input-row { display: grid; grid-template-columns: 1fr 0.6fr 0.6fr 1.2fr; gap: 6px; margin: 10px 0; }
         label { font-size: 8px; font-weight: 800; color: #a4b0be; text-transform: uppercase; margin-bottom: 3px; display: block; }
         input { width: 100%; padding: 10px 6px; border: 1px solid #eceff1; border-radius: 8px; font-size: 12px; background: #fbfcfc; -webkit-appearance: none; box-sizing: border-box; }
 
@@ -103,7 +103,7 @@
     <div class="prog-bg"><div id="progress-bar" class="prog-fill"></div></div>
     <div id="main-freedom" style="font-size: 10px; color: var(--primary); font-weight: 700; letter-spacing: 0.5px;">AVALANCHE MODE</div>
     <div style="display: flex; justify-content: space-around; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
-        <div style="text-align: center;"><span id="stat-interest" style="font-size: 18px; font-weight: 800;">$0</span><br><span style="font-size: 8px; opacity: 0.6; text-transform: uppercase;">Interest Cost</span></div>
+        <div style="text-align: center;"><span id="stat-min" style="font-size: 18px; font-weight: 800;">$0</span><br><span style="font-size: 8px; opacity: 0.6; text-transform: uppercase;">Total Min Due</span></div>
         <div style="text-align: center;"><span id="stat-apr" style="font-size: 18px; font-weight: 800;">0%</span><br><span style="font-size: 8px; opacity: 0.6; text-transform: uppercase;">Avg APR</span></div>
     </div>
 </div>
@@ -130,7 +130,6 @@ const COLORS = ['#2ecc71', '#3498db', '#9b59b6', '#f1c40f', '#e67e22', '#1abc9c'
 let debtChart, ratioChart;
 let cards = JSON.parse(localStorage.getItem(KEY)) || [];
 
-// SPLASH SCREEN HANDLER
 function initSplash() {
     const bar = document.getElementById('load-bar');
     const splash = document.getElementById('splash-screen');
@@ -138,7 +137,6 @@ function initSplash() {
     setTimeout(() => { splash.classList.add('splash-hidden'); }, 1100);
 }
 
-// PULL TO REFRESH LOGIC
 let startY = 0;
 const ptr = document.getElementById('ptr');
 
@@ -189,8 +187,8 @@ function initUI() {
         const themeColor = COLORS[i % COLORS.length];
         const isTarget = (i === targetIndex);
         
-        // Progress Logic (Assume 'limit' is the original balance if not set)
-        if(!c.limit) c.limit = c.bal || 100; 
+        // Ensure limit exists for progress bar
+        if(!c.limit || c.limit < c.bal) c.limit = c.bal || 100;
         const percentPaid = Math.max(0, Math.min(100, 100 - ((c.bal / c.limit) * 100)));
 
         let statusClass = '';
@@ -211,18 +209,23 @@ function initUI() {
                     <input type="text" oninput="updateData(${i}, 'name', this.value)" value="${c.name}" style="border:none; font-weight:800; font-size:16px; background:none; width:50%; color:var(--text);">
                     <button class="done-btn" onclick="forceMarkPaid(${i})">${hasPaidThisMonth ? 'PAID ✓' : 'MARK PAID'}</button>
                 </div>
-                
+
                 <div class="card-prog-container">
                     <div class="card-prog-fill" style="width: ${percentPaid}%; background: ${themeColor}"></div>
                 </div>
 
                 <div class="input-row">
                     <div><label>Balance</label><input type="number" inputmode="decimal" oninput="updateData(${i}, 'bal', this.value)" value="${c.bal || ''}"></div>
+                    <div><label>Min $</label><input type="number" inputmode="decimal" oninput="updateData(${i}, 'min', this.value)" value="${c.min || ''}"></div>
                     <div><label>APR %</label><input type="number" inputmode="decimal" oninput="updateData(${i}, 'apr', this.value)" value="${c.apr || ''}"></div>
                     <div><label>Due Date</label><input type="date" onblur="updateData(${i}, 'dueDate', this.value)" value="${c.dueDate || ''}"></div>
-                    <div><label>Pay $</label><input type="number" inputmode="decimal" id="p-${i}"></div>
                 </div>
-                <button onclick="applyPayment(${i})">${isPaidOff ? 'LOGGED: $0' : 'Apply Payment'}</button>
+
+                <div style="display: flex; gap: 8px;">
+                    <div style="flex: 1;"><label>Pay $</label><input type="number" inputmode="decimal" id="p-${i}" placeholder="Enter payment"></div>
+                    <button style="flex: 1; margin-top: 12px;" onclick="applyPayment(${i})">${isPaidOff ? 'LOGGED: $0' : 'Apply'}</button>
+                </div>
+
                 <div class="history-row">
                     <span>Last: $${c.lastPay || 0} (${c.lastDate || '--'})</span>
                     <span id="freedom-label-${i}" style="color:var(--text); font-weight:700;">--</span>
@@ -252,13 +255,14 @@ function applyPayment(i) {
 }
 
 function addCard() { 
-    cards.push({ name: "New Card", bal: 0, apr: 0, limit: 0, lastPay: 0, lastDate: "--", dueDate: "", lastPaidMonth: "" }); 
+    cards.push({ name: "New Card", bal: 0, min: 0, apr: 0, limit: 0, lastPay: 0, lastDate: "--", dueDate: "", lastPaidMonth: "" }); 
     saveAndRefresh(); 
 }
 
 function updateData(i, field, value) { 
     if (field === 'dueDate' && !value) return; 
     cards[i][field] = (field === 'name' || field === 'dueDate') ? value : (parseFloat(value) || 0); 
+    // Auto-set limit if we increase balance
     if (field === 'bal' && (!cards[i].limit || cards[i].limit < cards[i].bal)) cards[i].limit = cards[i].bal;
     localStorage.setItem(KEY, JSON.stringify(cards)); 
     if (field === 'apr' || field === 'bal' || field === 'dueDate') initUI(); 
@@ -268,12 +272,13 @@ function updateData(i, field, value) {
 function saveAndRefresh() { localStorage.setItem(KEY, JSON.stringify(cards)); initUI(); }
 
 function calculate() { 
-    let totalDebt = 0, totalInt = 0, maxMonths = 0, aprSum = 0; 
+    let totalDebt = 0, totalInt = 0, maxMonths = 0, aprSum = 0, totalMin = 0; 
     let bData = [], labels = []; 
     cards.forEach((c, i) => { 
         let bal = c.bal; 
         totalDebt += bal; 
-        aprSum += c.apr; 
+        aprSum += c.apr;
+        totalMin += (c.min || 0);
         let mRate = (c.apr / 100) / 12; 
         let calcPay = c.lastPay || 0; 
         let months = 0, interest = 0, tempBal = bal; 
@@ -293,7 +298,7 @@ function calculate() {
         labels.push(c.name); 
     }); 
     document.getElementById('main-debt').innerText = '$' + totalDebt.toLocaleString(undefined, {minimumFractionDigits: 2}); 
-    document.getElementById('stat-interest').innerText = '$' + Math.round(totalInt).toLocaleString(); 
+    document.getElementById('stat-min').innerText = '$' + Math.round(totalMin).toLocaleString(); 
     document.getElementById('stat-apr').innerText = cards.length ? Math.round(aprSum / cards.length) + '%' : '0%'; 
     const progress = totalDebt > 0 ? Math.max(5, 100 - (totalInt / (totalDebt + totalInt) * 100)) : 100; 
     document.getElementById('progress-bar').style.width = progress + '%'; 
@@ -317,8 +322,8 @@ function updateCharts(labels, bData, totalDebt, totalInt) {
 }
 
 function exportCSV() { 
-    let csv = "Card Name,Balance,APR,Due Date,Last Payment,Last Date\n"; 
-    cards.forEach(c => { csv += `${c.name},${c.bal},${c.apr},${c.dueDate},${c.lastPay},${c.lastDate}\n`; }); 
+    let csv = "Card Name,Balance,Min Pay,APR,Due Date,Last Payment,Last Date\n"; 
+    cards.forEach(c => { csv += `${c.name},${c.bal},${c.min},${c.apr},${c.dueDate},${c.lastPay},${c.lastDate}\n`; }); 
     const blob = new Blob([csv], { type: 'text/csv' }); 
     const url = window.URL.createObjectURL(blob); 
     const a = document.createElement('a'); 
@@ -329,7 +334,6 @@ function exportCSV() {
 
 function nuke() { if(confirm("Wipe all data?")) { localStorage.clear(); location.reload(); } }
 
-// BOOT APP
 initSplash();
 initUI();
 </script>
