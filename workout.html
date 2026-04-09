@@ -9,37 +9,34 @@
     <style>
         :root { --bg: #f8f9fa; --card: #fff; --p: #4CAF50; --s: #2196F3; --a: #FF9800; --other: #9c27b0; --total: #607d8b; }
         
-        html, body { 
-            overscroll-behavior-y: contain; 
-            font-family: -apple-system, sans-serif; 
-            background: var(--bg); 
-            margin: 0; padding: 0;
-            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
-        }
+        html, body { overscroll-behavior-y: contain; font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
 
-        /* The Pull-to-Refresh HUD */
-        #ptr-hud {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100px;
+        /* SPLASH SCREEN STYLES */
+        #splash-screen {
+            position: fixed; inset: 0; background: #1a1a1a; z-index: 2000;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 1000; pointer-events: none; opacity: 0;
-            transform: translateY(-20px); transition: opacity 0.1s;
+            transition: opacity 0.5s ease-out, visibility 0.5s;
         }
-        #ptr-spinner {
-            width: 30px; height: 30px; border: 3px solid #ddd;
-            border-top: 3px solid var(--s); border-radius: 50%;
-            transition: transform 0.1s linear, border-color 0.2s;
+        .splash-logo {
+            width: 80px; height: 80px; border: 4px solid var(--p); border-radius: 15px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 40px; font-weight: 900; margin-bottom: 20px;
+            box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
         }
+        .splash-title { color: white; font-size: 14px; font-weight: 800; letter-spacing: 4px; text-transform: uppercase; margin-bottom: 30px; }
+        .load-bar-container { width: 150px; height: 2px; background: #333; border-radius: 2px; overflow: hidden; }
+        .load-bar-progress { height: 100%; width: 0%; background: var(--p); transition: width 0.8s cubic-bezier(0.1, 0.5, 0.5, 1); }
+        .splash-hidden { opacity: 0; visibility: hidden; }
+
+        /* PTR & CORE UI (Version 3.6 Refined) */
+        #ptr-hud { position: fixed; top: 0; left: 0; width: 100%; height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; pointer-events: none; opacity: 0; transform: translateY(-20px); transition: opacity 0.1s; }
+        #ptr-spinner { width: 30px; height: 30px; border: 3px solid #ddd; border-top: 3px solid var(--s); border-radius: 50%; transition: transform 0.1s linear, border-color 0.2s; }
         #ptr-text { font-size: 11px; font-weight: 800; color: #aaa; margin-top: 8px; text-transform: uppercase; letter-spacing: 1px; }
 
-        /* Background Blur Effect during pull */
-        .container { 
-            width: 100%; max-width: 400px; padding: 15px; box-sizing: border-box; flex: 1; 
-            transition: filter 0.2s, opacity 0.2s;
-        }
+        .container { width: 100%; max-width: 400px; padding: 15px; box-sizing: border-box; flex: 1; transition: filter 0.2s, opacity 0.2s; }
         .pulling .container { filter: blur(2px); opacity: 0.6; }
 
         .card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: center; }
-        
         input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; background: white; }
         .row-wrap { display: flex; width: 100%; gap: 10px; }
         .row-wrap select { flex: 2; }
@@ -76,6 +73,14 @@
 </head>
 <body>
 
+<div id="splash-screen">
+    <div class="splash-logo">W</div>
+    <div class="splash-title">Workout Pro</div>
+    <div class="load-bar-container">
+        <div class="load-bar-progress" id="load-bar"></div>
+    </div>
+</div>
+
 <div id="ptr-hud">
     <div id="ptr-spinner"></div>
     <div id="ptr-text">Pull to refresh</div>
@@ -85,7 +90,6 @@
     <div class="card">
         <label id="date-label" style="font-size:11px; font-weight:bold; color:#aaa; text-transform:uppercase;">Workout Date</label>
         <input type="date" id="active-date">
-        
         <div class="entry-group">
             <div class="row-wrap">
                 <select id="workout-type" onchange="toggleCustomInput()">
@@ -101,7 +105,6 @@
             </div>
             <input id="custom-name" type="text" placeholder="Workout Name (e.g. Plank)" style="display:none;">
         </div>
-
         <div class="btn-row">
             <button class="btn-add" onclick="addEntry()">Add Entry</button>
             <button class="btn-rep" onclick="repeatLast()">Repeat Last</button>
@@ -135,7 +138,7 @@
     </div>
 </div>
 
-<footer>Workout Tracker Pro — v3.5</footer>
+<footer>Workout Tracker Pro — v3.6</footer>
 
 <script>
     var workouts = {};
@@ -154,12 +157,17 @@
         return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     }
 
-    // ADVANCED PULL-TO-REFRESH HUD LOGIC
+    // SPLASH SCREEN LOGIC
+    function initSplash() {
+        const bar = document.getElementById('load-bar');
+        const splash = document.getElementById('splash-screen');
+        setTimeout(() => { bar.style.width = '100%'; }, 100);
+        setTimeout(() => { splash.classList.add('splash-hidden'); }, 1100);
+    }
+
+    // PULL-TO-REFRESH HUD
     let touchStart = 0;
-    const hud = document.getElementById('ptr-hud');
-    const spinner = document.getElementById('ptr-spinner');
-    const txt = document.getElementById('ptr-text');
-    const body = document.body;
+    const hud = document.getElementById('ptr-hud'), spinner = document.getElementById('ptr-spinner'), txt = document.getElementById('ptr-text'), body = document.body;
 
     document.addEventListener('touchstart', e => { touchStart = e.touches[0].pageY; }, {passive: true});
     document.addEventListener('touchmove', e => {
@@ -170,81 +178,51 @@
             hud.style.opacity = offset / 80;
             hud.style.transform = `translateY(${offset - 40}px)`;
             spinner.style.transform = `rotate(${touchDiff * 2}deg)`;
-            
-            if (offset >= 75) {
-                txt.innerText = "Release to refresh";
-                txt.style.color = "var(--p)";
-                spinner.style.borderColor = "var(--p)";
-            } else {
-                txt.innerText = "Pull to refresh";
-                txt.style.color = "#aaa";
-                spinner.style.borderColor = "#ddd";
-                spinner.style.borderTopColor = "var(--s)";
-            }
+            if (offset >= 75) { txt.innerText = "Release to refresh"; txt.style.color = "var(--p)"; spinner.style.borderColor = "var(--p)"; }
+            else { txt.innerText = "Pull to refresh"; txt.style.color = "#aaa"; spinner.style.borderColor = "#ddd"; spinner.style.borderTopColor = "var(--s)"; }
         }
     }, {passive: true});
 
     document.addEventListener('touchend', e => {
         let touchDiff = e.changedTouches[0].pageY - touchStart;
         if (window.scrollY === 0 && touchDiff > 180) {
-            body.classList.remove('pulling');
-            body.classList.add('refreshing');
-            txt.innerText = "Refreshing...";
-            setTimeout(() => location.reload(), 600);
-        } else {
-            body.classList.remove('pulling');
-            hud.style.opacity = 0;
-            hud.style.transform = `translateY(-40px)`;
-        }
+            body.classList.remove('pulling'); body.classList.add('refreshing');
+            txt.innerText = "Refreshing..."; setTimeout(() => location.reload(), 600);
+        } else { body.classList.remove('pulling'); hud.style.opacity = 0; hud.style.transform = `translateY(-40px)`; }
     }, {passive: true});
 
     function toggleCustomInput() {
-        var s = document.getElementById("workout-type");
-        var c = document.getElementById("custom-name");
-        c.style.display = (s.value === "custom") ? "block" : "none";
-        if(s.value === "custom") c.focus();
+        var s = document.getElementById("workout-type"), c = document.getElementById("custom-name");
+        c.style.display = (s.value === "custom") ? "block" : "none"; if(s.value === "custom") c.focus();
     }
 
     function addSwipe(elId, count, callback) {
-        let start = 0;
-        let el = document.getElementById(elId);
+        let start = 0, el = document.getElementById(elId);
         el.addEventListener('touchstart', e => { start = e.touches[0].pageX; }, {passive: true});
-        el.addEventListener('touchend', e => {
-            let diff = e.changedTouches[0].pageX - start;
-            if (Math.abs(diff) > 40) callback(diff > 0 ? -1 : 1);
-        });
+        el.addEventListener('touchend', e => { let diff = e.changedTouches[0].pageX - start; if (Math.abs(diff) > 40) callback(diff > 0 ? -1 : 1); });
     }
 
     addSwipe('chart-card', 3, (dir) => { currentChartView = (currentChartView + dir + 3) % 3; updateUI(); });
     addSwipe('summary-card', 5, (dir) => { currentSummaryView = (currentSummaryView + dir + 5) % 5; updateUI(); });
 
     function getTots(day) {
-        var list = workouts[day] || [];
-        var res = { p: 0, s: 0, c: 0, total: 0, others: [], allEntries: list };
+        var list = workouts[day] || [], res = { p: 0, s: 0, c: 0, total: 0, others: [], allEntries: list };
         list.forEach(e => {
-            let key = Object.keys(e)[0];
-            let val = parseInt(e[key]) || 0;
-            res.total += val;
-            if(key === 'p') res.p += val; else if(key === 's') res.s += val; else if(key === 'c') res.c += val;
+            let key = Object.keys(e)[0], val = parseInt(e[key]) || 0;
+            res.total += val; if(key === 'p') res.p += val; else if(key === 's') res.s += val; else if(key === 'c') res.c += val;
             else { res.others.push({name: labelMap[key] || key, val: val}); }
         });
         return res;
     }
 
     function handleHistoryTap(day) {
-        if (expandedDay === day) {
-            expandedDay = null;
-            document.getElementById("active-date").value = getTodayLocal();
-        } else {
-            expandedDay = day;
-            document.getElementById("active-date").value = day;
-        }
+        if (expandedDay === day) { expandedDay = null; document.getElementById("active-date").value = getTodayLocal(); }
+        else { expandedDay = day; document.getElementById("active-date").value = day; }
         updateUI();
     }
 
     function updateUI() {
-        var active = document.getElementById("active-date").value;
-        var t = getTots(active);
+        var active = document.getElementById("active-date").value, t = getTots(active);
         document.querySelectorAll('#chart-dots .dot').forEach((d, i) => d.classList.toggle('active', i === currentChartView));
         document.querySelectorAll('#summary-dots .dot').forEach((d, i) => d.classList.toggle('active', i === currentSummaryView));
         
@@ -265,10 +243,9 @@
         sortedDays.forEach(day => {
             let dayT = getTots(day);
             let setsHtml = dayT.allEntries.map(e => { let k = Object.keys(e)[0]; return `<div class="detail-row"><span>${labelMap[k] || k}</span> <span>${e[k]}</span></div>`; }).join("");
-            let isOpen = (expandedDay === day) ? "open" : "";
             hist += `<div class="history-item" onclick="handleHistoryTap('${day}')">
                 <div class="history-header"><div class="history-date">${day.split('-')[1]}/${day.split('-')[2]}/${day.split('-')[0]}</div><div class="history-meta">${dayT.allEntries.length} sets ${expandedDay === day ? '▴':'▾'}</div></div>
-                <div class="history-details ${isOpen}">${setsHtml}<div class="detail-total-row"><span>TOTAL VOLUME</span> <span>${dayT.total} REPS</span></div></div>
+                <div class="history-details ${expandedDay === day ? 'open' : ''}">${setsHtml}<div class="detail-total-row"><span>TOTAL VOLUME</span> <span>${dayT.total} REPS</span></div></div>
             </div>`;
         });
         document.getElementById("history").innerHTML = hist || '<p style="color:#999;text-align:center;font-size:12px;">No logs yet.</p>';
@@ -276,13 +253,13 @@
     }
 
     function draw() {
-        var can = document.getElementById("chart"); var ctx = can.getContext("2d"); ctx.clearRect(0,0,400,200);
+        var can = document.getElementById("chart"), ctx = can.getContext("2d"); ctx.clearRect(0,0,400,200);
         var days = []; for(var i=6; i>=0; i--) { var d = new Date(); d.setDate(d.getDate()-i); days.push(d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0')); }
         var sel = document.getElementById("active-date").value;
         if (currentChartView === 0) { 
             var max = 10; days.forEach(day => { var t = getTots(day); max = Math.max(max, t.p, t.s, t.c); });
             days.forEach((day, k) => {
-                var t = getTots(day); var x = k * 55 + 15; ctx.globalAlpha = (day === sel) ? 1.0 : 0.2;
+                var t = getTots(day), x = k * 55 + 15; ctx.globalAlpha = (day === sel) ? 1.0 : 0.2;
                 var bar = (v, c, o) => { var h = (v/max) * 140; ctx.fillStyle = c; ctx.fillRect(x+o, 170-h, 10, h); };
                 bar(t.p, "#4CAF50", 0); bar(t.s, "#2196F3", 12); bar(t.c, "#FF9800", 24);
                 ctx.globalAlpha = 1; ctx.fillStyle = "#333"; ctx.font = "10px sans-serif"; ctx.textAlign="center";
@@ -291,7 +268,7 @@
         } else if (currentChartView === 1) { 
             var maxV = 10; days.forEach(day => { maxV = Math.max(maxV, getTots(day).total); });
             days.forEach((day, k) => {
-                var t = getTots(day); var x = k * 55 + 15; ctx.globalAlpha = (day === sel) ? 1.0 : 0.3;
+                var t = getTots(day), x = k * 55 + 15; ctx.globalAlpha = (day === sel) ? 1.0 : 0.3;
                 var h = (t.total/maxV) * 140; ctx.fillStyle = "#607d8b"; ctx.fillRect(x, 170-h, 34, h);
                 ctx.globalAlpha = 1; ctx.fillStyle = "#333"; ctx.textAlign="center";
                 ctx.fillText(new Date(day.replace(/-/g,'/')).toLocaleDateString(undefined, {weekday:'narrow'}), x+17, 190);
@@ -299,7 +276,7 @@
             });
         } else { 
             days.forEach((day, k) => {
-                var t = getTots(day); var x = k * 55 + 15; var count = t.others.length + (t.p?1:0) + (t.s?1:0) + (t.c?1:0);
+                var t = getTots(day), x = k * 55 + 15, count = t.others.length + (t.p?1:0) + (t.s?1:0) + (t.c?1:0);
                 ctx.globalAlpha = (day === sel) ? 1.0 : 0.3; var h = (count / 6) * 140; ctx.fillStyle = "#9c27b0"; ctx.fillRect(x, 170-h, 34, h);
                 ctx.globalAlpha = 1; ctx.fillStyle = "#333"; ctx.textAlign="center";
                 ctx.fillText(new Date(day.replace(/-/g,'/')).toLocaleDateString(undefined, {weekday:'narrow'}), x+17, 190); ctx.fillText(count, x+17, 165-h);
@@ -326,6 +303,7 @@
     function clearAll() { if(confirm("Permanently delete all data?")){workouts={};save();} }
 
     window.onload = function() {
+        initSplash();
         document.getElementById("active-date").value = getTodayLocal();
         document.getElementById("active-date").onchange = function() { expandedDay = null; updateUI(); };
         updateUI();
