@@ -47,30 +47,26 @@
         .dot { width: 6px; height: 6px; background: #eee; border-radius: 50%; transition: background 0.3s; }
         .dot.active { background: #bbb; }
 
-        .history-item { border-bottom: 1px solid #eee; padding: 12px 0; cursor: pointer; transition: background 0.2s; border-radius: 8px; }
+        /* History Refined */
+        .history-item { border-bottom: 1px solid #f0f0f0; padding: 10px 0; cursor: pointer; }
         .history-header { display: flex; justify-content: space-between; align-items: center; text-align: left; padding: 0 5px; }
+        .history-date { font-size: 14px; font-weight: 600; color: #333; }
+        .history-meta { color: #ccc; font-size: 11px; }
+        
         .history-details { 
             display: none; text-align: left; background: #fafafa; 
-            padding: 12px; border-radius: 8px; margin-top: 8px; 
+            padding: 10px; border-radius: 8px; margin-top: 8px; 
             font-size: 13px; color: #444; border: 1px solid #f0f0f0;
         }
         .history-details.open { display: block; }
-        .detail-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #eee; }
+        .detail-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed #eee; }
         .detail-row:last-child { border-bottom: none; }
+        .detail-total-row { margin-top: 8px; padding-top: 8px; border-top: 1px solid #ddd; font-weight: bold; display: flex; justify-content: space-between; color: #666; font-size: 11px; }
         
-        #ptr-element {
-            position: absolute; top: 0; left: 0; width: 100%; height: 50px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 12px; color: #999; transform: translateY(-50px);
-            transition: transform 0.2s ease; z-index: 10;
-        }
-
         footer { width: 100%; padding: 20px 0; text-align: center; font-size: 10px; color: #bbb; letter-spacing: 1px; text-transform: uppercase; }
     </style>
 </head>
 <body>
-
-<div id="ptr-element">Pull to refresh...</div>
 
 <div class="container" id="main-content">
     <div class="card">
@@ -116,23 +112,23 @@
     </div>
 
     <div class="card" style="padding: 20px;">
-        <h3 style="margin:0 0 15px 0; font-size: 1em; color:#444; text-align: left;">Recent History</h3>
+        <h3 style="margin:0 0 15px 0; font-size: 10px; color:#aaa; text-align: left; text-transform: uppercase; letter-spacing: 1px;">History Log</h3>
         <div id="history"></div>
         <div style="margin-top:20px; border-top:1px solid #eee; padding-top:15px; display:flex; gap:10px; flex-wrap:wrap;">
-            <button onclick="downloadCSV()" style="background:#f0f0f0; color:#444; font-size:11px; flex:1; border:1px solid #ddd;">Export CSV</button>
-            <button onclick="importData()" style="background:#f0f0f0; color:#666; font-size:11px; flex:1;">Restore JSON</button>
-            <button onclick="clearAll()" style="background:none; color:#ccc; font-size:10px; border:none; width:100%;">Clear Everything</button>
+            <button onclick="downloadCSV()" style="background:#f0f0f0; color:#444; font-size:11px; flex:1; border:1px solid #ddd;">CSV</button>
+            <button onclick="importData()" style="background:#f0f0f0; color:#666; font-size:11px; flex:1;">Restore</button>
+            <button onclick="clearAll()" style="background:none; color:#ccc; font-size:9px; border:none; width:100%;">Clear All Data</button>
         </div>
     </div>
 </div>
 
-<footer>Workout Tracker Pro — v3.0</footer>
+<footer>Workout Tracker Pro — v3.1</footer>
 
 <script>
     var workouts = {};
     var currentChartView = 0; 
     var currentSummaryView = 0; 
-    var expandedDay = null; // Keeps track of which history item is open
+    var expandedDay = null; 
     const labelMap = { p: "Pushups", s: "Squats", c: "Calves", mp: "Modified Pushups", bc: "Band Curls" };
 
     try {
@@ -179,9 +175,7 @@
     }
 
     function handleHistoryTap(day) {
-        // Toggle expansion logic
         expandedDay = (expandedDay === day) ? null : day;
-        // Sync active date
         document.getElementById("active-date").value = day;
         updateUI();
     }
@@ -217,7 +211,7 @@
             let dayT = getTots(day);
             let setsHtml = dayT.allEntries.map(e => {
                 let k = Object.keys(e)[0];
-                return `<div class="detail-row"><span>${labelMap[k] || k}</span> <strong>${e[k]}</strong></div>`;
+                return `<div class="detail-row"><span>${labelMap[k] || k}</span> <span>${e[k]}</span></div>`;
             }).join("");
 
             let isOpen = (expandedDay === day) ? "open" : "";
@@ -226,19 +220,16 @@
             hist += `
                 <div class="history-item" onclick="handleHistoryTap('${day}')">
                     <div class="history-header">
-                        <div>
-                            <strong>${day.split('-')[1]}/${day.split('-')[2]}/${day.split('-')[0]}</strong><br>
-                            <span style="color:#999;font-size:10px;">Vol: ${dayT.total} reps</span>
-                        </div>
-                        <div style="color:#ccc; font-size:14px;">${dayT.allEntries.length} sets ${arrow}</div>
+                        <div class="history-date">${day.split('-')[1]}/${day.split('-')[2]}/${day.split('-')[0]}</div>
+                        <div class="history-meta">${dayT.allEntries.length} sets ${arrow}</div>
                     </div>
                     <div class="history-details ${isOpen}">
                         ${setsHtml}
-                        <div style="margin-top:10px; font-size:9px; color:#bbb; text-align:center; font-style:italic;">Date selected for editing above</div>
+                        <div class="detail-total-row"><span>TOTAL VOLUME</span> <span>${dayT.total} REPS</span></div>
                     </div>
                 </div>`;
         });
-        document.getElementById("history").innerHTML = hist || '<p style="color:#999;text-align:center;">No data found.</p>';
+        document.getElementById("history").innerHTML = hist || '<p style="color:#999;text-align:center;font-size:12px;">No history logs yet.</p>';
         draw();
     }
 
