@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Destroyer v1.6.3</title>
+    <title>Debt Destroyer v1.6.4</title>
     <script id="chart-js" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { 
@@ -26,9 +26,9 @@
         .prog-fill { width: 0%; height: 100%; background: var(--primary); transition: width 0.5s; }
 
         /* FLIP CARD SYSTEM */
-        .card-container { perspective: 1000px; margin-bottom: 15px; min-height: 200px; position: relative; }
+        .card-container { perspective: 1000px; margin-bottom: 15px; min-height: 230px; position: relative; }
         .card-inner { 
-            position: relative; width: 100%; height: 100%; min-height: 200px;
+            position: relative; width: 100%; height: 100%; min-height: 230px;
             transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); 
             transform-style: preserve-3d; 
         }
@@ -38,15 +38,15 @@
             position: absolute; width: 100%; height: 100%; 
             -webkit-backface-visibility: hidden; backface-visibility: hidden; 
             border-radius: 18px; padding: 15px; border: 1px solid #e1e8ed; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03); background: var(--card); /* Explicit background to prevent bleed */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03); background: var(--card);
             box-sizing: border-box; top: 0; left: 0;
         }
         
-        .card-back { transform: rotateY(180deg); border-left: 6px solid var(--accent); display: flex; flex-direction: column; justify-content: center; z-index: 1; }
+        .card-back { transform: rotateY(180deg); border-left: 6px solid var(--accent); display: flex; flex-direction: column; z-index: 1; overflow-y: auto; }
         .card-front { border-left: 6px solid #ddd; z-index: 2; }
 
         /* UI ELEMENTS */
-        .mini-prog-container { height: 4px; background: #eee; border-radius: 2px; margin: 10px 0; overflow: hidden; width: 100%; }
+        .mini-prog-container { height: 4px; background: #eee; border-radius: 2px; margin: 8px 0; overflow: hidden; width: 100%; }
         .mini-prog-fill { height: 100%; transition: width 0.6s ease; }
         
         .input-row { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 8px; margin: 10px 0; }
@@ -55,6 +55,11 @@
         
         button { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 700; width: 100%; }
         .done-btn { background: #ced6e0; color: #2f3542; font-size: 10px; padding: 4px 8px; border-radius: 6px; width: auto; font-weight: 800; }
+        
+        /* HISTORY STYLES */
+        .history-list { margin-top: 10px; border-top: 1px solid #eee; padding-top: 8px; flex-grow: 1; }
+        .history-item { display: flex; justify-content: space-between; font-size: 11px; padding: 4px 0; border-bottom: 1px dotted #f1f2f6; }
+        .history-item:last-child { border-bottom: none; }
         
         .priority-tag-front { position: absolute; top: -8px; right: 15px; background: var(--danger); color: white; font-size: 8px; font-weight: 900; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; z-index: 20; }
         .priority-tag-back { position: absolute; top: -8px; left: 15px; background: var(--danger); color: white; font-size: 8px; font-weight: 900; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; z-index: 20; }
@@ -88,7 +93,7 @@
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight:bold;">Backup CSV</span>
-    <span>v1.6.3</span>
+    <span>v1.6.4</span>
     <span onclick="nuke()" style="color:var(--danger)">Reset App</span>
 </div>
 
@@ -115,6 +120,16 @@ function initUI() {
         if(!c.limit || c.limit < c.bal) c.limit = c.bal || 100;
         const percentPaid = Math.max(0, Math.min(100, 100 - ((c.bal / c.limit) * 100)));
         const isTarget = (i === targetIndex && !isPaidOff);
+        
+        // Ensure history exists
+        if (!c.history) c.history = c.lastPay ? [{amt: c.lastPay, date: c.lastDate || 'Initial'}] : [];
+
+        let historyHtml = c.history.slice(-5).reverse().map(h => `
+            <div class="history-item">
+                <span style="color:#747d8c">${h.date}</span>
+                <span style="font-weight:700; color:var(--primary)">+$${h.amt.toLocaleString()}</span>
+            </div>
+        `).join('') || '<div style="font-size:10px; color:#ccc; text-align:center; margin-top:10px;">No payments yet</div>';
 
         list.innerHTML += `
             <div class="card-container">
@@ -138,15 +153,18 @@ function initUI() {
                     <div class="card-back" onclick="toggleFlip(this)">
                         ${isTarget ? '<div class="priority-tag-back">Target</div>' : ''}
                         <div style="text-align:center;">
-                            <div style="font-weight:800; text-transform:uppercase; font-size:10px; color:#a4b0be; margin-bottom:5px;">Card Progress</div>
-                            <div style="font-size: 18px; font-weight: 800; color: var(--text);">${percentPaid.toFixed(1)}% Paid</div>
+                            <div style="font-size: 16px; font-weight: 800; color: var(--text);">${percentPaid.toFixed(1)}% Paid</div>
                             <div class="mini-prog-container">
                                 <div class="mini-prog-fill" style="width: ${percentPaid}%; background: ${themeColor}"></div>
                             </div>
                         </div>
-                        <div style="display:flex; justify-content:space-around; margin-top:15px; border-top: 1px solid #eee; padding-top:15px;" onclick="event.stopPropagation()">
+                        <div style="display:flex; justify-content:space-around; margin-top:5px;" onclick="event.stopPropagation()">
                             <div style="text-align:center;"><label>APR %</label><input type="number" style="width:50px; text-align:center; padding:5px;" oninput="updateData(${i}, 'apr', this.value)" value="${c.apr || 0}"></div>
                             <div style="text-align:center;"><label>Freedom</label><span id="freedom-label-${i}" style="font-weight:800; font-size:12px;">--</span></div>
+                        </div>
+                        <div class="history-list" onclick="event.stopPropagation()">
+                            <label>Recent Payments</label>
+                            ${historyHtml}
                         </div>
                     </div>
                 </div>
@@ -159,10 +177,16 @@ function applyPayment(i) {
     const amt = parseFloat(document.getElementById(`p-${i}`).value) || 0;
     if (amt > 0) {
         cards[i].bal = Math.max(0, cards[i].bal - amt);
-        cards[i].lastPay = amt;
         const now = new Date();
+        const dateStr = (now.getMonth()+1)+'/'+now.getDate();
+        
+        if (!cards[i].history) cards[i].history = [];
+        cards[i].history.push({amt: amt, date: dateStr});
+        
+        cards[i].lastPay = amt;
+        cards[i].lastDate = dateStr;
         cards[i].lastPaidMonth = now.getMonth()+'-'+now.getFullYear();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
         saveAndRefresh();
     }
 }
@@ -174,7 +198,7 @@ function forceMarkPaid(i) {
 }
 
 function addCard() { 
-    cards.push({ name: "New Card", bal: 0, min: 0, apr: 0, limit: 0, lastPay: 0, lastDate: "--", dueDate: "", lastPaidMonth: "" }); 
+    cards.push({ name: "New Card", bal: 0, min: 0, apr: 0, limit: 0, lastPay: 0, lastDate: "", dueDate: "", lastPaidMonth: "", history: [] }); 
     saveAndRefresh(); 
 }
 
@@ -195,9 +219,13 @@ function calculate() {
         totalDebt += c.bal; aprSum += c.apr; totalMin += (c.min || 0);
         let mRate = (c.apr / 100) / 12; 
         let months = 0;
-        if (c.bal > 0 && c.lastPay > (c.bal * mRate)) { 
+        // Use average of last payments or min payment for estimate
+        let payEstimate = (c.history && c.history.length) ? 
+            c.history.reduce((a, b) => a + b.amt, 0) / c.history.length : c.min;
+
+        if (c.bal > 0 && payEstimate > (c.bal * mRate)) { 
             let temp = c.bal;
-            while (temp > 0 && months < 600) { let mi = temp * mRate; totalInt += mi; temp = (temp + mi) - c.lastPay; months++; }
+            while (temp > 0 && months < 600) { let mi = temp * mRate; totalInt += mi; temp = (temp + mi) - payEstimate; months++; }
             if (months > maxMonths) maxMonths = months;
         }
         const freedom = document.getElementById(`freedom-label-${i}`);
