@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <style>
-        :root { --bg: #f8f9fa; --card: #fff; --p: #4CAF50; --s: #2196F3; --a: #FF9800; --other: #9c27b0; }
+        :root { --bg: #f8f9fa; --card: #fff; --p: #4CAF50; --s: #2196F3; --a: #FF9800; --other: #9c27b0; --total: #607d8b; }
         
         html, body { 
             overscroll-behavior-y: contain; 
@@ -38,15 +38,14 @@
         .btn-rep { background: var(--s); }
         .btn-del { background: #ff4444; }
         
-        /* Carousel Styles */
-        .carousel-view { padding: 20px 0; min-height: 80px; display: flex; flex-direction: column; justify-content: center; }
-        .carousel-val { font-size: 3em; font-weight: 900; line-height: 1; margin: 5px 0; }
-        .carousel-label { font-size: 0.9em; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+        .carousel-view { padding: 20px 0; min-height: 100px; display: flex; flex-direction: column; justify-content: center; }
+        .carousel-val { font-size: 3.5em; font-weight: 900; line-height: 1; margin: 5px 0; }
+        .carousel-label { font-size: 0.8em; color: #999; text-transform: uppercase; letter-spacing: 2px; font-weight: bold; }
 
         .chart-container { position: relative; overflow: hidden; touch-action: pan-y; }
-        .dots { display: flex; justify-content: center; gap: 5px; margin-top: 10px; }
-        .dot { width: 6px; height: 6px; background: #ddd; border-radius: 50%; }
-        .dot.active { background: #999; }
+        .dots { display: flex; justify-content: center; gap: 6px; margin-top: 10px; padding-bottom: 10px; }
+        .dot { width: 6px; height: 6px; background: #eee; border-radius: 50%; transition: background 0.3s; }
+        .dot.active { background: #bbb; }
 
         .history-item { border-bottom: 1px solid #eee; padding: 8px 0; display: flex; justify-content: space-between; font-size: 0.9em; align-items: center; text-align: left; }
         
@@ -66,7 +65,7 @@
 
 <div class="container" id="main-content">
     <div class="card">
-        <label id="date-label" style="font-size:12px; font-weight:bold; color:#666;">Select Workout Date:</label>
+        <label id="date-label" style="font-size:11px; font-weight:bold; color:#aaa; text-transform:uppercase;">Workout Date</label>
         <input type="date" id="active-date">
         
         <div class="entry-group">
@@ -93,11 +92,10 @@
     </div>
 
     <div class="card chart-container" id="summary-card">
-        <h3 id="label-date" style="margin:0; font-size: 0.8em; color: #bbb;">SUMMARY</h3>
-        <div id="summary-view" class="carousel-view">
-            </div>
+        <div id="summary-view" class="carousel-view"></div>
         <div class="dots" id="summary-dots">
             <div class="dot active"></div>
+            <div class="dot"></div>
             <div class="dot"></div>
             <div class="dot"></div>
             <div class="dot"></div>
@@ -105,8 +103,8 @@
     </div>
 
     <div class="card chart-container" id="chart-card">
-        <h3 id="chart-view-title" style="margin:0; font-size: 0.8em; color: #bbb;">CHART</h3>
-        <canvas id="chart" width="400" height="200" style="width:100%; height:auto; margin-top:10px;"></canvas>
+        <h3 id="chart-view-title" style="margin-top:10px; font-size: 0.75em; color: #bbb; text-transform:uppercase; letter-spacing:1px;">CHART</h3>
+        <canvas id="chart" width="400" height="200" style="width:100%; height:auto; margin-top:5px;"></canvas>
         <div class="dots" id="chart-dots">
             <div class="dot active"></div>
             <div class="dot"></div>
@@ -114,10 +112,10 @@
         </div>
     </div>
 
-    <div class="card" style="text-align: left;">
-        <h3 style="margin:0 0 10px 0; font-size: 1.1em;">History</h3>
+    <div class="card" style="text-align: left; padding: 20px;">
+        <h3 style="margin:0 0 15px 0; font-size: 1em; color:#444;">History & Export</h3>
         <div id="history"></div>
-        <div style="margin-top:20px; border-top:1px solid #eee; padding-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+        <div style="margin-top:20px; border-top:1px solid #eee; padding-top:15px; display:flex; gap:10px; flex-wrap:wrap;">
             <button onclick="downloadCSV()" style="background:#f0f0f0; color:#444; font-size:11px; flex:1; border:1px solid #ddd;">Download CSV</button>
             <button onclick="importData()" style="background:#f0f0f0; color:#666; font-size:11px; flex:1;">Restore JSON</button>
             <button onclick="clearAll()" style="background:none; color:#ccc; font-size:10px; border:none; width:100%;">Clear Everything</button>
@@ -125,12 +123,12 @@
     </div>
 </div>
 
-<footer>Workout Tracker Pro — v2.7</footer>
+<footer>Workout Tracker Pro — v2.8</footer>
 
 <script>
     var workouts = {};
     var currentChartView = 0; 
-    var currentSummaryView = 0; // 0:P, 1:S, 2:C, 3:Others
+    var currentSummaryView = 0; // 0:P, 1:S, 2:C, 3:Others, 4:Total
     const labelMap = { p: "Pushups", s: "Squats", c: "Calves", mp: "Modified Pushups", bc: "Band Curls" };
 
     try {
@@ -145,50 +143,18 @@
         if(select.value === "custom") customInput.focus();
     }
 
-    // SWIPE LOGIC (Reusable)
     function addSwipe(elId, count, callback) {
         let start = 0;
         let el = document.getElementById(elId);
         el.addEventListener('touchstart', e => { start = e.touches[0].pageX; }, {passive: true});
         el.addEventListener('touchend', e => {
             let diff = e.changedTouches[0].pageX - start;
-            if (Math.abs(diff) > 40) {
-                callback(diff > 0 ? -1 : 1);
-            }
+            if (Math.abs(diff) > 40) callback(diff > 0 ? -1 : 1);
         });
     }
 
-    addSwipe('chart-card', 3, (dir) => {
-        currentChartView = (currentChartView + dir + 3) % 3;
-        updateUI();
-    });
-
-    addSwipe('summary-card', 4, (dir) => {
-        currentSummaryView = (currentSummaryView + dir + 4) % 4;
-        updateUI();
-    });
-
-    // PTR Logic
-    var ptrStartY = 0;
-    var ptr = document.getElementById('ptr-element');
-    var content = document.getElementById('main-content');
-    window.addEventListener('touchstart', e => { if (window.scrollY === 0) ptrStartY = e.touches[0].pageY; }, {passive: true});
-    window.addEventListener('touchmove', e => {
-        var y = e.touches[0].pageY;
-        if (window.scrollY === 0 && y > ptrStartY) {
-            var diff = y - ptrStartY;
-            if (diff > 10 && diff < 80) {
-                ptr.style.transform = `translateY(${diff - 50}px)`;
-                content.style.transform = `translateY(${diff/2}px)`;
-                ptr.innerText = diff > 60 ? "Release to refresh..." : "Pull to refresh...";
-            }
-        }
-    }, {passive: true});
-    window.addEventListener('touchend', e => {
-        var y = e.changedTouches[0].pageY;
-        if (window.scrollY === 0 && (y - ptrStartY) > 60) { location.reload(); } 
-        else { ptr.style.transform = 'translateY(-50px)'; content.style.transform = 'translateY(0px)'; }
-    });
+    addSwipe('chart-card', 3, (dir) => { currentChartView = (currentChartView + dir + 3) % 3; updateUI(); });
+    addSwipe('summary-card', 5, (dir) => { currentSummaryView = (currentSummaryView + dir + 5) % 5; updateUI(); });
 
     function getTots(day) {
         var list = workouts[day] || [];
@@ -212,37 +178,33 @@
         var active = document.getElementById("active-date").value;
         var t = getTots(active);
         
-        // Update Dots
         document.querySelectorAll('#chart-dots .dot').forEach((d, i) => d.classList.toggle('active', i === currentChartView));
         document.querySelectorAll('#summary-dots .dot').forEach((d, i) => d.classList.toggle('active', i === currentSummaryView));
         
-        // Titles
         const chartTitles = ["Weekly Comparison", "Daily Total Volume", "Custom Count"];
         document.getElementById('chart-view-title').innerText = chartTitles[currentChartView];
 
-        // Summary View Content
         const summary = document.getElementById('summary-view');
         if (currentSummaryView === 0) summary.innerHTML = `<span class="carousel-label">Pushups</span><div class="carousel-val" style="color:var(--p)">${t.p}</div>`;
         else if (currentSummaryView === 1) summary.innerHTML = `<span class="carousel-label">Squats</span><div class="carousel-val" style="color:var(--s)">${t.s}</div>`;
         else if (currentSummaryView === 2) summary.innerHTML = `<span class="carousel-label">Calves</span><div class="carousel-val" style="color:var(--a)">${t.c}</div>`;
-        else {
+        else if (currentSummaryView === 3) {
             let list = t.others.map(o => `<b>${o.name}</b>: ${o.val}`).join("<br>");
-            summary.innerHTML = `<span class="carousel-label">Others</span><div style="font-size:13px; margin-top:10px;">${list || 'None'}</div>`;
+            summary.innerHTML = `<span class="carousel-label">Others</span><div style="font-size:13px; margin-top:10px; max-height:60px; overflow-y:auto;">${list || 'None'}</div>`;
+        } else {
+            summary.innerHTML = `<span class="carousel-label">Daily Total</span><div class="carousel-val" style="color:var(--total)">${t.total}</div>`;
         }
 
-        // Visual Date Check
         var label = document.getElementById("date-label");
-        label.innerHTML = (workouts[active] && workouts[active].length > 0) ? 'Select Workout Date: <span style="color:var(--p)">✅ Logged</span>' : 'Select Workout Date:';
+        label.innerHTML = (workouts[active] && workouts[active].length > 0) ? 'Workout Date <span style="color:var(--p); font-size:9px;">(Logged)</span>' : 'Workout Date';
 
-        // History
         var hist = "";
         var sortedDays = Object.keys(workouts).sort().reverse().slice(0,5);
         sortedDays.forEach(day => {
             let dayT = getTots(day);
-            hist += `<div class="history-item"><div><strong>${day.split('-')[1]}/${day.split('-')[2]}</strong><br><span style="color:#666;font-size:10px;">Vol: ${dayT.total}</span></div><div style="text-align:right; font-size:10px; color:#bbb;">${dayT.others.length + (dayT.p?1:0) + (dayT.s?1:0) + (dayT.c?1:0)} types</div></div>`;
+            hist += `<div class="history-item"><div><strong>${day.split('-')[1]}/${day.split('-')[2]}</strong><br><span style="color:#666;font-size:10px;">Total Reps: ${dayT.total}</span></div><div style="text-align:right; font-size:10px; color:#bbb;">${dayT.others.length + (dayT.p?1:0) + (dayT.s?1:0) + (dayT.c?1:0)} exercises</div></div>`;
         });
-        document.getElementById("history").innerHTML = hist || '<p style="color:#999;text-align:center;">No history.</p>';
-        
+        document.getElementById("history").innerHTML = hist || '<p style="color:#999;text-align:center;">No history yet.</p>';
         draw();
     }
 
@@ -280,9 +242,9 @@
         } else { 
             days.forEach((day, k) => {
                 var t = getTots(day); var x = k * 55 + 15;
-                var count = t.others.length;
+                var count = t.others.length + (t.p?1:0) + (t.s?1:0) + (t.c?1:0);
                 ctx.globalAlpha = (day === sel) ? 1.0 : 0.4;
-                var h = (count / 5) * 140; ctx.fillStyle = "#9c27b0"; ctx.fillRect(x, 170-h, 34, h);
+                var h = (count / 6) * 140; ctx.fillStyle = "#9c27b0"; ctx.fillRect(x, 170-h, 34, h);
                 ctx.globalAlpha = 1; ctx.fillStyle = "#333"; ctx.textAlign="center";
                 ctx.fillText(new Date(day.replace(/-/g,'/')).toLocaleDateString(undefined, {weekday:'narrow'}), x+17, 190);
                 ctx.fillText(count, x+17, 165-h);
@@ -295,11 +257,18 @@
         var type = document.getElementById("workout-type").value;
         var custom = document.getElementById("custom-name").value.trim();
         var val = parseInt(document.getElementById("reps-val").value) || 0;
-        if(!type || (type === "custom" && !custom) || val <= 0) { alert("Check entry!"); return; }
+        if(!type || (type === "custom" && !custom) || val <= 0) { alert("Invalid entry!"); return; }
         if(!workouts[d]) workouts[d] = [];
         var key = (type === "custom") ? custom : type;
         var entry = {}; entry[key] = val;
         workouts[d].push(entry);
+        
+        // AUTO-NAVIGATE summary to match the added type
+        if(key === 'p') currentSummaryView = 0;
+        else if(key === 's') currentSummaryView = 1;
+        else if(key === 'c') currentSummaryView = 2;
+        else currentSummaryView = 3;
+
         document.getElementById("workout-type").value = ""; 
         document.getElementById("reps-val").value = "";
         document.getElementById("custom-name").value = "";
@@ -333,7 +302,7 @@
     }
 
     function importData() { var s = prompt("Paste JSON:"); if(s){ try{workouts=JSON.parse(s);save();}catch(e){alert("Error");} } }
-    function clearAll() { if(confirm("Clear all?")){workouts={};save();} }
+    function clearAll() { if(confirm("Clear all data?")){workouts={};save();} }
 
     window.onload = function() {
         document.getElementById("active-date").value = new Date().toISOString().split('T')[0];
