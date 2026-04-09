@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Destroyer v1.7.0</title>
+    <title>Debt Destroyer v1.7.1</title>
     <script id="chart-js" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { 
@@ -19,7 +19,6 @@
             overscroll-behavior-y: contain; overflow-x: hidden; 
         }
 
-        /* SPLASH SCREEN */
         #splash-screen {
             position: fixed; inset: 0; background: #1e272e; z-index: 3000;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -70,7 +69,6 @@
         .history-list { margin-top: 10px; border-top: 1px solid #eee; padding-top: 8px; flex-grow: 1; overflow-y: auto; max-height: 85px; }
         .history-item { display: flex; justify-content: space-between; font-size: 11px; padding: 4px 0; border-bottom: 1px dotted #f1f2f6; }
         
-        /* New Back Balance Display */
         .back-balance-display { background: #f8fafb; padding: 10px; border-radius: 12px; margin-bottom: 10px; text-align: center; }
         .delta-pill { font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
         .delta-neg { color: var(--primary); background: rgba(46, 204, 113, 0.1); }
@@ -112,7 +110,7 @@
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight:bold;">Backup CSV</span>
-    <span>v1.7.0</span>
+    <span>v1.7.1</span>
     <span onclick="nuke()" style="color:var(--danger)">Reset App</span>
 </div>
 
@@ -134,7 +132,10 @@ function initUI() {
     const targetIndex = cards.findIndex(c => c.bal > 0);
 
     cards.forEach((c, i) => {
-        if (!Array.isArray(c.history)) c.history = [];
+        // PERMANENT GUARD: Never wipe history if it exists
+        if (!Array.isArray(c.history)) {
+            c.history = (c.lastPay && c.lastPay > 0) ? [{amt: c.lastPay, date: c.lastDate || 'Initial'}] : [];
+        }
         if (c.prevBal === undefined) c.prevBal = c.bal;
 
         const isPaidOff = c.bal === 0;
@@ -144,7 +145,6 @@ function initUI() {
         const isTarget = (i === targetIndex && !isPaidOff);
         const isThisMonthPaid = c.lastPaidMonth === curMonthYear;
 
-        // Calculate Delta
         const diff = c.bal - c.prevBal;
         let deltaHtml = '';
         if (diff < 0) deltaHtml = `<span class="delta-pill delta-neg">-${Math.abs(diff).toLocaleString()}</span>`;
@@ -180,20 +180,17 @@ function initUI() {
                     </div>
                     <div class="card-back" onclick="toggleFlip(this)" style="border-left: 6px solid ${themeColor};">
                         ${isTarget ? '<div class="priority-tag-back">Target</div>' : ''}
-                        
                         <div class="back-balance-display">
                             <label>Current Balance</label>
                             <span style="font-size:18px; font-weight:800;">$${c.bal.toLocaleString()}</span>
                             ${deltaHtml}
                         </div>
-
                         <div style="text-align:center;">
                             <div style="font-size: 14px; font-weight: 800; color: #a4b0be;">${percentPaid.toFixed(1)}% PROGRESS</div>
                             <div class="mini-prog-container">
                                 <div class="mini-prog-fill" style="width: ${percentPaid}%; background: ${themeColor}"></div>
                             </div>
                         </div>
-                        
                         <div style="display:flex; justify-content:space-around; margin-top:5px;" onclick="event.stopPropagation()">
                             <div style="text-align:center;"><label>APR %</label><input type="number" style="width:50px; text-align:center; padding:5px;" oninput="updateData(${i}, 'apr', this.value)" value="${c.apr || 0}"></div>
                             <div style="text-align:center;"><label>Freedom</label><span id="freedom-label-${i}" style="font-weight:800; font-size:12px;">--</span></div>
@@ -210,21 +207,23 @@ function initUI() {
 }
 
 function applyPayment(i) {
-    const amt = parseFloat(document.getElementById(`p-${i}`).value) || 0;
+    const amtInput = document.getElementById(`p-${i}`);
+    const amt = parseFloat(amtInput.value) || 0;
     if (amt > 0) {
-        cards[i].prevBal = cards[i].bal; // Save current as old before updating
+        cards[i].prevBal = cards[i].bal; 
         cards[i].bal = Math.max(0, cards[i].bal - amt);
         const now = new Date();
         const dateStr = (now.getMonth()+1)+'/'+now.getDate();
         if (!Array.isArray(cards[i].history)) cards[i].history = [];
         cards[i].history.push({amt: amt, date: dateStr});
         cards[i].lastPaidMonth = now.getMonth()+'-'+now.getFullYear();
+        amtInput.value = ''; // Clear input
         saveAndRefresh();
     }
 }
 
 function updateData(i, field, value) { 
-    if (field === 'bal') cards[i].prevBal = cards[i].bal; // Update logic for direct typing
+    if (field === 'bal') cards[i].prevBal = cards[i].bal; 
     cards[i][field] = (field === 'name' || field === 'dueDate') ? value : (parseFloat(value) || 0); 
     if (field === 'bal' && (!cards[i].limit || cards[i].limit < cards[i].bal)) cards[i].limit = cards[i].bal; 
     localStorage.setItem(KEY, JSON.stringify(cards)); 
@@ -243,7 +242,10 @@ function addCard() {
     saveAndRefresh(); 
 }
 
-function saveAndRefresh() { localStorage.setItem(KEY, JSON.stringify(cards)); initUI(); }
+function saveAndRefresh() { 
+    localStorage.setItem(KEY, JSON.stringify(cards)); 
+    initUI(); 
+}
 
 function calculate() { 
     let totalDebt = 0, totalInt = 0, maxMonths = 0, aprSum = 0, totalMin = 0; 
