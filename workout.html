@@ -47,16 +47,16 @@
         .dot { width: 6px; height: 6px; background: #eee; border-radius: 50%; transition: background 0.3s; }
         .dot.active { background: #bbb; }
 
-        /* History Accordion */
-        .history-item { border-bottom: 1px solid #eee; padding: 12px 0; cursor: pointer; }
-        .history-header { display: flex; justify-content: space-between; align-items: center; text-align: left; }
+        .history-item { border-bottom: 1px solid #eee; padding: 12px 0; cursor: pointer; transition: background 0.2s; border-radius: 8px; }
+        .history-header { display: flex; justify-content: space-between; align-items: center; text-align: left; padding: 0 5px; }
         .history-details { 
-            display: none; text-align: left; background: #fdfdfd; 
-            padding: 10px; border-radius: 8px; margin-top: 8px; 
-            border: 1px inset #fafafa; font-size: 12px; color: #555;
+            display: none; text-align: left; background: #fafafa; 
+            padding: 12px; border-radius: 8px; margin-top: 8px; 
+            font-size: 13px; color: #444; border: 1px solid #f0f0f0;
         }
         .history-details.open { display: block; }
-        .detail-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed #eee; }
+        .detail-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #eee; }
+        .detail-row:last-child { border-bottom: none; }
         
         #ptr-element {
             position: absolute; top: 0; left: 0; width: 100%; height: 50px;
@@ -116,22 +116,23 @@
     </div>
 
     <div class="card" style="padding: 20px;">
-        <h3 style="margin:0 0 15px 0; font-size: 1em; color:#444; text-align: left;">History</h3>
+        <h3 style="margin:0 0 15px 0; font-size: 1em; color:#444; text-align: left;">Recent History</h3>
         <div id="history"></div>
         <div style="margin-top:20px; border-top:1px solid #eee; padding-top:15px; display:flex; gap:10px; flex-wrap:wrap;">
-            <button onclick="downloadCSV()" style="background:#f0f0f0; color:#444; font-size:11px; flex:1; border:1px solid #ddd;">CSV Export</button>
+            <button onclick="downloadCSV()" style="background:#f0f0f0; color:#444; font-size:11px; flex:1; border:1px solid #ddd;">Export CSV</button>
             <button onclick="importData()" style="background:#f0f0f0; color:#666; font-size:11px; flex:1;">Restore JSON</button>
             <button onclick="clearAll()" style="background:none; color:#ccc; font-size:10px; border:none; width:100%;">Clear Everything</button>
         </div>
     </div>
 </div>
 
-<footer>Workout Tracker Pro — v2.9</footer>
+<footer>Workout Tracker Pro — v3.0</footer>
 
 <script>
     var workouts = {};
     var currentChartView = 0; 
     var currentSummaryView = 0; 
+    var expandedDay = null; // Keeps track of which history item is open
     const labelMap = { p: "Pushups", s: "Squats", c: "Calves", mp: "Modified Pushups", bc: "Band Curls" };
 
     try {
@@ -177,18 +178,11 @@
         return res;
     }
 
-    function toggleHistory(dayId) {
-        // Change the active date when clicking history
-        document.getElementById("active-date").value = dayId;
-        
-        // Toggle the visibility of details
-        let detailDiv = document.getElementById('details-' + dayId);
-        let isOpen = detailDiv.classList.contains('open');
-        
-        // Close others
-        document.querySelectorAll('.history-details').forEach(d => d.classList.remove('open'));
-        
-        if (!isOpen) detailDiv.classList.add('open');
+    function handleHistoryTap(day) {
+        // Toggle expansion logic
+        expandedDay = (expandedDay === day) ? null : day;
+        // Sync active date
+        document.getElementById("active-date").value = day;
         updateUI();
     }
 
@@ -218,27 +212,33 @@
 
         // HISTORY SECTION
         var hist = "";
-        var sortedDays = Object.keys(workouts).sort().reverse().slice(0,7);
+        var sortedDays = Object.keys(workouts).sort().reverse().slice(0,10);
         sortedDays.forEach(day => {
             let dayT = getTots(day);
             let setsHtml = dayT.allEntries.map(e => {
                 let k = Object.keys(e)[0];
-                return `<div class="detail-row"><span>${labelMap[k] || k}</span> <span>${e[k]} reps</span></div>`;
+                return `<div class="detail-row"><span>${labelMap[k] || k}</span> <strong>${e[k]}</strong></div>`;
             }).join("");
 
+            let isOpen = (expandedDay === day) ? "open" : "";
+            let arrow = (expandedDay === day) ? "▴" : "▾";
+
             hist += `
-                <div class="history-item" onclick="toggleHistory('${day}')">
+                <div class="history-item" onclick="handleHistoryTap('${day}')">
                     <div class="history-header">
-                        <div><strong>${day.split('-')[1]}/${day.split('-')[2]}</strong><br><span style="color:#999;font-size:10px;">Total Reps: ${dayT.total}</span></div>
-                        <div style="color:#bbb; font-size:12px;">${dayT.allEntries.length} sets ▾</div>
+                        <div>
+                            <strong>${day.split('-')[1]}/${day.split('-')[2]}/${day.split('-')[0]}</strong><br>
+                            <span style="color:#999;font-size:10px;">Vol: ${dayT.total} reps</span>
+                        </div>
+                        <div style="color:#ccc; font-size:14px;">${dayT.allEntries.length} sets ${arrow}</div>
                     </div>
-                    <div id="details-${day}" class="history-details">
-                        ${setsHtml || 'No data logged for this day.'}
-                        <div style="margin-top:8px; font-size:9px; color:#bbb; text-align:center;">Tapped to edit above</div>
+                    <div class="history-details ${isOpen}">
+                        ${setsHtml}
+                        <div style="margin-top:10px; font-size:9px; color:#bbb; text-align:center; font-style:italic;">Date selected for editing above</div>
                     </div>
                 </div>`;
         });
-        document.getElementById("history").innerHTML = hist || '<p style="color:#999;text-align:center;">No history yet.</p>';
+        document.getElementById("history").innerHTML = hist || '<p style="color:#999;text-align:center;">No data found.</p>';
         draw();
     }
 
@@ -291,7 +291,7 @@
         var type = document.getElementById("workout-type").value;
         var custom = document.getElementById("custom-name").value.trim();
         var val = parseInt(document.getElementById("reps-val").value) || 0;
-        if(!type || (type === "custom" && !custom) || val <= 0) { alert("Invalid entry!"); return; }
+        if(!type || (type === "custom" && !custom) || val <= 0) { alert("Check your reps!"); return; }
         if(!workouts[d]) workouts[d] = [];
         var key = (type === "custom") ? custom : type;
         var entry = {}; entry[key] = val;
@@ -326,12 +326,12 @@
         a.href = URL.createObjectURL(blob); a.download = 'workout_history.csv'; a.click();
     }
 
-    function importData() { var s = prompt("Paste JSON:"); if(s){ try{workouts=JSON.parse(s);save();}catch(e){alert("Error");} } }
-    function clearAll() { if(confirm("Clear all data?")){workouts={};save();} }
+    function importData() { var s = prompt("Paste JSON Backup:"); if(s){ try{workouts=JSON.parse(s);save();}catch(e){alert("Error");} } }
+    function clearAll() { if(confirm("Permanently delete all data?")){workouts={};save();} }
 
     window.onload = function() {
         document.getElementById("active-date").value = new Date().toISOString().split('T')[0];
-        document.getElementById("active-date").onchange = updateUI;
+        document.getElementById("active-date").onchange = function() { expandedDay = null; updateUI(); };
         updateUI();
     };
 </script>
