@@ -18,7 +18,7 @@
         }
 
         .container { width: 100%; max-width: 400px; padding: 15px; box-sizing: border-box; flex: 1; }
-        .card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: center; }
         
         input, select { 
             width: 100%; padding: 12px; margin: 8px 0; 
@@ -38,17 +38,17 @@
         .btn-rep { background: var(--s); }
         .btn-del { background: #ff4444; }
         
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; text-align: center; gap: 5px; }
-        .stat-val { font-size: 1.2em; font-weight: bold; display: block; }
-        
-        /* Carousel/Chart Styles */
+        /* Carousel Styles */
+        .carousel-view { padding: 20px 0; min-height: 80px; display: flex; flex-direction: column; justify-content: center; }
+        .carousel-val { font-size: 3em; font-weight: 900; line-height: 1; margin: 5px 0; }
+        .carousel-label { font-size: 0.9em; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+
         .chart-container { position: relative; overflow: hidden; touch-action: pan-y; }
-        .chart-title { margin: 0 0 5px 0; font-size: 1.1em; text-align: center; }
-        .dots { display: flex; justify-content: center; gap: 5px; margin-top: 5px; }
+        .dots { display: flex; justify-content: center; gap: 5px; margin-top: 10px; }
         .dot { width: 6px; height: 6px; background: #ddd; border-radius: 50%; }
         .dot.active { background: #999; }
 
-        .history-item { border-bottom: 1px solid #eee; padding: 8px 0; display: flex; justify-content: space-between; font-size: 0.9em; align-items: center; }
+        .history-item { border-bottom: 1px solid #eee; padding: 8px 0; display: flex; justify-content: space-between; font-size: 0.9em; align-items: center; text-align: left; }
         
         #ptr-element {
             position: absolute; top: 0; left: 0; width: 100%; height: 50px;
@@ -92,24 +92,29 @@
         </div>
     </div>
 
-    <div class="card">
-        <h3 id="label-date" style="margin:0 0 10px 0; font-size: 1.1em;">Daily Summary</h3>
-        <div id="totals" class="stat-grid"></div>
-        <div id="day-details" style="margin-top:10px; font-size:0.85em; color:#666; border-top:1px solid #eee; padding-top:10px;"></div>
+    <div class="card chart-container" id="summary-card">
+        <h3 id="label-date" style="margin:0; font-size: 0.8em; color: #bbb;">SUMMARY</h3>
+        <div id="summary-view" class="carousel-view">
+            </div>
+        <div class="dots" id="summary-dots">
+            <div class="dot active"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
     </div>
 
     <div class="card chart-container" id="chart-card">
-        <h3 class="chart-title" id="chart-view-title">Weekly Comparison</h3>
-        <canvas id="chart" width="400" height="200" style="width:100%; height:auto;"></canvas>
+        <h3 id="chart-view-title" style="margin:0; font-size: 0.8em; color: #bbb;">CHART</h3>
+        <canvas id="chart" width="400" height="200" style="width:100%; height:auto; margin-top:10px;"></canvas>
         <div class="dots" id="chart-dots">
             <div class="dot active"></div>
             <div class="dot"></div>
             <div class="dot"></div>
         </div>
-        <p style="font-size:9px; color:#ccc; text-align:center; margin:5px 0 0 0;">Swipe to change view</p>
     </div>
 
-    <div class="card">
+    <div class="card" style="text-align: left;">
         <h3 style="margin:0 0 10px 0; font-size: 1.1em;">History</h3>
         <div id="history"></div>
         <div style="margin-top:20px; border-top:1px solid #eee; padding-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
@@ -120,11 +125,12 @@
     </div>
 </div>
 
-<footer>Workout Tracker Pro — v2.6</footer>
+<footer>Workout Tracker Pro — v2.7</footer>
 
 <script>
     var workouts = {};
     var currentChartView = 0; 
+    var currentSummaryView = 0; // 0:P, 1:S, 2:C, 3:Others
     const labelMap = { p: "Pushups", s: "Squats", c: "Calves", mp: "Modified Pushups", bc: "Band Curls" };
 
     try {
@@ -139,26 +145,28 @@
         if(select.value === "custom") customInput.focus();
     }
 
-    // Chart Swipe Interaction
-    var chartStart = 0;
-    var chartCard = document.getElementById('chart-card');
-    chartCard.addEventListener('touchstart', e => { chartStart = e.touches[0].pageX; }, {passive: true});
-    chartCard.addEventListener('touchend', e => {
-        var diff = e.changedTouches[0].pageX - chartStart;
-        if (Math.abs(diff) > 50) {
-            if (diff > 0) currentChartView = (currentChartView > 0) ? currentChartView - 1 : 2;
-            else currentChartView = (currentChartView < 2) ? currentChartView + 1 : 0;
-            updateDots();
-            draw();
-        }
+    // SWIPE LOGIC (Reusable)
+    function addSwipe(elId, count, callback) {
+        let start = 0;
+        let el = document.getElementById(elId);
+        el.addEventListener('touchstart', e => { start = e.touches[0].pageX; }, {passive: true});
+        el.addEventListener('touchend', e => {
+            let diff = e.changedTouches[0].pageX - start;
+            if (Math.abs(diff) > 40) {
+                callback(diff > 0 ? -1 : 1);
+            }
+        });
+    }
+
+    addSwipe('chart-card', 3, (dir) => {
+        currentChartView = (currentChartView + dir + 3) % 3;
+        updateUI();
     });
 
-    function updateDots() {
-        const dots = document.querySelectorAll('.dot');
-        dots.forEach((d, i) => d.classList.toggle('active', i === currentChartView));
-        const titles = ["Weekly Comparison", "Daily Total Volume", "Custom Exercises"];
-        document.getElementById('chart-view-title').innerText = titles[currentChartView];
-    }
+    addSwipe('summary-card', 4, (dir) => {
+        currentSummaryView = (currentSummaryView + dir + 4) % 4;
+        updateUI();
+    });
 
     // PTR Logic
     var ptrStartY = 0;
@@ -182,9 +190,6 @@
         else { ptr.style.transform = 'translateY(-50px)'; content.style.transform = 'translateY(0px)'; }
     });
 
-    function getToday() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
-    function fmtDate(iso) { if(!iso) return ""; var p = iso.split('-'); return p[1] + '/' + p[2] + '/' + p[0]; }
-    
     function getTots(day) {
         var list = workouts[day] || [];
         var res = { p: 0, s: 0, c: 0, total: 0, others: [] };
@@ -203,22 +208,41 @@
         return res;
     }
 
-    function update() {
+    function updateUI() {
         var active = document.getElementById("active-date").value;
-        if(!active) return;
+        var t = getTots(active);
+        
+        // Update Dots
+        document.querySelectorAll('#chart-dots .dot').forEach((d, i) => d.classList.toggle('active', i === currentChartView));
+        document.querySelectorAll('#summary-dots .dot').forEach((d, i) => d.classList.toggle('active', i === currentSummaryView));
+        
+        // Titles
+        const chartTitles = ["Weekly Comparison", "Daily Total Volume", "Custom Count"];
+        document.getElementById('chart-view-title').innerText = chartTitles[currentChartView];
+
+        // Summary View Content
+        const summary = document.getElementById('summary-view');
+        if (currentSummaryView === 0) summary.innerHTML = `<span class="carousel-label">Pushups</span><div class="carousel-val" style="color:var(--p)">${t.p}</div>`;
+        else if (currentSummaryView === 1) summary.innerHTML = `<span class="carousel-label">Squats</span><div class="carousel-val" style="color:var(--s)">${t.s}</div>`;
+        else if (currentSummaryView === 2) summary.innerHTML = `<span class="carousel-label">Calves</span><div class="carousel-val" style="color:var(--a)">${t.c}</div>`;
+        else {
+            let list = t.others.map(o => `<b>${o.name}</b>: ${o.val}`).join("<br>");
+            summary.innerHTML = `<span class="carousel-label">Others</span><div style="font-size:13px; margin-top:10px;">${list || 'None'}</div>`;
+        }
+
+        // Visual Date Check
         var label = document.getElementById("date-label");
         label.innerHTML = (workouts[active] && workouts[active].length > 0) ? 'Select Workout Date: <span style="color:var(--p)">✅ Logged</span>' : 'Select Workout Date:';
-        var t = getTots(active);
-        document.getElementById("totals").innerHTML = `<div><span class="stat-val">${t.p}</span>P</div><div><span class="stat-val">${t.s}</span>S</div><div><span class="stat-val">${t.c}</span>C</div>`;
-        let otherText = t.others.map(o => `<b>${o.name}</b>: ${o.val}`).join(" | ");
-        document.getElementById("day-details").innerHTML = otherText || "No additional exercises.";
+
+        // History
         var hist = "";
-        var sortedDays = Object.keys(workouts).sort().reverse().slice(0,7);
+        var sortedDays = Object.keys(workouts).sort().reverse().slice(0,5);
         sortedDays.forEach(day => {
             let dayT = getTots(day);
-            hist += `<div class="history-item"><div><strong>${fmtDate(day)}</strong><br><span style="color:#666;font-size:10px;">Vol: ${dayT.total}</span></div><div style="text-align:right; font-size:10px; color:#bbb;">${dayT.others.length} custom</div></div>`;
+            hist += `<div class="history-item"><div><strong>${day.split('-')[1]}/${day.split('-')[2]}</strong><br><span style="color:#666;font-size:10px;">Vol: ${dayT.total}</span></div><div style="text-align:right; font-size:10px; color:#bbb;">${dayT.others.length + (dayT.p?1:0) + (dayT.s?1:0) + (dayT.c?1:0)} types</div></div>`;
         });
         document.getElementById("history").innerHTML = hist || '<p style="color:#999;text-align:center;">No history.</p>';
+        
         draw();
     }
 
@@ -234,26 +258,22 @@
         var sel = document.getElementById("active-date").value;
 
         if (currentChartView === 0) { 
-            var max = 10;
-            days.forEach(day => { var t = getTots(day); max = Math.max(max, t.p, t.s, t.c); });
+            var max = 10; days.forEach(day => { var t = getTots(day); max = Math.max(max, t.p, t.s, t.c); });
             days.forEach((day, k) => {
                 var t = getTots(day); var x = k * 55 + 15;
                 ctx.globalAlpha = (day === sel) ? 1.0 : 0.3;
-                var bar = (val, col, off) => { var h = (val/max) * 140; ctx.fillStyle = col; ctx.fillRect(x+off, 170-h, 10, h); };
+                var bar = (v, c, o) => { var h = (v/max) * 140; ctx.fillStyle = c; ctx.fillRect(x+o, 170-h, 10, h); };
                 bar(t.p, "#4CAF50", 0); bar(t.s, "#2196F3", 12); bar(t.c, "#FF9800", 24);
                 ctx.globalAlpha = 1; ctx.fillStyle = "#333"; ctx.font = "10px sans-serif"; ctx.textAlign="center";
                 ctx.fillText(new Date(day.replace(/-/g,'/')).toLocaleDateString(undefined, {weekday:'narrow'}), x+17, 190);
             });
         } else if (currentChartView === 1) { 
-            var maxV = 10;
-            days.forEach(day => { maxV = Math.max(maxV, getTots(day).total); });
+            var maxV = 10; days.forEach(day => { maxV = Math.max(maxV, getTots(day).total); });
             days.forEach((day, k) => {
                 var t = getTots(day); var x = k * 55 + 15;
                 ctx.globalAlpha = (day === sel) ? 1.0 : 0.4;
-                var h = (t.total/maxV) * 140;
-                ctx.fillStyle = "#607d8b";
-                ctx.fillRect(x, 170-h, 34, h);
-                ctx.globalAlpha = 1; ctx.fillStyle = "#333";
+                var h = (t.total/maxV) * 140; ctx.fillStyle = "#607d8b"; ctx.fillRect(x, 170-h, 34, h);
+                ctx.globalAlpha = 1; ctx.fillStyle = "#333"; ctx.textAlign="center";
                 ctx.fillText(new Date(day.replace(/-/g,'/')).toLocaleDateString(undefined, {weekday:'narrow'}), x+17, 190);
                 if(t.total > 0) ctx.fillText(t.total, x+17, 165-h);
             });
@@ -262,10 +282,8 @@
                 var t = getTots(day); var x = k * 55 + 15;
                 var count = t.others.length;
                 ctx.globalAlpha = (day === sel) ? 1.0 : 0.4;
-                var h = (count / 5) * 140; 
-                ctx.fillStyle = "#9c27b0";
-                ctx.fillRect(x, 170-h, 34, h);
-                ctx.globalAlpha = 1; ctx.fillStyle = "#333";
+                var h = (count / 5) * 140; ctx.fillStyle = "#9c27b0"; ctx.fillRect(x, 170-h, 34, h);
+                ctx.globalAlpha = 1; ctx.fillStyle = "#333"; ctx.textAlign="center";
                 ctx.fillText(new Date(day.replace(/-/g,'/')).toLocaleDateString(undefined, {weekday:'narrow'}), x+17, 190);
                 ctx.fillText(count, x+17, 165-h);
             });
@@ -277,7 +295,7 @@
         var type = document.getElementById("workout-type").value;
         var custom = document.getElementById("custom-name").value.trim();
         var val = parseInt(document.getElementById("reps-val").value) || 0;
-        if(!type || (type === "custom" && !custom) || val <= 0) { alert("Invalid entry!"); return; }
+        if(!type || (type === "custom" && !custom) || val <= 0) { alert("Check entry!"); return; }
         if(!workouts[d]) workouts[d] = [];
         var key = (type === "custom") ? custom : type;
         var entry = {}; entry[key] = val;
@@ -299,30 +317,28 @@
         if(workouts[d] && workouts[d].length > 0) { workouts[d].pop(); if(workouts[d].length === 0) delete workouts[d]; save(); }
     }
 
-    function save() { localStorage.setItem("workouts", JSON.stringify(workouts)); update(); }
+    function save() { localStorage.setItem("workouts", JSON.stringify(workouts)); updateUI(); }
 
     function downloadCSV() {
         let csv = "Date,Workout,Reps\n";
         Object.keys(workouts).sort().forEach(day => {
             workouts[day].forEach(entry => {
-                let key = Object.keys(entry)[0];
-                let name = labelMap[key] || key;
-                csv += `${fmtDate(day)},${name},${entry[key]}\n`;
+                let k = Object.keys(entry)[0];
+                csv += `${day},${labelMap[k] || k},${entry[k]}\n`;
             });
         });
         const blob = new Blob([csv], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url; a.download = `workout_history.csv`; a.click();
+        a.href = URL.createObjectURL(blob); a.download = 'workout_history.csv'; a.click();
     }
 
-    function importData() { var s = prompt("Paste JSON backup data:"); if(s){ try{workouts=JSON.parse(s);save();}catch(e){alert("Error");} } }
-    function clearAll() { if(confirm("Delete everything?")){workouts={};save();} }
+    function importData() { var s = prompt("Paste JSON:"); if(s){ try{workouts=JSON.parse(s);save();}catch(e){alert("Error");} } }
+    function clearAll() { if(confirm("Clear all?")){workouts={};save();} }
 
     window.onload = function() {
-        document.getElementById("active-date").value = getToday();
-        document.getElementById("active-date").onchange = update;
-        update();
+        document.getElementById("active-date").value = new Date().toISOString().split('T')[0];
+        document.getElementById("active-date").onchange = updateUI;
+        updateUI();
     };
 </script>
 </body>
