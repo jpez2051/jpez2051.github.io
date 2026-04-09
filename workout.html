@@ -47,7 +47,6 @@
         .dot { width: 6px; height: 6px; background: #eee; border-radius: 50%; transition: background 0.3s; }
         .dot.active { background: #bbb; }
 
-        /* History Refined */
         .history-item { border-bottom: 1px solid #f0f0f0; padding: 10px 0; cursor: pointer; }
         .history-header { display: flex; justify-content: space-between; align-items: center; text-align: left; padding: 0 5px; }
         .history-date { font-size: 14px; font-weight: 600; color: #333; }
@@ -63,7 +62,6 @@
         .detail-row:last-child { border-bottom: none; }
         .detail-total-row { margin-top: 8px; padding-top: 8px; border-top: 1px solid #ddd; font-weight: bold; display: flex; justify-content: space-between; color: #666; font-size: 11px; }
         
-        /* Pull to Refresh Visuals */
         #ptr-element {
             position: fixed; top: 0; left: 0; width: 100%; height: 70px;
             display: flex; align-items: center; justify-content: center;
@@ -73,11 +71,7 @@
             background: #fff; border-bottom: 1px solid #eee;
         }
         
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.4; }
-            100% { opacity: 1; }
-        }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
         .refreshing-text { animation: pulse 1s infinite; color: var(--s); }
 
         footer { width: 100%; padding: 20px 0; text-align: center; font-size: 10px; color: #bbb; letter-spacing: 1px; text-transform: uppercase; }
@@ -141,7 +135,7 @@
     </div>
 </div>
 
-<footer>Workout Tracker Pro — v3.3</footer>
+<footer>Workout Tracker Pro — v3.4</footer>
 
 <script>
     var workouts = {};
@@ -155,25 +149,26 @@
         if(saved) workouts = JSON.parse(saved);
     } catch(e) { workouts = {}; }
 
-    // Pull to Refresh Logic with Visual Indicator
+    // Timezone Helper: Get YYYY-MM-DD for LOCAL time
+    function getTodayLocal() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
     let touchStart = 0;
     const ptr = document.getElementById('ptr-element');
 
     document.addEventListener('touchstart', e => { touchStart = e.touches[0].pageY; }, {passive: true});
-    
     document.addEventListener('touchmove', e => {
         let touchDiff = e.touches[0].pageY - touchStart;
         if (window.scrollY === 0 && touchDiff > 0) {
             let offset = Math.min(touchDiff / 2.5, 70);
             ptr.style.transform = `translateY(${offset - 70}px)`;
-            
-            if (offset >= 65) {
-                ptr.innerText = "Release to refresh";
-                ptr.style.color = "var(--s)";
-            } else {
-                ptr.innerText = "Pull to refresh...";
-                ptr.style.color = "#888";
-            }
+            if (offset >= 65) { ptr.innerText = "Release to refresh"; ptr.style.color = "var(--s)"; }
+            else { ptr.innerText = "Pull to refresh..."; ptr.style.color = "#888"; }
         }
     }, {passive: true});
 
@@ -183,9 +178,7 @@
             ptr.innerHTML = '<span class="refreshing-text">Refreshing...</span>';
             ptr.style.transform = `translateY(0px)`;
             setTimeout(() => location.reload(), 500);
-        } else {
-            ptr.style.transform = `translateY(-70px)`;
-        }
+        } else { ptr.style.transform = `translateY(-70px)`; }
     }, {passive: true});
 
     function toggleCustomInput() {
@@ -218,10 +211,7 @@
             if(key === 'p') res.p += val;
             else if(key === 's') res.s += val;
             else if(key === 'c') res.c += val;
-            else {
-                let name = labelMap[key] || key;
-                res.others.push({name: name, val: val});
-            }
+            else { let name = labelMap[key] || key; res.others.push({name: name, val: val}); }
         });
         return res;
     }
@@ -229,7 +219,7 @@
     function handleHistoryTap(day) {
         if (expandedDay === day) {
             expandedDay = null;
-            document.getElementById("active-date").value = new Date().toISOString().split('T')[0];
+            document.getElementById("active-date").value = getTodayLocal();
         } else {
             expandedDay = day;
             document.getElementById("active-date").value = day;
@@ -254,9 +244,7 @@
         else if (currentSummaryView === 3) {
             let list = t.others.map(o => `<b>${o.name}</b>: ${o.val}`).join("<br>");
             summary.innerHTML = `<span class="carousel-label">Others</span><div style="font-size:13px; margin-top:10px;">${list || 'None'}</div>`;
-        } else {
-            summary.innerHTML = `<span class="carousel-label">Daily Total</span><div class="carousel-val" style="color:var(--total)">${t.total}</div>`;
-        }
+        } else { summary.innerHTML = `<span class="carousel-label">Daily Total</span><div class="carousel-val" style="color:var(--total)">${t.total}</div>`; }
 
         var label = document.getElementById("date-label");
         label.innerHTML = (workouts[active] && workouts[active].length > 0) ? 'Workout Date <span style="color:var(--p); font-size:9px;">(Logged)</span>' : 'Workout Date';
@@ -269,20 +257,15 @@
                 let k = Object.keys(e)[0];
                 return `<div class="detail-row"><span>${labelMap[k] || k}</span> <span>${e[k]}</span></div>`;
             }).join("");
-
             let isOpen = (expandedDay === day) ? "open" : "";
             let arrow = (expandedDay === day) ? "▴" : "▾";
-
             hist += `
                 <div class="history-item" onclick="handleHistoryTap('${day}')">
                     <div class="history-header">
                         <div class="history-date">${day.split('-')[1]}/${day.split('-')[2]}/${day.split('-')[0]}</div>
                         <div class="history-meta">${dayT.allEntries.length} sets ${arrow}</div>
                     </div>
-                    <div class="history-details ${isOpen}">
-                        ${setsHtml}
-                        <div class="detail-total-row"><span>TOTAL VOLUME</span> <span>${dayT.total} REPS</span></div>
-                    </div>
+                    <div class="history-details ${isOpen}">${setsHtml}<div class="detail-total-row"><span>TOTAL VOLUME</span> <span>${dayT.total} REPS</span></div></div>
                 </div>`;
         });
         document.getElementById("history").innerHTML = hist || '<p style="color:#999;text-align:center;font-size:12px;">No logs yet.</p>';
@@ -299,7 +282,6 @@
             days.push(d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0')); 
         }
         var sel = document.getElementById("active-date").value;
-
         if (currentChartView === 0) { 
             var max = 10; days.forEach(day => { var t = getTots(day); max = Math.max(max, t.p, t.s, t.c); });
             days.forEach((day, k) => {
@@ -348,36 +330,20 @@
         toggleCustomInput(); save();
     }
 
-    function repeatLast() {
-        var d = document.getElementById("active-date").value;
-        if(workouts[d] && workouts[d].length > 0) { workouts[d].push({...workouts[d][workouts[d].length-1]}); save(); }
-    }
-
-    function deleteLast() {
-        var d = document.getElementById("active-date").value;
-        if(workouts[d] && workouts[d].length > 0) { workouts[d].pop(); if(workouts[d].length === 0) delete workouts[d]; save(); }
-    }
-
+    function repeatLast() { var d = document.getElementById("active-date").value; if(workouts[d] && workouts[d].length > 0) { workouts[d].push({...workouts[d][workouts[d].length-1]}); save(); } }
+    function deleteLast() { var d = document.getElementById("active-date").value; if(workouts[d] && workouts[d].length > 0) { workouts[d].pop(); if(workouts[d].length === 0) delete workouts[d]; save(); } }
     function save() { localStorage.setItem("workouts", JSON.stringify(workouts)); updateUI(); }
-
     function downloadCSV() {
         let csv = "Date,Workout,Reps\n";
-        Object.keys(workouts).sort().forEach(day => {
-            workouts[day].forEach(entry => {
-                let k = Object.keys(entry)[0];
-                csv += `${day},${labelMap[k] || k},${entry[k]}\n`;
-            });
-        });
+        Object.keys(workouts).sort().forEach(day => { workouts[day].forEach(entry => { let k = Object.keys(entry)[0]; csv += `${day},${labelMap[k] || k},${entry[k]}\n`; }); });
         const blob = new Blob([csv], { type: 'text/csv' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob); a.download = 'workout_history.csv'; a.click();
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'workout_history.csv'; a.click();
     }
-
     function importData() { var s = prompt("Paste JSON Backup:"); if(s){ try{workouts=JSON.parse(s);save();}catch(e){alert("Error");} } }
     function clearAll() { if(confirm("Permanently delete all data?")){workouts={};save();} }
 
     window.onload = function() {
-        document.getElementById("active-date").value = new Date().toISOString().split('T')[0];
+        document.getElementById("active-date").value = getTodayLocal();
         document.getElementById("active-date").onchange = function() { expandedDay = null; updateUI(); };
         updateUI();
     };
