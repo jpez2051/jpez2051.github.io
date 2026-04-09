@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Destroyer v1.6.7</title>
+    <title>Debt Destroyer v1.6.8</title>
     <script id="chart-js" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { 
@@ -70,7 +70,10 @@
         input { width: 100%; padding: 10px 6px; border: 1px solid #eceff1; border-radius: 8px; font-size: 13px; background: #fbfcfc; -webkit-appearance: none; box-sizing: border-box; }
         
         button { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 700; width: 100%; }
-        .done-btn { background: #ced6e0; color: #2f3542; font-size: 10px; padding: 4px 8px; border-radius: 6px; width: auto; font-weight: 800; }
+        
+        /* DONE BUTTON STATES */
+        .done-btn { background: #ced6e0; color: #2f3542; font-size: 10px; padding: 6px 10px; border-radius: 6px; width: auto; font-weight: 800; border: none; transition: background 0.3s; }
+        .done-btn.active-paid { background: var(--primary); color: white; }
         
         .history-list { margin-top: 10px; border-top: 1px solid #eee; padding-top: 8px; flex-grow: 1; overflow-y: auto; max-height: 85px; }
         .history-item { display: flex; justify-content: space-between; font-size: 11px; padding: 4px 0; border-bottom: 1px dotted #f1f2f6; }
@@ -112,7 +115,7 @@
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight:bold;">Backup CSV</span>
-    <span>v1.6.7</span>
+    <span>v1.6.8</span>
     <span onclick="nuke()" style="color:var(--danger)">Reset App</span>
 </div>
 
@@ -134,17 +137,14 @@ function initUI() {
     const targetIndex = cards.findIndex(c => c.bal > 0);
 
     cards.forEach((c, i) => {
-        if ((!c.history || c.history.length === 0) && c.lastPay && c.lastPay > 0) {
-            c.history = [{amt: c.lastPay, date: c.lastDate || 'Recent'}];
-        } else if (!c.history) {
-            c.history = [];
-        }
+        if (!c.history) c.history = [];
 
         const isPaidOff = c.bal === 0;
         const themeColor = COLORS[i % COLORS.length];
         if(!c.limit || c.limit < c.bal) c.limit = c.bal || 100;
         const percentPaid = Math.max(0, Math.min(100, 100 - ((c.bal / c.limit) * 100)));
         const isTarget = (i === targetIndex && !isPaidOff);
+        const isThisMonthPaid = c.lastPaidMonth === curMonthYear;
 
         let historyHtml = c.history.slice(-5).reverse().map(h => `
             <div class="history-item">
@@ -160,7 +160,9 @@ function initUI() {
                         ${isTarget ? '<div class="priority-tag-front">Target</div>' : ''}
                         <div style="display:flex; justify-content:space-between; align-items:center;" onclick="event.stopPropagation()">
                             <input type="text" oninput="updateData(${i}, 'name', this.value)" value="${c.name}" style="border:none; font-weight:800; font-size:16px; background:none; color:var(--text); width: 60%;">
-                            <button class="done-btn" onclick="forceMarkPaid(${i})">${c.lastPaidMonth === curMonthYear ? 'PAID ✓' : 'MARK PAID'}</button>
+                            <button class="done-btn ${isThisMonthPaid ? 'active-paid' : ''}" onclick="forceMarkPaid(${i})">
+                                ${isThisMonthPaid ? 'PAID ✓' : 'MARK PAID'}
+                            </button>
                         </div>
                         <div class="input-row" onclick="event.stopPropagation()">
                             <div><label>Balance</label><input type="number" oninput="updateData(${i}, 'bal', this.value)" value="${c.bal || ''}"></div>
