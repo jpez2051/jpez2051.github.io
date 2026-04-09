@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Destroyer v1.5.0</title>
+    <title>Debt Destroyer v1.5.1</title>
     <script id="chart-js" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { 
@@ -54,7 +54,6 @@
         .dashboard { background: linear-gradient(135deg, #1e272e, #000); color: white; border-radius: 18px; padding: 18px; margin-bottom: 12px; text-align: center; box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
         .main-total { font-size: 34px; font-weight: 800; margin-bottom: 5px; }
         
-        /* Dashboard & Card Progress Bars */
         .prog-bg { width: 100%; background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; margin: 10px 0; overflow: hidden; }
         .prog-fill { width: 0%; height: 100%; background: var(--primary); transition: width 0.5s; }
         
@@ -120,7 +119,7 @@
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight:bold;">Backup CSV</span>
-    <span>v1.5.0</span>
+    <span>v1.5.1</span>
     <span onclick="nuke()" style="color:var(--danger)">Reset App</span>
 </div>
 
@@ -187,7 +186,6 @@ function initUI() {
         const themeColor = COLORS[i % COLORS.length];
         const isTarget = (i === targetIndex);
         
-        // Ensure limit exists for progress bar
         if(!c.limit || c.limit < c.bal) c.limit = c.bal || 100;
         const percentPaid = Math.max(0, Math.min(100, 100 - ((c.bal / c.limit) * 100)));
 
@@ -250,6 +248,10 @@ function applyPayment(i) {
         cards[i].lastPay = amt;
         cards[i].lastDate = (now.getMonth()+1).toString().padStart(2,'0')+'/'+now.getDate().toString().padStart(2,'0')+'/'+now.getFullYear();
         cards[i].lastPaidMonth = `${now.getMonth()}-${now.getFullYear()}`;
+        
+        // SMOOTH SCROLL TO TOP
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
         saveAndRefresh();
     }
 }
@@ -262,7 +264,6 @@ function addCard() {
 function updateData(i, field, value) { 
     if (field === 'dueDate' && !value) return; 
     cards[i][field] = (field === 'name' || field === 'dueDate') ? value : (parseFloat(value) || 0); 
-    // Auto-set limit if we increase balance
     if (field === 'bal' && (!cards[i].limit || cards[i].limit < cards[i].bal)) cards[i].limit = cards[i].bal;
     localStorage.setItem(KEY, JSON.stringify(cards)); 
     if (field === 'apr' || field === 'bal' || field === 'dueDate') initUI(); 
