@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Destroyer v1.7.8</title>
+    <title>Debt Destroyer v1.7.9</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { 
@@ -50,17 +50,18 @@
         .card-back { transform: rotateY(180deg); display: flex; flex-direction: column; justify-content: space-between; }
 
         .target-tag {
-            position: absolute; top: 10px; right: 15px; background: var(--danger); 
-            color: white; font-size: 9px; font-weight: 900; padding: 3px 8px; 
-            border-radius: 6px; text-transform: uppercase; z-index: 10;
+            background: var(--danger); color: white; font-size: 8px; font-weight: 900; 
+            padding: 2px 8px; border-radius: 4px; text-transform: uppercase;
         }
+
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; height: 24px; }
 
         .input-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 10px 0; }
         label { font-size: 8px; font-weight: 800; color: #a4b0be; text-transform: uppercase; margin-bottom: 2px; display: block; }
         input { width: 100%; padding: 8px; border: 1px solid #eceff1; border-radius: 8px; font-size: 12px; background: #fbfcfc; box-sizing: border-box; }
         
         button { background: var(--accent); color: white; border: none; padding: 10px; border-radius: 8px; font-weight: 700; width: 100%; }
-        .paid-btn { background: #ced6e0; color: #2f3542; font-size: 10px; padding: 5px 10px; border-radius: 6px; width: auto; font-weight: 800; }
+        .paid-btn { background: #ced6e0; color: #2f3542; font-size: 9px; padding: 4px 8px; border-radius: 5px; width: auto; font-weight: 800; border: none; }
         .paid-btn.active { background: var(--primary); color: white; }
 
         .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: white; text-align: center; padding: 15px 0; font-size: 10px; border-top: 1px solid #eee; display: flex; justify-content: space-around; z-index: 100; }
@@ -90,7 +91,7 @@
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight:bold;">Backup CSV</span>
-    <span>v1.7.8</span>
+    <span>v1.7.9</span>
     <span onclick="nuke()" style="color:var(--danger)">Reset</span>
 </div>
 
@@ -108,7 +109,6 @@ function initUI() {
     const now = new Date();
     const curMonthKey = `${now.getMonth()}-${now.getFullYear()}`;
 
-    // Avalanche Sort
     cards.sort((a, b) => (a.bal <= 0) - (b.bal <= 0) || b.apr - a.apr);
     const targetIdx = cards.findIndex(c => c.bal > 0);
 
@@ -121,13 +121,15 @@ function initUI() {
             <div class="card-container">
                 <div class="card-inner">
                     <div class="card-front" onclick="toggleFlip(this)" style="border-left: 6px solid ${color}; opacity: ${c.bal <= 0 ? 0.6 : 1}">
-                        ${isTarget ? '<div class="target-tag">Target</div>' : ''}
-                        <div style="display:flex; justify-content:space-between; align-items:center;" onclick="event.stopPropagation()">
-                            <input type="text" oninput="updateData(${i}, 'name', this.value)" value="${c.name}" style="border:none; font-weight:800; background:none; font-size:16px; width:60%;">
-                            <button class="paid-btn ${isPaidThisMonth ? 'active' : ''}" onclick="markPaid(${i})">
+                        <div class="card-header">
+                            <div style="flex: 1;">
+                                ${isTarget ? '<span class="target-tag">Target</span>' : ''}
+                            </div>
+                            <button class="paid-btn ${isPaidThisMonth ? 'active' : ''}" onclick="event.stopPropagation(); markPaid(${i})">
                                 ${isPaidThisMonth ? 'PAID ✓' : 'MARK PAID'}
                             </button>
                         </div>
+                        <input type="text" oninput="updateData(${i}, 'name', this.value)" value="${c.name}" onclick="event.stopPropagation()" style="border:none; font-weight:800; background:none; font-size:16px; width:100%; margin-bottom:10px;">
                         <div class="input-row" onclick="event.stopPropagation()">
                             <div><label>Balance</label><input type="number" oninput="updateData(${i}, 'bal', this.value)" value="${c.bal}"></div>
                             <div><label>Min $</label><input type="number" oninput="updateData(${i}, 'min', this.value)" value="${c.min}"></div>
@@ -139,18 +141,20 @@ function initUI() {
                         </div>
                     </div>
                     <div class="card-back" onclick="toggleFlip(this)" style="border-left: 6px solid ${color}">
-                        <div style="text-align:center; padding:10px;">
-                            <label>Card Stats</label>
-                            <div style="font-size:22px; font-weight:800; color:${color}">$${(c.bal || 0).toLocaleString()}</div>
+                        <div class="card-header">
+                             ${isTarget ? '<span class="target-tag">Target</span>' : ''}
                         </div>
-                        <div style="padding:15px; background:#f8fafb; border-radius:12px;">
-                            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                                <span style="font-size:10px; font-weight:700; color:#a4b0be;">APR RATE</span>
-                                <input type="number" oninput="updateData(${i}, 'apr', this.value)" value="${c.apr}" style="width:60px; text-align:right; font-weight:800; border:none; background:none; padding:0;" onclick="event.stopPropagation()">
+                        <div style="text-align:center; flex:1; display:flex; flex-direction:column; justify-content:center;">
+                            <label>Remaining</label>
+                            <div style="font-size:24px; font-weight:800; color:${color}">$${(c.bal || 0).toLocaleString()}</div>
+                            <div style="margin-top:20px; padding:10px; background:#f8fafb; border-radius:12px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <span style="font-size:10px; font-weight:700; color:#a4b0be;">APR RATE</span>
+                                    <input type="number" oninput="updateData(${i}, 'apr', this.value)" value="${c.apr}" style="width:60px; text-align:right; font-weight:800; border:none; background:none; padding:0; color:${color};" onclick="event.stopPropagation()">
+                                </div>
                             </div>
-                            <div style="font-size:10px; color:#2f3542; font-weight:700;">PAYOFF PRIORITY: ${i + 1}</div>
                         </div>
-                        <div style="font-size:9px; text-align:center; color:#a4b0be; margin-top:10px;">Click card to flip</div>
+                        <div style="font-size:9px; text-align:center; color:#a4b0be; margin-top:10px;">Tap to flip</div>
                     </div>
                 </div>
             </div>`;
