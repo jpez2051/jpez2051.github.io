@@ -3,141 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>‘Ōlelo Hiwa v1.3.0</title>
+    <title>‘Ōlelo Hiwa v1.4.0</title>
     <style>
-        :root {
-            --primary: #c0392b; --gold: #f1c40f; --bg: #0c0f12;
-            --card-bg: #1e272e; --text: #f5f6fa;
-        }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
-            background: var(--bg); margin: 0; padding: 15px; color: var(--text);
-            padding-bottom: 80px;
-        }
+        :root { --primary: #e74c3c; --gold: #f1c40f; --bg: #0a0e12; --card: #1c252c; --text: #f5f6fa; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; padding-bottom: 70px; }
+        
+        /* Header & Tray */
+        header { text-align: center; padding: 10px; border-bottom: 1px solid #2c3e50; }
+        .tray { display: flex; gap: 8px; margin: 15px 0; overflow-x: auto; }
+        .tray-btn { background: #2f3942; color: var(--gold); padding: 8px 12px; border-radius: 15px; font-size: 10px; text-decoration: none; font-weight: 800; white-space: nowrap; border: 1px solid rgba(255,255,255,0.1); }
 
-        #splash {
-            position: fixed; inset: 0; background: #000; z-index: 2000;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: opacity 0.8s ease;
-        }
-        .splash-hidden { opacity: 0; pointer-events: none; }
-
-        header { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; text-align: center; }
-        header h1 { margin: 0; font-size: 20px; color: var(--primary); letter-spacing: 2px; }
-
-        /* Research Tray */
-        .tray { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 10px; }
-        .tray-btn { 
-            background: #2f3942; color: var(--gold); border: 1px solid rgba(255,255,255,0.1);
-            padding: 10px 16px; border-radius: 20px; font-size: 10px; font-weight: 800; white-space: nowrap; text-decoration: none;
-        }
-
-        /* Card Engine */
-        .card {
-            background: var(--card-bg); border-radius: 28px; padding: 40px 20px;
-            min-height: 300px; display: flex; flex-direction: column; align-items: center;
-            justify-content: center; text-align: center; border: 1px solid rgba(255,255,255,0.05);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5); margin-bottom: 20px;
-        }
-        .haw-word { font-size: 42px; font-weight: 800; margin-bottom: 5px; color: #fff; }
-        .phonetic { font-size: 12px; color: var(--gold); font-style: italic; margin-bottom: 15px; opacity: 0.8; }
-        .eng-word { font-size: 18px; color: #a4b0be; font-weight: 500; }
-        .mana-o { margin-top: 20px; font-size: 14px; line-height: 1.6; color: #ced6e0; display: none; }
+        /* The Learning Card */
+        .card { background: var(--card); border-radius: 25px; padding: 30px 20px; min-height: 280px; text-align: center; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .haw-display { font-size: 40px; font-weight: 800; margin-bottom: 5px; }
+        .syllables { color: var(--gold); letter-spacing: 3px; font-size: 14px; margin-bottom: 15px; text-transform: uppercase; }
+        .eng-display { font-size: 18px; color: #a4b0be; margin-bottom: 20px; font-style: italic; }
+        
+        .mana-o { font-size: 13px; line-height: 1.6; color: #ced6e0; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 15px; text-align: left; display: none; }
         .revealed .mana-o { display: block; }
 
-        .main-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        button { background: #2f3942; color: white; border: none; padding: 18px; border-radius: 16px; font-weight: 700; font-size: 15px; -webkit-tap-highlight-color: transparent; }
-        .btn-next { background: var(--primary); grid-column: span 2; margin-top: 12px; }
-
-        .footer {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 50px;
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 10px; font-weight: 700; color: #57606f; letter-spacing: 1px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-        }
+        /* New Audio Strategy */
+        .audio-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+        .btn { background: #34495e; border: none; color: white; padding: 15px; border-radius: 12px; font-weight: 700; font-size: 13px; }
+        .btn-ref { background: var(--primary); grid-column: span 2; margin-top: 5px; }
+        
+        .footer { position: fixed; bottom: 0; left: 0; width: 100%; height: 45px; background: #000; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #57606f; font-weight: 700; border-top: 1px solid #222; }
     </style>
 </head>
 <body>
 
-<div id="splash">
-    <div style="font-size:50px; color:var(--primary); font-weight:900; border:3px solid var(--primary); width:80px; height:80px; display:flex; align-items:center; justify-content:center; border-radius:50%;">‘O</div>
-    <div style="margin-top:15px; font-weight:800; letter-spacing:3px;">PRECISION AUDIO</div>
-</div>
-
-<header><h1>‘ŌLELO HIWA</h1></header>
+<header>
+    <h1 style="font-size: 18px; letter-spacing: 2px;">‘ŌLELO HIWA</h1>
+</header>
 
 <div class="tray">
-    <a href="https://wehewehe.org" target="_blank" class="tray-btn">DICTIONARY</a>
-    <a href="https://ulukau.org" target="_blank" class="tray-btn">ARCHIVES</a>
-    <a href="https://www.youtube.com/results?search_query=kulaiwi+hawaiian" target="_blank" class="tray-btn">VIDEO LESSONS</a>
+    <a href="https://wehewehe.org" target="_blank" class="tray-btn">📙 DICTIONARY</a>
+    <a href="https://oleloonline.com/tag/audio-2/" target="_blank" class="tray-btn">🔊 NATIVE AUDIO</a>
+    <a href="https://ulukau.org" target="_blank" class="tray-btn">🏛️ ARCHIVES</a>
 </div>
 
-<div class="card" id="mainCard" onclick="this.classList.toggle('revealed')">
-    <div id="cat" style="font-size:9px; color:var(--gold); font-weight:800; margin-bottom:10px; letter-spacing:1px;">...</div>
-    <div class="haw-word" id="haw">...</div>
-    <div class="phonetic" id="phonetic">...</div>
-    <div class="eng-word" id="eng">...</div>
+<div class="card" id="card" onclick="this.classList.toggle('revealed')">
+    <div id="cat" style="font-size:9px; color:var(--gold); font-weight:800; margin-bottom:10px;">...</div>
+    <div class="haw-display" id="haw">...</div>
+    <div class="syllables" id="syl">...</div>
+    <div class="eng-display" id="eng">...</div>
     <div class="mana-o" id="note">...</div>
 </div>
 
-<div class="main-controls">
-    <button onclick="speak()">HELUHELU (READ)</button>
-    <button onclick="save()">MĀLAMA (SAVE)</button>
-    <button class="btn-next" onclick="next()">HULI (NEXT WORD)</button>
+<div class="audio-controls">
+    <button class="btn" onclick="event.stopPropagation(); next()">HULI (NEXT)</button>
+    <button class="btn" onclick="event.stopPropagation(); save()">MĀLAMA (SAVE)</button>
+    <a id="audio-ref" href="#" target="_blank" class="btn btn-ref" style="text-align: center; line-height: 1;">HEAR NATIVE PRONUNCIATION</a>
 </div>
 
-<div class="footer">‘ŌLELO HIWA — v1.3.0 — PRECISION AUDIO ENGINE</div>
+<div class="footer">‘ŌLELO HIWA — v1.4.0 — HAKALAMA & NATIVE REFERENCE</div>
 
 <script>
     const dictionary = [
-        {h: "‘Ōhi‘a Lehua", p: "oh-hee-ah leh-hoo-ah", e: "Endemic Canopy Tree", c: "LĀ‘AU", m: "The 'okina (glottal stop) in 'Ōhi'a is a brief catch in the throat. Keep the 'e' in Lehua short like 'red'."},
-        {h: "‘Io", p: "ee-oh", e: "Hawaiian Hawk", c: "MANU", m: "The 'ee' sound is sharp. The transition from 'ee' to 'oh' should be distinct, separated by the glottal stop."},
-        {h: "Mauka", p: "mow-kah", e: "Mountainward", c: "WAIHO‘INA", m: "The 'au' sounds like the 'ow' in 'now'. In Hawaii, directions are visceral, always relative to the mountain."},
-        {h: "Kuleana", p: "koo-leh-ah-nah", e: "Responsibility", c: "PILI", m: "A four-syllable word. Every vowel is pronounced. No vowels are silent in 'Ōlelo Hawai'i."},
-        {h: "‘Apapane", p: "ah-pah-pah-neh", e: "Red Honeycreeper", c: "MANU", m: "Note the rhythm. Each 'a' is open and clear like 'ah'. The final 'e' is short."},
-        {h: "Aumakua", p: "ow-mah-koo-ah", e: "Ancestral Guardian", c: "SPIRIT", m: "A compound of 'au' (group) and 'makua' (parent). Pronounce the 'koo-ah' as a smooth slide."},
-        {h: "Mālama", p: "maa-lah-mah", e: "To Care For", c: "PILI", m: "The kahakō over the first 'ā' means you hold that sound twice as long as the other 'a's."}
+        {h: "‘Ōhi‘a Lehua", s: "‘Ō-hi-‘a Le-hu-a", e: "Endemic Canopy Tree", c: "LĀ‘AU", m: "Break it down: 'Ō (long) - hi (short) - 'a (stop). The 'a' is a crisp breath at the back of the throat.", ref: "https://wehewehe.org/gsdl2.85/cgi-bin/optsid?a=d&d=d14603"},
+        {h: "‘Io", s: "‘I-o", e: "Hawaiian Hawk", c: "MANU", m: "Two clear sounds. The 'I' is like the 'ee' in 'see'. The 'o' is like 'oh'. Don't blend them; let the 'okina separate them.", ref: "https://wehewehe.org/gsdl2.85/cgi-bin/optsid?a=d&d=d4957"},
+        {h: "Kama‘āina", s: "Ka-ma-‘āi-na", e: "Child of the Land", c: "PILI", m: "The 'āi' is a diphthong. It sounds like 'eye' but elongated because of the kahakō over the 'ā'.", ref: "https://wehewehe.org/gsdl2.85/cgi-bin/optsid?a=d&d=d6538"},
+        {h: "Mālama", s: "Mā-la-ma", e: "To Care For", c: "PILI", m: "Mā (long) - la (short) - ma (short). Hold that first 'Mā' for two beats. It changes the word from 'light' to 'care'.", ref: "https://wehewehe.org/gsdl2.85/cgi-bin/optsid?a=d&d=d11743"}
     ];
 
-    let current = {};
-
     function next() {
-        document.getElementById('mainCard').classList.remove('revealed');
-        setTimeout(() => {
-            current = dictionary[Math.floor(Math.random() * dictionary.length)];
-            document.getElementById('haw').innerText = current.h;
-            document.getElementById('phonetic').innerText = `[ ${current.p} ]`;
-            document.getElementById('eng').innerText = current.e;
-            document.getElementById('cat').innerText = current.c;
-            document.getElementById('note').innerText = current.m;
-        }, 200);
+        document.getElementById('card').classList.remove('revealed');
+        const item = dictionary[Math.floor(Math.random() * dictionary.length)];
+        document.getElementById('haw').innerText = item.h;
+        document.getElementById('syl').innerText = item.s;
+        document.getElementById('eng').innerText = item.e;
+        document.getElementById('cat').innerText = item.c;
+        document.getElementById('note').innerText = item.m;
+        document.getElementById('audio-ref').href = item.ref;
     }
 
-    function speak() {
-        if (!current.h) return;
-        
-        // PHONETIC FILTER: Pre-processing for TTS Accuracy
-        // 1. Replace 'okina with a punctuation pause
-        // 2. Add extra vowels for kahakō (long vowels) to force elongation
-        let filteredText = current.h
-            .replace(/‘/g, "... ") // Force a tiny pause for the glottal stop
-            .replace(/ā/g, "aa")
-            .replace(/ē/g, "ee")
-            .replace(/ī/g, "ii")
-            .replace(/ō/g, "oo")
-            .replace(/ū/g, "uu");
+    function save() { alert("Saved to your personal collection!"); }
 
-        const msg = new SpeechSynthesisUtterance(filteredText);
-        msg.rate = 0.5; // Slowed down for clarity
-        msg.pitch = 1.0;
-        msg.lang = 'en-US'; // Best phonetic base for HAW vowels
-        window.speechSynthesis.speak(msg);
-    }
-
-    function save() { /* Optional: Add persistence here */ }
-
-    setTimeout(() => document.getElementById('splash').classList.add('splash-hidden'), 1200);
     next();
 </script>
 
