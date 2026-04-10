@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Destroyer v1.7.9</title>
+    <title>Debt Destroyer v1.8.0</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { 
@@ -27,15 +27,15 @@
 
         .dashboard { 
             background: linear-gradient(135deg, #1e272e, #000); color: white; 
-            border-radius: 18px; padding: 15px; margin-bottom: 12px; text-align: center; 
+            border-radius: 18px; padding: 12px; margin-bottom: 10px; text-align: center; 
         }
-        .main-total { font-size: 32px; font-weight: 800; }
-        .prog-bg { width: 100%; background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; margin: 8px 0; overflow: hidden; }
+        .main-total { font-size: 30px; font-weight: 800; }
+        .prog-bg { width: 100%; background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; margin: 6px 0; overflow: hidden; }
         .prog-fill { width: 0%; height: 100%; background: var(--primary); transition: width 0.5s; }
 
-        .card-container { margin-bottom: 12px; perspective: 1000px; position: relative; }
+        .card-container { margin-bottom: 15px; perspective: 1000px; position: relative; }
         .card-inner { 
-            position: relative; width: 100%; min-height: 200px;
+            position: relative; width: 100%; min-height: 230px;
             transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d; 
         }
         .card-container.flipped .card-inner { transform: rotateY(180deg); }
@@ -43,29 +43,31 @@
         .card-front, .card-back { 
             position: absolute; width: 100%; height: 100%; 
             -webkit-backface-visibility: hidden; backface-visibility: hidden; 
-            border-radius: 18px; padding: 15px;
+            border-radius: 20px; padding: 18px;
             border: 1px solid #e1e8ed; background: var(--card); box-sizing: border-box; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
         }
         
-        .card-back { transform: rotateY(180deg); display: flex; flex-direction: column; justify-content: space-between; }
+        .card-back { transform: rotateY(180deg); display: flex; flex-direction: column; }
 
         .target-tag {
             background: var(--danger); color: white; font-size: 8px; font-weight: 900; 
-            padding: 2px 8px; border-radius: 4px; text-transform: uppercase;
+            padding: 3px 8px; border-radius: 5px; text-transform: uppercase;
         }
 
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; height: 24px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; min-height: 24px; }
 
-        .input-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 10px 0; }
-        label { font-size: 8px; font-weight: 800; color: #a4b0be; text-transform: uppercase; margin-bottom: 2px; display: block; }
-        input { width: 100%; padding: 8px; border: 1px solid #eceff1; border-radius: 8px; font-size: 12px; background: #fbfcfc; box-sizing: border-box; }
+        .input-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 12px 0; }
+        label { font-size: 8px; font-weight: 800; color: #a4b0be; text-transform: uppercase; margin-bottom: 4px; display: block; }
+        input { width: 100%; padding: 10px 8px; border: 1px solid #eceff1; border-radius: 10px; font-size: 13px; background: #fbfcfc; box-sizing: border-box; -webkit-appearance: none; }
         
-        button { background: var(--accent); color: white; border: none; padding: 10px; border-radius: 8px; font-weight: 700; width: 100%; }
-        .paid-btn { background: #ced6e0; color: #2f3542; font-size: 9px; padding: 4px 8px; border-radius: 5px; width: auto; font-weight: 800; border: none; }
+        .pay-row { display: flex; gap: 8px; margin-top: 14px; border-top: 1px solid #f1f2f6; padding-top: 14px; }
+        button { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 700; width: 100%; }
+        .paid-btn { background: #ced6e0; color: #2f3542; font-size: 9px; padding: 5px 10px; border-radius: 6px; width: auto; font-weight: 800; border: none; }
         .paid-btn.active { background: var(--primary); color: white; }
 
         .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: white; text-align: center; padding: 15px 0; font-size: 10px; border-top: 1px solid #eee; display: flex; justify-content: space-around; z-index: 100; }
-        .chart-card { background: var(--card); border-radius: 18px; padding: 15px; margin-bottom: 12px; border: 1px solid #e1e8ed; height: 160px; }
+        .chart-card { background: var(--card); border-radius: 18px; padding: 15px; margin-bottom: 12px; border: 1px solid #e1e8ed; height: 150px; }
     </style>
 </head>
 <body>
@@ -78,20 +80,20 @@
     <div class="main-total" id="main-debt">$0.00</div>
     <div class="prog-bg"><div id="progress-bar" class="prog-fill"></div></div>
     <div id="main-freedom" style="font-size: 10px; color: var(--primary); font-weight: 800; letter-spacing: 1px;">AVALANCHE MODE</div>
-    <div style="display: flex; justify-content: space-around; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
-        <div style="text-align: center;"><span id="stat-min" style="font-size: 18px; font-weight: 800;">$0</span><br><span style="font-size: 8px; opacity: 0.6;">MIN DUE</span></div>
-        <div style="text-align: center;"><span id="stat-apr" style="font-size: 18px; font-weight: 800;">0%</span><br><span style="font-size: 8px; opacity: 0.6;">AVG APR</span></div>
+    <div style="display: flex; justify-content: space-around; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
+        <div style="text-align: center;"><span id="stat-min" style="font-size: 16px; font-weight: 800;">$0</span><br><span style="font-size: 8px; opacity: 0.6;">MIN DUE</span></div>
+        <div style="text-align: center;"><span id="stat-apr" style="font-size: 16px; font-weight: 800;">0%</span><br><span style="font-size: 8px; opacity: 0.6;">AVG APR</span></div>
     </div>
 </div>
 
 <div class="chart-card"><canvas id="debtChart"></canvas></div>
 
 <div id="card-list"></div>
-<button onclick="addCard()" style="background:#2f3542; color:white; padding:15px; border-radius:12px; width:100%; margin-bottom:20px;">+ ADD NEW CARD</button>
+<button onclick="addCard()" style="background:#2f3542; color:white; padding:16px; border-radius:14px; width:100%; margin-bottom:30px; font-weight: 800;">+ ADD NEW CARD</button>
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight:bold;">Backup CSV</span>
-    <span>v1.7.9</span>
+    <span>v1.8.0</span>
     <span onclick="nuke()" style="color:var(--danger)">Reset</span>
 </div>
 
@@ -129,15 +131,15 @@ function initUI() {
                                 ${isPaidThisMonth ? 'PAID ✓' : 'MARK PAID'}
                             </button>
                         </div>
-                        <input type="text" oninput="updateData(${i}, 'name', this.value)" value="${c.name}" onclick="event.stopPropagation()" style="border:none; font-weight:800; background:none; font-size:16px; width:100%; margin-bottom:10px;">
+                        <input type="text" oninput="updateData(${i}, 'name', this.value)" value="${c.name}" onclick="event.stopPropagation()" style="border:none; font-weight:800; background:none; font-size:17px; width:100%; margin-bottom:5px; color:var(--text);">
                         <div class="input-row" onclick="event.stopPropagation()">
                             <div><label>Balance</label><input type="number" oninput="updateData(${i}, 'bal', this.value)" value="${c.bal}"></div>
                             <div><label>Min $</label><input type="number" oninput="updateData(${i}, 'min', this.value)" value="${c.min}"></div>
                             <div><label>Due Date</label><input type="date" onblur="updateData(${i}, 'due', this.value)" value="${c.due || ''}"></div>
                         </div>
-                        <div style="display:flex; gap:8px;" onclick="event.stopPropagation()">
+                        <div class="pay-row" onclick="event.stopPropagation()">
                             <input type="number" id="p-${i}" placeholder="Pay $">
-                            <button onclick="applyPayment(${i})">Apply</button>
+                            <button onclick="applyPayment(${i})" style="flex: 0 0 100px;">Apply</button>
                         </div>
                     </div>
                     <div class="card-back" onclick="toggleFlip(this)" style="border-left: 6px solid ${color}">
@@ -145,16 +147,16 @@ function initUI() {
                              ${isTarget ? '<span class="target-tag">Target</span>' : ''}
                         </div>
                         <div style="text-align:center; flex:1; display:flex; flex-direction:column; justify-content:center;">
-                            <label>Remaining</label>
-                            <div style="font-size:24px; font-weight:800; color:${color}">$${(c.bal || 0).toLocaleString()}</div>
-                            <div style="margin-top:20px; padding:10px; background:#f8fafb; border-radius:12px;">
+                            <label>Current Balance</label>
+                            <div style="font-size:26px; font-weight:900; color:${color}">$${(c.bal || 0).toLocaleString()}</div>
+                            <div style="margin-top:25px; padding:15px; background:#f8fafb; border-radius:15px; border: 1px solid #eee;">
                                 <div style="display:flex; justify-content:space-between; align-items:center;">
                                     <span style="font-size:10px; font-weight:700; color:#a4b0be;">APR RATE</span>
-                                    <input type="number" oninput="updateData(${i}, 'apr', this.value)" value="${c.apr}" style="width:60px; text-align:right; font-weight:800; border:none; background:none; padding:0; color:${color};" onclick="event.stopPropagation()">
+                                    <input type="number" oninput="updateData(${i}, 'apr', this.value)" value="${c.apr}" style="width:70px; text-align:right; font-weight:900; border:none; background:none; padding:0; color:${color}; font-size:16px;" onclick="event.stopPropagation()">
                                 </div>
                             </div>
                         </div>
-                        <div style="font-size:9px; text-align:center; color:#a4b0be; margin-top:10px;">Tap to flip</div>
+                        <div style="font-size:10px; text-align:center; color:#ced6e0; margin-top:10px;">Tap to flip</div>
                     </div>
                 </div>
             </div>`;
