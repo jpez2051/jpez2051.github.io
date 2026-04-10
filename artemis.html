@@ -3,111 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ARTEMIS II | GLOBAL TRACKER</title>
+    <title>ARTEMIS II | MISSION CONTROL v1.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #05070a; color: #e2e8f0; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        body { background-color: #020408; color: #e2e8f0; font-family: 'Inter', sans-serif; overflow-x: hidden; }
         .font-orbitron { font-family: 'Orbitron', sans-serif; }
-        #map { height: 400px; width: 100%; filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
-        .scanline { background: linear-gradient(to bottom, rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); background-size: 100% 2px, 3px 100%; pointer-events: none; }
+        #map { height: 450px; width: 100%; filter: invert(100%) hue-rotate(180deg) brightness(90%) contrast(90%); }
+        .status-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(8px); border: 1px solid rgba(51, 65, 85, 0.5); }
     </style>
 </head>
-<body class="p-4 lg:p-8" x-data="missionData()" x-init="initMap()">
-    <div class="fixed inset-0 scanline z-50 opacity-10"></div>
+<body class="p-4 lg:p-10" x-data="missionControl()" x-init="initApp()">
 
-    <header class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-800 pb-6 mb-8">
+    <header class="flex justify-between items-end border-b border-slate-800 pb-6 mb-8">
         <div>
-            <h1 class="text-3xl font-orbitron font-bold tracking-widest text-white">ARTEMIS II <span class="text-red-500 text-sm align-top">LIVE MAP</span></h1>
-            <p class="text-slate-400 text-xs mt-1 tracking-tighter uppercase">NASA AROW TELEMETRY FEED | ORION (CM-002)</p>
+            <div class="flex items-center gap-3">
+                <div class="w-3 h-3 bg-red-600 rounded-full status-pulse"></div>
+                <h1 class="text-2xl font-orbitron font-bold tracking-tighter text-white">ORION TELEMETRY <span class="text-slate-500 font-light">| ARTEMIS II</span></h1>
+            </div>
+            <p class="text-slate-500 text-[10px] mt-1 tracking-[0.2em] uppercase">Deep Space Network Stream: Active</p>
         </div>
-        <div class="mt-4 md:mt-0 text-right">
-            <div class="text-xs text-slate-500 uppercase tracking-widest">Ground Track Status</div>
-            <div class="text-2xl font-orbitron text-emerald-400">ACTIVE</div>
+        <div class="text-right">
+            <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Splashdown Window (PDT)</p>
+            <p class="text-xl font-orbitron text-blue-400">17:07:00</p>
         </div>
     </header>
 
-    <main class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="space-y-6">
-            <div class="bg-slate-900/80 border border-slate-800 p-5 rounded-lg">
-                <h3 class="text-xs font-bold uppercase text-slate-500 mb-4 tracking-widest">Orbital Position</h3>
-                <div class="grid grid-cols-2 gap-4 font-mono text-sm">
-                    <div><span class="text-slate-500 block text-[10px]">LATITUDE</span> <span x-text="lat.toFixed(4) + '° N'"></span></div>
-                    <div><span class="text-slate-500 block text-[10px]">LONGITUDE</span> <span x-text="lng.toFixed(4) + '° W'"></span></div>
-                </div>
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        
+        <div class="space-y-4">
+            <div class="glass p-4 rounded shadow-2xl">
+                <p class="text-[10px] text-slate-500 font-bold mb-2 uppercase">Velocity (Relative)</p>
+                <div class="text-2xl font-orbitron text-white" x-text="velocity.toLocaleString() + ' MPH'"></div>
+                <div class="w-full bg-slate-800 h-1 mt-2"><div class="bg-blue-500 h-full transition-all duration-500" :style="`width: ${(velocity/24500)*100}%` "></div></div>
             </div>
-
-            <div class="bg-blue-900/20 border border-blue-500/30 p-5 rounded-lg">
-                <h3 class="text-xs font-bold uppercase text-blue-400 mb-2 tracking-widest italic">Splashdown Target</h3>
-                <p class="text-sm text-slate-300">Pacific Ocean, Zone 7A</p>
-                <p class="text-[10px] text-slate-500 mt-1">USS John P. Murtha (LPD-26) on station.</p>
+            <div class="glass p-4 rounded">
+                <p class="text-[10px] text-slate-500 font-bold mb-2 uppercase">Altitude</p>
+                <div class="text-2xl font-orbitron text-emerald-400" x-text="altitude.toLocaleString() + ' MI'"></div>
+            </div>
+            <div class="glass p-4 rounded">
+                <p class="text-[10px] text-slate-500 font-bold mb-2 uppercase">Cabin Pressure</p>
+                <div class="text-xl font-orbitron text-white">14.7 PSI</div>
             </div>
         </div>
 
-        <div class="lg:col-span-2">
-            <div class="bg-slate-900 border border-slate-800 rounded-lg overflow-hidden relative">
+        <div class="lg:col-span-3">
+            <div class="glass rounded overflow-hidden relative">
                 <div id="map"></div>
-                <div class="absolute bottom-4 left-4 z-[1000] bg-black/80 p-2 text-[10px] font-mono border border-emerald-500/50 text-emerald-400">
-                    SENSORS: NOMINAL<br>COMMS: DSN_GOLDSTONE_24
+                <div class="absolute top-4 right-4 z-[1000] glass p-3 font-mono text-[11px] text-blue-300">
+                    LAT: <span x-text="lat.toFixed(4)"></span><br>
+                    LNG: <span x-text="lng.toFixed(4)"></span>
                 </div>
             </div>
-            
-            <div class="mt-6 p-4 bg-slate-900/50 border border-slate-800 rounded flex justify-between items-center text-xs">
-                <span class="text-slate-500 uppercase tracking-widest">Target Velocity</span>
-                <span class="text-blue-400 font-bold" x-text="velocity + ' MPH'"></span>
-            </div>
         </div>
-    </main>
+    </div>
+
+    <footer class="mt-12 flex justify-between items-center border-t border-slate-900 pt-6">
+        <div class="flex gap-6 text-[10px] text-slate-600 uppercase tracking-widest font-semibold">
+            <span>NASA/JSC/PAO</span>
+            <span>Recovery Force: USS John P. Murtha</span>
+        </div>
+        <div class="text-[10px] bg-slate-900 text-slate-400 px-3 py-1 rounded-full font-mono">
+            BUILD_VER: <span class="text-emerald-500">1.2.0-STABLE</span>
+        </div>
+    </footer>
 
     <script>
-        function missionData() {
+        function missionControl() {
             return {
-                lat: 25.1234,
-                lng: 135.5678,
-                velocity: 23140,
+                lat: 28.5,
+                lng: -145.2,
+                velocity: 23840,
+                altitude: 48200,
                 map: null,
                 marker: null,
-                
-                initMap() {
-                    // Initialize Leaflet Map
+
+                initApp() {
                     this.map = L.map('map', {
-                        center: [25, -140],
-                        zoom: 3,
+                        center: [30, -130],
+                        zoom: 4,
                         zoomControl: false,
                         attributionControl: false
                     });
 
-                    // Add Dark Themed Tiles
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.map);
 
-                    // Custom Orion Icon
-                    const orionIcon = L.divIcon({
-                        className: 'orion-marker',
-                        html: '<div style="background: #3b82f6; width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 10px #3b82f6; border: 2px solid white;"></div>',
-                        iconSize: [12, 12]
+                    const icon = L.divIcon({
+                        className: 'custom-div-icon',
+                        html: "<div style='background-color:#3b82f6; width:10px; height:10px; border-radius:50%; border:2px solid #fff; box-shadow: 0 0 15px #3b82f6;'></div>",
+                        iconSize: [10, 10]
                     });
 
-                    // Initial Marker
-                    this.marker = L.marker([this.lat, -this.lng], { icon: orionIcon }).addTo(this.map);
+                    this.marker = L.marker([this.lat, this.lng], {icon: icon}).addTo(this.map);
 
-                    // Dynamic Telemetry Loop
+                    // Telemetry update loop
                     setInterval(() => {
-                        // Simulating Movement toward California Splashdown
-                        this.lat += 0.01;
-                        this.lng -= 0.05;
-                        this.velocity += Math.floor(Math.random() * 20);
+                        this.velocity += (Math.random() > 0.5 ? 5 : -5);
+                        this.altitude -= 0.1; // Falling toward earth
+                        this.lat += 0.005; 
+                        this.lng += 0.015; // Moving East toward California
 
-                        // Update Marker Position
-                        this.marker.setLatLng([this.lat, -this.lng]);
-                        
-                        // Pan map to follow
-                        if (Math.abs(this.lng % 2) < 0.1) {
-                            this.map.panTo([this.lat, -this.lng]);
-                        }
-                    }, 500);
+                        this.marker.setLatLng([this.lat, this.lng]);
+                    }, 1000);
                 }
             }
         }
