@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ARTEMIS II | COMMAND CENTER v1.4.2</title>
+    <title>ARTEMIS II | COMMAND CENTER v1.4.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -31,7 +31,7 @@
             <div class="flex flex-col md:flex-row gap-6 md:gap-12 mt-4 md:mt-0">
                 <div class="hst-highlight">
                     <div class="text-[10px] text-blue-400 uppercase tracking-widest font-bold">HST Landing Est.</div>
-                    <div class="text-xl md:text-2xl font-orbitron text-white">14:07:00</div>
+                    <div class="text-xl md:text-2xl font-orbitron text-white">2:07:00 PM</div>
                 </div>
                 <div class="text-left md:text-right">
                     <div class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">T-Minus Splashdown</div>
@@ -46,19 +46,16 @@
                     <p class="text-[10px] text-slate-500 font-bold uppercase mb-2">Velocity</p>
                     <div class="text-2xl font-orbitron text-white" x-text="velocity.toLocaleString() + ' MPH'"></div>
                 </div>
-
                 <div class="glass p-5 rounded-lg">
                     <p class="text-[10px] text-slate-500 font-bold uppercase mb-2">Altitude</p>
                     <div class="text-2xl font-orbitron text-emerald-400" x-text="altitude.toLocaleString() + ' MI'"></div>
                 </div>
-
                 <div class="glass p-5 rounded-lg">
                     <p class="text-[10px] text-slate-500 font-bold uppercase mb-3">Crew Condition</p>
                     <div class="space-y-2 text-[11px] font-mono">
-                        <div class="flex justify-between border-b border-slate-800 pb-1"><span>WISEMAN</span> <span class="text-emerald-500">GO</span></div>
-                        <div class="flex justify-between border-b border-slate-800 pb-1"><span>GLOVER</span> <span class="text-emerald-500">GO</span></div>
-                        <div class="flex justify-between border-b border-slate-800 pb-1"><span>KOCH</span> <span class="text-emerald-500">GO</span></div>
-                        <div class="flex justify-between"><span>HANSEN</span> <span class="text-emerald-500">GO</span></div>
+                        <template x-for="name in ['WISEMAN', 'GLOVER', 'KOCH', 'HANSEN']">
+                            <div class="flex justify-between border-b border-slate-800 pb-1"><span x-text="name"></span> <span class="text-emerald-500">GO</span></div>
+                        </template>
                     </div>
                 </div>
             </div>
@@ -70,23 +67,20 @@
                         TRACKING: ORION_CM_002
                     </div>
                 </div>
-
-                <div class="glass p-4 rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div class="flex items-center gap-3">
-                        <span class="relative flex h-3 w-3">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
-                        </span>
-                        <span class="text-[11px] font-mono uppercase tracking-wider">Trajectory Status: Nominal | Preparing for Entry Interface</span>
-                    </div>
+                <div class="glass p-4 rounded-lg flex items-center gap-3">
+                    <span class="relative flex h-3 w-3">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                    </span>
+                    <span class="text-[11px] font-mono uppercase tracking-wider">Telemetry Link Stable | Final Entry Profile Confirmed</span>
                 </div>
             </div>
         </main>
 
         <footer class="mt-12 py-8 border-t border-slate-900 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] tracking-[0.2em] text-slate-600">
-            <div>MISSION ELAPSED TIME: 009:17:58:22</div>
+            <div>CURRENT TIME (HST): <span x-text="formatHST()"></span></div>
             <div class="bg-slate-900 px-4 py-1 rounded-full border border-slate-800">
-                BUILD_VER: <span class="text-blue-500 font-bold">1.4.2-HST-TIMING</span>
+                BUILD_VER: <span class="text-blue-500 font-bold">1.4.3-12HR-CLK</span>
             </div>
         </footer>
     </div>
@@ -94,14 +88,7 @@
     <script>
         function missionControl() {
             return {
-                velocity: 24205, 
-                altitude: 41020, 
-                lat: 26.54, 
-                lng: -140.12, 
-                // Set countdown for roughly 1:40 PM HST (just over an hour to go!)
-                countdown: "01:12:42", 
-                map: null, 
-                marker: null,
+                velocity: 24205, altitude: 41020, lat: 26.54, lng: -140.12, countdown: "01:39:10", map: null, marker: null,
                 initApp() {
                     this.map = L.map('map', { center: [25, -135], zoom: 4, zoomControl: false, attributionControl: false });
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.map);
@@ -114,6 +101,9 @@
                         if (s > 0) s--; else { s = 59; if (m > 0) m--; else { m = 59; if(h > 0) h--; } }
                         this.countdown = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
                     }, 1000);
+                },
+                formatHST() {
+                    return new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
                 }
             }
         }
