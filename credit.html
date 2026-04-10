@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Destroyer v1.8.1</title>
+    <title>Debt Snowball v2.0</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { 
-            --bg: #f4f7f6; --card: #ffffff; --primary: #2ecc71; --accent: #3498db; 
-            --danger: #ff4757; --text: #2f3542; 
+            --bg: #1e272e; --card: #ffffff; --primary: #2ecc71; --accent: #3498db; 
+            --danger: #ff4757; --text: #f4f7f6; --text-dark: #2f3542; 
         }
         
         body { 
@@ -19,19 +19,25 @@
         }
 
         #splash-screen {
-            position: fixed; inset: 0; background: #1e272e; z-index: 3000;
+            position: fixed; inset: 0; background: #000; z-index: 3000;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             transition: opacity 0.5s ease;
         }
         .splash-hidden { opacity: 0; visibility: hidden; }
 
         .dashboard { 
-            background: linear-gradient(135deg, #1e272e, #000); color: white; 
-            border-radius: 18px; padding: 12px; margin-bottom: 10px; text-align: center; 
+            background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(30,39,46,0) 100%); 
+            padding: 15px 12px; text-align: center; margin-bottom: 5px;
         }
-        .main-total { font-size: 30px; font-weight: 800; }
-        .prog-bg { width: 100%; background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; margin: 6px 0; overflow: hidden; }
-        .prog-fill { width: 0%; height: 100%; background: var(--primary); transition: width 0.5s; }
+        .main-total { font-size: 32px; font-weight: 800; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        
+        .main-freedom { 
+            background: rgba(46, 204, 113, 0.1); color: var(--primary); 
+            font-size: 11px; font-weight: 800; letter-spacing: 1.5px; 
+            padding: 5px 12px; border-radius: 20px; display: inline-block; margin-top: 8px;
+        }
+
+        .chart-container { background: rgba(255,255,255,0.03); border-radius: 18px; padding: 15px; margin-bottom: 20px; height: 180px; }
 
         .card-container { margin-bottom: 15px; perspective: 1000px; position: relative; height: auto; min-height: 250px; }
         .card-inner { 
@@ -44,63 +50,79 @@
             position: absolute; width: 100%; height: 100%; 
             -webkit-backface-visibility: hidden; backface-visibility: hidden; 
             border-radius: 20px; padding: 18px; padding-bottom: 25px;
-            border: 1px solid #e1e8ed; background: var(--card); box-sizing: border-box; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.02); display: flex; flex-direction: column;
+            border: 1px solid rgba(255,255,255,0.08); background: #2f3640; box-sizing: border-box; 
+            box-shadow: 0 6px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column;
         }
         
         .card-back { transform: rotateY(180deg); }
 
         .target-tag {
-            background: var(--danger); color: white; font-size: 8px; font-weight: 900; 
+            background: var(--accent); color: white; font-size: 8px; font-weight: 900; 
             padding: 3px 8px; border-radius: 5px; text-transform: uppercase;
         }
 
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; min-height: 24px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; min-height: 24px; }
 
         .input-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 12px 0; }
         label { font-size: 8px; font-weight: 800; color: #a4b0be; text-transform: uppercase; margin-bottom: 4px; display: block; }
-        input { width: 100%; padding: 10px 8px; border: 1px solid #eceff1; border-radius: 10px; font-size: 13px; background: #fbfcfc; box-sizing: border-box; -webkit-appearance: none; }
+        input { 
+            width: 100%; padding: 10px 8px; border: 1px solid rgba(255,255,255,0.1); 
+            border-radius: 10px; font-size: 13px; background: rgba(0,0,0,0.2); 
+            box-sizing: border-box; color: #fff; -webkit-appearance: none; 
+        }
         
-        .pay-row { display: flex; gap: 8px; margin-top: auto; border-top: 1px solid #f1f2f6; padding-top: 15px; }
+        .pay-row { display: flex; gap: 8px; margin-top: auto; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 15px; }
         button { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 700; width: 100%; }
-        .paid-btn { background: #ced6e0; color: #2f3542; font-size: 9px; padding: 5px 10px; border-radius: 6px; width: auto; font-weight: 800; border: none; }
+        .paid-btn { background: #353b48; color: #a4b0be; font-size: 9px; padding: 5px 10px; border-radius: 6px; width: auto; font-weight: 800; border: none; }
         .paid-btn.active { background: var(--primary); color: white; }
 
-        .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: white; text-align: center; padding: 15px 0; font-size: 10px; border-top: 1px solid #eee; display: flex; justify-content: space-around; z-index: 100; }
-        .chart-card { background: var(--card); border-radius: 18px; padding: 15px; margin-bottom: 12px; border: 1px solid #e1e8ed; height: 150px; }
+        .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); text-align: center; padding: 15px 0; font-size: 10px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-around; z-index: 100; }
+        
+        /* Progress Ring */
+        .progress-ring { position: relative; width: 70px; height: 70px; margin: 0 auto; }
+        .progress-ring svg { transform: rotate(-90deg); }
+        .progress-ring__circle { 
+            stroke-dasharray: 220; stroke-dashoffset: 220; 
+            transition: stroke-dashoffset 0.5s ease; stroke-width: 8; fill: none; 
+        }
+        .progress-ring__background { stroke: rgba(255,255,255,0.1); stroke-width: 8; fill: none; }
+        .progress-label { 
+            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; 
+            font-weight: 800; font-size: 14px; color: #fff; 
+        }
     </style>
 </head>
 <body>
 
 <div id="splash-screen">
     <div style="color:white; font-size:40px; font-weight:900; border:4px solid var(--primary); padding:12px; border-radius:18px;">$</div>
+    <div style="color:#747d8c; font-size: 10px; font-weight: 800; letter-spacing: 2px; margin-top: 15px;">SNOWBALL v2.0</div>
 </div>
 
 <div class="dashboard">
     <div class="main-total" id="main-debt">$0.00</div>
-    <div class="prog-bg"><div id="progress-bar" class="prog-fill"></div></div>
-    <div id="main-freedom" style="font-size: 10px; color: var(--primary); font-weight: 800; letter-spacing: 1px;">AVALANCHE MODE</div>
-    <div style="display: flex; justify-content: space-around; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
-        <div style="text-align: center;"><span id="stat-min" style="font-size: 16px; font-weight: 800;">$0</span><br><span style="font-size: 8px; opacity: 0.6;">MIN DUE</span></div>
-        <div style="text-align: center;"><span id="stat-apr" style="font-size: 16px; font-weight: 800;">0%</span><br><span style="font-size: 8px; opacity: 0.6;">AVG APR</span></div>
+    <div id="main-freedom" class="main-freedom">CALCULATING PROJECTION...</div>
+    <div style="display: flex; justify-content: space-around; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px;">
+        <div style="text-align: center;"><span id="stat-min" style="font-size: 16px; font-weight: 800; color: #fff;">$0</span><br><span style="font-size: 8px; opacity: 0.6;">MIN DUE</span></div>
+        <div style="text-align: center;"><span id="stat-apr" style="font-size: 16px; font-weight: 800; color: #fff;">0%</span><br><span style="font-size: 8px; opacity: 0.6;">AVG APR</span></div>
     </div>
 </div>
 
-<div class="chart-card"><canvas id="debtChart"></canvas></div>
+<div class="chart-container"><canvas id="burnDownChart"></canvas></div>
 
 <div id="card-list"></div>
-<button onclick="addCard()" style="background:#2f3542; color:white; padding:16px; border-radius:14px; width:100%; margin-bottom:30px; font-weight: 800;">+ ADD NEW CARD</button>
+<button onclick="addCard()" style="background:#2ecc71; color:white; padding:16px; border-radius:14px; width:100%; margin-bottom:30px; font-weight: 800; border:none;">+ ADD NEW DEBT</button>
 
 <div class="footer">
-    <span onclick="exportCSV()" style="color:var(--accent); font-weight:bold;">Backup CSV</span>
-    <span>v1.8.1</span>
+    <span onclick="exportCSV()" style="color:var(--accent); font-weight:bold;">CSV Export</span>
+    <span>v2.0 Snowball</span>
     <span onclick="nuke()" style="color:var(--danger)">Reset</span>
 </div>
 
 <script>
 const KEY = 'debt_v125';
 const COLORS = ['#2ecc71', '#3498db', '#9b59b6', '#f1c40f', '#e67e22', '#1abc9c', '#e74c3c'];
-let debtChart;
+let burnDownChart;
 let cards = JSON.parse(localStorage.getItem(KEY)) || [];
 
 function toggleFlip(el) { el.closest('.card-container').classList.toggle('flipped'); }
@@ -111,6 +133,7 @@ function initUI() {
     const now = new Date();
     const curMonthKey = `${now.getMonth()}-${now.getFullYear()}`;
 
+    // Sort: Avalanche (Highest APR)
     cards.sort((a, b) => (a.bal <= 0) - (b.bal <= 0) || b.apr - a.apr);
     const targetIdx = cards.findIndex(c => c.bal > 0);
 
@@ -119,19 +142,23 @@ function initUI() {
         const isTarget = (i === targetIdx && c.bal > 0);
         const isPaidThisMonth = c.lastPaidMonth === curMonthKey;
 
+        if (c.highestBal === undefined || c.bal > c.highestBal) c.highestBal = c.bal;
+        const prog = c.highestBal > 0 ? ((c.highestBal - c.bal) / c.highestBal) * 100 : 0;
+        const ringOffset = 220 - (prog / 100) * 220;
+
         list.innerHTML += `
             <div class="card-container">
                 <div class="card-inner">
                     <div class="card-front" onclick="toggleFlip(this)" style="border-left: 6px solid ${color}; opacity: ${c.bal <= 0 ? 0.6 : 1}">
                         <div class="card-header">
                             <div style="flex: 1;">
-                                ${isTarget ? '<span class="target-tag">Target</span>' : ''}
+                                ${isTarget ? '<span class="target-tag">TARGET</span>' : ''}
                             </div>
                             <button class="paid-btn ${isPaidThisMonth ? 'active' : ''}" onclick="event.stopPropagation(); markPaid(${i})">
                                 ${isPaidThisMonth ? 'PAID ✓' : 'MARK PAID'}
                             </button>
                         </div>
-                        <input type="text" oninput="updateData(${i}, 'name', this.value)" value="${c.name}" onclick="event.stopPropagation()" style="border:none; font-weight:800; background:none; font-size:17px; width:100%; margin-bottom:5px; color:var(--text);">
+                        <input type="text" oninput="updateData(${i}, 'name', this.value)" value="${c.name}" onclick="event.stopPropagation()" style="border:none; font-weight:800; background:none; font-size:17px; width:100%; margin-bottom:5px; color:#fff;">
                         <div class="input-row" onclick="event.stopPropagation()">
                             <div><label>Balance</label><input type="number" oninput="updateData(${i}, 'bal', this.value)" value="${c.bal}"></div>
                             <div><label>Min $</label><input type="number" oninput="updateData(${i}, 'min', this.value)" value="${c.min}"></div>
@@ -144,15 +171,19 @@ function initUI() {
                     </div>
                     <div class="card-back" onclick="toggleFlip(this)" style="border-left: 6px solid ${color}">
                         <div class="card-header">
-                             ${isTarget ? '<span class="target-tag">Target</span>' : ''}
+                             ${isTarget ? '<span class="target-tag">TARGET</span>' : ''}
                         </div>
-                        <div style="text-align:center; flex:1; display:flex; flex-direction:column; justify-content:center;">
-                            <label>Current Balance</label>
-                            <div style="font-size:26px; font-weight:900; color:${color}">$${(c.bal || 0).toLocaleString()}</div>
-                            <div style="margin-top:25px; padding:15px; background:#f8fafb; border-radius:15px; border: 1px solid #eee;">
-                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="text-align:center; flex:1; display:flex; justify-content:center; align-items:center; gap: 20px;">
+                            <div class="progress-ring">
+                                <svg width="70" height="70"><circle class="progress-ring__background" cx="35" cy="35" r="31"/><circle class="progress-ring__circle" stroke="${color}" stroke-dashoffset="${ringOffset}" cx="35" cy="35" r="31"/></svg>
+                                <div class="progress-label">${prog.toFixed(0)}%</div>
+                            </div>
+                            <div style="flex: 1; text-align:left;">
+                                <label style="margin:0;">Remaining</label>
+                                <div style="font-size:26px; font-weight:900; color:#fff;">$${(c.bal || 0).toLocaleString()}</div>
+                                <div style="margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
                                     <span style="font-size:10px; font-weight:700; color:#a4b0be;">APR RATE</span>
-                                    <input type="number" oninput="updateData(${i}, 'apr', this.value)" value="${c.apr}" style="width:70px; text-align:right; font-weight:900; border:none; background:none; padding:0; color:${color}; font-size:16px;" onclick="event.stopPropagation()">
+                                    <input type="number" oninput="updateData(${i}, 'apr', this.value)" value="${c.apr}" style="width:60px; text-align:right; font-weight:900; border:none; background:none; padding:0; color:#fff; font-size:16px;" onclick="event.stopPropagation()">
                                 </div>
                             </div>
                         </div>
@@ -191,51 +222,109 @@ function save() {
 }
 
 function calculate() {
-    let total = 0, totalMin = 0, aprSum = 0, maxMonths = 0;
-    let bData = [], labels = [];
-
+    let total = 0, totalMin = 0, aprSum = 0, totalInt = 0;
     cards.forEach(c => {
         total += c.bal;
         totalMin += (c.min || 0);
         aprSum += (c.apr || 0);
-        if (c.bal > 0) {
-            let mRate = (c.apr / 100) / 12;
-            let pay = c.min || 1;
-            if (pay > (c.bal * mRate)) {
-                let m = Math.log(pay / (pay - c.bal * mRate)) / Math.log(1 + mRate);
-                if (m > maxMonths) maxMonths = m;
-            }
-            bData.push(c.bal); labels.push(c.name);
-        }
     });
 
     document.getElementById('main-debt').innerText = '$' + total.toLocaleString(undefined, {minimumFractionDigits: 2});
     document.getElementById('stat-min').innerText = '$' + Math.round(totalMin);
     document.getElementById('stat-apr').innerText = cards.length ? Math.round(aprSum / cards.length) + '%' : '0%';
     
-    if (maxMonths > 0) {
-        let d = new Date(); d.setMonth(d.getMonth() + Math.ceil(maxMonths));
+    // Project Burn Down (Avalanche)
+    let projection = projectAvalanche(cards);
+    
+    if (projection.months > 0) {
+        let d = new Date(); d.setMonth(d.getMonth() + projection.months);
         document.getElementById('main-freedom').innerText = "FREEDOM: " + d.toLocaleDateString('en-US', {month:'short', year:'numeric'}).toUpperCase();
     } else {
-        document.getElementById('main-freedom').innerText = total > 0 ? "ADD MIN PAYMENTS" : "DEBT FREE";
+        document.getElementById('main-freedom').innerText = total > 0 ? "ADD MIN PAYMENTS" : "DEBT FREE!";
     }
 
-    renderChart(labels, bData);
+    renderBurnDownChart(projection);
 }
 
-function renderChart(labels, data) {
-    const ctx = document.getElementById('debtChart');
+function projectAvalanche(cards) {
+    let tempCards = cards.filter(c => c.bal > 0).map(c => ({...c}));
+    if (tempCards.length === 0) return { months: 0, timeline: [], targetTimeline: [] };
+
+    // Standard Snowball Pay = Total Minimums
+    let totalPay = tempCards.reduce((sum, c) => sum + (c.min || 0), 0);
+    let months = 0, timeline = [], targetTimeline = [];
+    
+    let target = tempCards[0]; // Cards are pre-sorted by APR
+
+    while (months < 600) { // Safety cap
+        months++;
+        let totalInt = 0, currentTotal = 0, targetBal = 0;
+        let paymentPill = totalPay;
+
+        // Apply Interest and Current Minimums
+        for (let c of tempCards) {
+            if (c.bal <= 0) continue;
+            let mRate = (c.apr / 100) / 12;
+            let mi = c.bal * mRate;
+            totalInt += mi;
+            c.bal = (c.bal + mi) - c.min;
+            paymentPill -= c.min;
+            if (c.id === target.id) targetBal = c.bal;
+            currentTotal += c.bal;
+        }
+
+        // Apply Snowball Pill to Target
+        if (target && target.bal > 0) {
+            target.bal -= paymentPill;
+            targetBal = target.bal;
+            currentTotal -= paymentPill;
+            if (target.bal <= 0) {
+                tempCards.shift();
+                target = tempCards[0];
+            }
+        } else if (currentTotal <= 0) {
+             currentTotal = 0;
+             break;
+        }
+        
+        timeline.push(Math.max(0, currentTotal));
+        targetTimeline.push(Math.max(0, targetBal));
+
+        if (currentTotal <= 0) break;
+    }
+
+    return { months, timeline, targetTimeline };
+}
+
+function renderBurnDownChart(projection) {
+    const ctx = document.getElementById('burnDownChart');
     if (!ctx) return;
-    if (debtChart) debtChart.destroy();
-    debtChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: { labels, datasets: [{ data, backgroundColor: COLORS, borderWidth: 0 }] },
-        options: { cutout: '75%', maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    if (burnDownChart) burnDownChart.destroy();
+    
+    const labels = Array.from({length: projection.months}, (_, i) => `Month ${i+1}`);
+    
+    burnDownChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                { label: 'Total Debt', data: projection.timeline, borderColor: '#2ecc71', backgroundColor: 'rgba(46, 204, 113, 0.05)', borderWidth: 3, tension: 0.3, fill: true, pointRadius: 0 },
+                { label: 'Target Debt', data: projection.targetTimeline, borderColor: '#3498db', borderWidth: 2, tension: 0.3, fill: false, pointRadius: 0, borderDash: [5,5] }
+            ]
+        },
+        options: {
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { display: false },
+                y: { display: true, ticks: { color: '#747d8c', font: { size: 9 }, callback: v => '$'+v.toLocaleString() }, grid: { color: 'rgba(255,255,255,0.03)' } }
+            }
+        }
     });
 }
 
-function addCard() { cards.push({name: "New Debt", bal: 0, min: 0, apr: 0, due: ""}); save(); }
-function nuke() { if(confirm("Clear data?")) { localStorage.clear(); location.reload(); } }
+function addCard() { cards.push({name: "New Card", bal: 0, min: 0, apr: 0, highestBal: 0, history: [], due: ""}); save(); initUI(); }
+function nuke() { if(confirm("Wipe all data?")) { localStorage.clear(); location.reload(); } }
 function exportCSV() { 
     let csv = "Name,Balance,Min,APR,Due\n" + cards.map(c => `${c.name},${c.bal},${c.min},${c.apr},${c.due}`).join('\n');
     window.open('data:text/csv;charset=utf-8,' + encodeURI(csv));
