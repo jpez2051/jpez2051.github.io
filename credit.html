@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Destroyer v1.8.0</title>
+    <title>Debt Destroyer v1.8.1</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { 
@@ -15,7 +15,7 @@
         
         body { 
             font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; 
-            padding: 10px; padding-bottom: 100px; color: var(--text); overflow-x: hidden; 
+            padding: 10px; padding-bottom: 120px; color: var(--text); overflow-x: hidden; 
         }
 
         #splash-screen {
@@ -33,9 +33,9 @@
         .prog-bg { width: 100%; background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; margin: 6px 0; overflow: hidden; }
         .prog-fill { width: 0%; height: 100%; background: var(--primary); transition: width 0.5s; }
 
-        .card-container { margin-bottom: 15px; perspective: 1000px; position: relative; }
+        .card-container { margin-bottom: 15px; perspective: 1000px; position: relative; height: auto; min-height: 250px; }
         .card-inner { 
-            position: relative; width: 100%; min-height: 230px;
+            position: relative; width: 100%; height: 100%; min-height: 250px;
             transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d; 
         }
         .card-container.flipped .card-inner { transform: rotateY(180deg); }
@@ -43,12 +43,12 @@
         .card-front, .card-back { 
             position: absolute; width: 100%; height: 100%; 
             -webkit-backface-visibility: hidden; backface-visibility: hidden; 
-            border-radius: 20px; padding: 18px;
+            border-radius: 20px; padding: 18px; padding-bottom: 25px;
             border: 1px solid #e1e8ed; background: var(--card); box-sizing: border-box; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.02); display: flex; flex-direction: column;
         }
         
-        .card-back { transform: rotateY(180deg); display: flex; flex-direction: column; }
+        .card-back { transform: rotateY(180deg); }
 
         .target-tag {
             background: var(--danger); color: white; font-size: 8px; font-weight: 900; 
@@ -57,11 +57,11 @@
 
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; min-height: 24px; }
 
-        .input-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 12px 0; }
+        .input-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 12px 0; }
         label { font-size: 8px; font-weight: 800; color: #a4b0be; text-transform: uppercase; margin-bottom: 4px; display: block; }
         input { width: 100%; padding: 10px 8px; border: 1px solid #eceff1; border-radius: 10px; font-size: 13px; background: #fbfcfc; box-sizing: border-box; -webkit-appearance: none; }
         
-        .pay-row { display: flex; gap: 8px; margin-top: 14px; border-top: 1px solid #f1f2f6; padding-top: 14px; }
+        .pay-row { display: flex; gap: 8px; margin-top: auto; border-top: 1px solid #f1f2f6; padding-top: 15px; }
         button { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 700; width: 100%; }
         .paid-btn { background: #ced6e0; color: #2f3542; font-size: 9px; padding: 5px 10px; border-radius: 6px; width: auto; font-weight: 800; border: none; }
         .paid-btn.active { background: var(--primary); color: white; }
@@ -93,7 +93,7 @@
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight:bold;">Backup CSV</span>
-    <span>v1.8.0</span>
+    <span>v1.8.1</span>
     <span onclick="nuke()" style="color:var(--danger)">Reset</span>
 </div>
 
