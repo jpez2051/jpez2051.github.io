@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Snowball v2.0</title>
+    <title>Debt Snowball v2.1</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { 
@@ -39,9 +39,10 @@
 
         .chart-container { background: rgba(255,255,255,0.03); border-radius: 18px; padding: 15px; margin-bottom: 20px; height: 180px; }
 
-        .card-container { margin-bottom: 15px; perspective: 1000px; position: relative; height: auto; min-height: 250px; }
+        /* Structural Card Fixes */
+        .card-container { margin-bottom: 15px; perspective: 1000px; position: relative; min-height: 260px; }
         .card-inner { 
-            position: relative; width: 100%; height: 100%; min-height: 250px;
+            position: relative; width: 100%; height: 100%; min-height: 260px;
             transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d; 
         }
         .card-container.flipped .card-inner { transform: rotateY(180deg); }
@@ -49,7 +50,7 @@
         .card-front, .card-back { 
             position: absolute; width: 100%; height: 100%; 
             -webkit-backface-visibility: hidden; backface-visibility: hidden; 
-            border-radius: 20px; padding: 18px; padding-bottom: 25px;
+            border-radius: 20px; padding: 18px;
             border: 1px solid rgba(255,255,255,0.08); background: #2f3640; box-sizing: border-box; 
             box-shadow: 0 6px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column;
         }
@@ -71,7 +72,8 @@
             box-sizing: border-box; color: #fff; -webkit-appearance: none; 
         }
         
-        .pay-row { display: flex; gap: 8px; margin-top: auto; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 15px; }
+        /* Fixed Pay Row Alignment */
+        .pay-row { display: flex; gap: 8px; margin-top: auto; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 15px; padding-bottom: 5px; }
         button { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 700; width: 100%; }
         .paid-btn { background: #353b48; color: #a4b0be; font-size: 9px; padding: 5px 10px; border-radius: 6px; width: auto; font-weight: 800; border: none; }
         .paid-btn.active { background: var(--primary); color: white; }
@@ -79,7 +81,7 @@
         .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); text-align: center; padding: 15px 0; font-size: 10px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-around; z-index: 100; }
         
         /* Progress Ring */
-        .progress-ring { position: relative; width: 70px; height: 70px; margin: 0 auto; }
+        .progress-ring { position: relative; width: 70px; height: 70px; margin: 0 auto; flex-shrink: 0; }
         .progress-ring svg { transform: rotate(-90deg); }
         .progress-ring__circle { 
             stroke-dasharray: 220; stroke-dashoffset: 220; 
@@ -96,7 +98,7 @@
 
 <div id="splash-screen">
     <div style="color:white; font-size:40px; font-weight:900; border:4px solid var(--primary); padding:12px; border-radius:18px;">$</div>
-    <div style="color:#747d8c; font-size: 10px; font-weight: 800; letter-spacing: 2px; margin-top: 15px;">SNOWBALL v2.0</div>
+    <div style="color:#747d8c; font-size: 10px; font-weight: 800; letter-spacing: 2px; margin-top: 15px;">SNOWBALL v2.1</div>
 </div>
 
 <div class="dashboard">
@@ -115,7 +117,7 @@
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight:bold;">CSV Export</span>
-    <span>v2.0 Snowball</span>
+    <span>v2.1 Snowball</span>
     <span onclick="nuke()" style="color:var(--danger)">Reset</span>
 </div>
 
@@ -180,14 +182,14 @@ function initUI() {
                             </div>
                             <div style="flex: 1; text-align:left;">
                                 <label style="margin:0;">Remaining</label>
-                                <div style="font-size:26px; font-weight:900; color:#fff;">$${(c.bal || 0).toLocaleString()}</div>
+                                <div style="font-size:24px; font-weight:900; color:#fff;">$${(c.bal || 0).toLocaleString()}</div>
                                 <div style="margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
                                     <span style="font-size:10px; font-weight:700; color:#a4b0be;">APR RATE</span>
                                     <input type="number" oninput="updateData(${i}, 'apr', this.value)" value="${c.apr}" style="width:60px; text-align:right; font-weight:900; border:none; background:none; padding:0; color:#fff; font-size:16px;" onclick="event.stopPropagation()">
                                 </div>
                             </div>
                         </div>
-                        <div style="font-size:10px; text-align:center; color:#ced6e0; margin-top:10px;">Tap to flip</div>
+                        <div style="font-size:10px; text-align:center; color:#ced6e0; margin-top:10px; margin-bottom: 5px;">Tap to flip</div>
                     </div>
                 </div>
             </div>`;
@@ -222,7 +224,7 @@ function save() {
 }
 
 function calculate() {
-    let total = 0, totalMin = 0, aprSum = 0, totalInt = 0;
+    let total = 0, totalMin = 0, aprSum = 0;
     cards.forEach(c => {
         total += c.bal;
         totalMin += (c.min || 0);
@@ -233,7 +235,6 @@ function calculate() {
     document.getElementById('stat-min').innerText = '$' + Math.round(totalMin);
     document.getElementById('stat-apr').innerText = cards.length ? Math.round(aprSum / cards.length) + '%' : '0%';
     
-    // Project Burn Down (Avalanche)
     let projection = projectAvalanche(cards);
     
     if (projection.months > 0) {
@@ -250,46 +251,40 @@ function projectAvalanche(cards) {
     let tempCards = cards.filter(c => c.bal > 0).map(c => ({...c}));
     if (tempCards.length === 0) return { months: 0, timeline: [], targetTimeline: [] };
 
-    // Standard Snowball Pay = Total Minimums
     let totalPay = tempCards.reduce((sum, c) => sum + (c.min || 0), 0);
     let months = 0, timeline = [], targetTimeline = [];
     
-    let target = tempCards[0]; // Cards are pre-sorted by APR
+    // Sort logic handled in initUI already, but just to be safe:
+    tempCards.sort((a,b) => b.apr - a.apr);
+    let target = tempCards[0];
 
-    while (months < 600) { // Safety cap
+    while (months < 360) { // 30 year safety cap
         months++;
-        let totalInt = 0, currentTotal = 0, targetBal = 0;
+        let currentTotal = 0, targetBal = 0;
         let paymentPill = totalPay;
 
-        // Apply Interest and Current Minimums
         for (let c of tempCards) {
             if (c.bal <= 0) continue;
             let mRate = (c.apr / 100) / 12;
             let mi = c.bal * mRate;
-            totalInt += mi;
             c.bal = (c.bal + mi) - c.min;
             paymentPill -= c.min;
-            if (c.id === target.id) targetBal = c.bal;
+            if (target && c.name === target.name) targetBal = c.bal;
             currentTotal += c.bal;
         }
 
-        // Apply Snowball Pill to Target
         if (target && target.bal > 0) {
             target.bal -= paymentPill;
-            targetBal = target.bal;
             currentTotal -= paymentPill;
+            targetBal = target.bal;
             if (target.bal <= 0) {
-                tempCards.shift();
+                tempCards = tempCards.filter(c => c.bal > 0);
                 target = tempCards[0];
             }
-        } else if (currentTotal <= 0) {
-             currentTotal = 0;
-             break;
         }
         
         timeline.push(Math.max(0, currentTotal));
         targetTimeline.push(Math.max(0, targetBal));
-
         if (currentTotal <= 0) break;
     }
 
@@ -323,7 +318,7 @@ function renderBurnDownChart(projection) {
     });
 }
 
-function addCard() { cards.push({name: "New Card", bal: 0, min: 0, apr: 0, highestBal: 0, history: [], due: ""}); save(); initUI(); }
+function addCard() { cards.push({name: "New Card", bal: 0, min: 0, apr: 0, highestBal: 0, due: ""}); save(); }
 function nuke() { if(confirm("Wipe all data?")) { localStorage.clear(); location.reload(); } }
 function exportCSV() { 
     let csv = "Name,Balance,Min,APR,Due\n" + cards.map(c => `${c.name},${c.bal},${c.min},${c.apr},${c.due}`).join('\n');
