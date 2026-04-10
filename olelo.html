@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>‘Ōlelo Hiwa v1.2.0</title>
+    <title>‘Ōlelo Hiwa v1.3.0</title>
     <style>
         :root {
-            --primary: #c0392b; --gold: #f1c40f; --bg: #0f1418;
-            --card-bg: #1c252c; --text: #f5f6fa; --link: #3498db;
+            --primary: #c0392b; --gold: #f1c40f; --bg: #0c0f12;
+            --card-bg: #1e272e; --text: #f5f6fa;
         }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
             background: var(--bg); margin: 0; padding: 15px; color: var(--text);
-            overflow-x: hidden; padding-bottom: 100px;
+            padding-bottom: 80px;
         }
 
         #splash {
@@ -22,73 +22,63 @@
         }
         .splash-hidden { opacity: 0; pointer-events: none; }
 
-        header { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        header h1 { margin: 0; font-size: 18px; color: var(--primary); letter-spacing: 1px; }
-        
+        header { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; text-align: center; }
+        header h1 { margin: 0; font-size: 20px; color: var(--primary); letter-spacing: 2px; }
+
         /* Research Tray */
-        .tray { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
+        .tray { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 10px; }
         .tray-btn { 
             background: #2f3942; color: var(--gold); border: 1px solid rgba(255,255,255,0.1);
-            padding: 8px 15px; border-radius: 20px; font-size: 10px; font-weight: 800; white-space: nowrap; text-decoration: none;
+            padding: 10px 16px; border-radius: 20px; font-size: 10px; font-weight: 800; white-space: nowrap; text-decoration: none;
         }
 
-        /* SRS Card Engine */
+        /* Card Engine */
         .card {
-            background: var(--card-bg); border-radius: 24px; padding: 30px 20px;
-            min-height: 280px; display: flex; flex-direction: column; align-items: center;
+            background: var(--card-bg); border-radius: 28px; padding: 40px 20px;
+            min-height: 300px; display: flex; flex-direction: column; align-items: center;
             justify-content: center; text-align: center; border: 1px solid rgba(255,255,255,0.05);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.4); margin-bottom: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5); margin-bottom: 20px;
         }
-        .haw-word { font-size: 36px; font-weight: 800; margin-bottom: 10px; }
-        .eng-word { font-size: 18px; color: #a4b0be; }
-        .mana-o { margin-top: 20px; font-size: 13px; line-height: 1.5; color: #ced6e0; display: none; }
+        .haw-word { font-size: 42px; font-weight: 800; margin-bottom: 5px; color: #fff; }
+        .phonetic { font-size: 12px; color: var(--gold); font-style: italic; margin-bottom: 15px; opacity: 0.8; }
+        .eng-word { font-size: 18px; color: #a4b0be; font-weight: 500; }
+        .mana-o { margin-top: 20px; font-size: 14px; line-height: 1.6; color: #ced6e0; display: none; }
         .revealed .mana-o { display: block; }
 
-        /* SRS Difficulty Buttons */
-        .srs-btns { display: none; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 15px; width: 100%; }
-        .revealed .srs-btns { display: grid; }
-        .srs-btn { font-size: 10px; padding: 10px; border-radius: 10px; border: none; font-weight: 800; color: white; }
-        .easy { background: #27ae60; } .mid { background: #f39c12; } .hard { background: #e74c3c; }
-
-        .main-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
-        button { background: #2f3942; color: white; border: none; padding: 16px; border-radius: 14px; font-weight: 700; font-size: 14px; }
-        .btn-next { background: var(--primary); grid-column: span 2; margin-top: 10px; }
+        .main-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        button { background: #2f3942; color: white; border: none; padding: 18px; border-radius: 16px; font-weight: 700; font-size: 15px; -webkit-tap-highlight-color: transparent; }
+        .btn-next { background: var(--primary); grid-column: span 2; margin-top: 12px; }
 
         .footer {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 40px;
-            background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center;
-            font-size: 9px; font-weight: 700; color: #57606f; border-top: 1px solid rgba(255,255,255,0.1);
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 50px;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; font-weight: 700; color: #57606f; letter-spacing: 1px;
+            border-top: 1px solid rgba(255,255,255,0.1);
         }
     </style>
 </head>
 <body>
 
 <div id="splash">
-    <div style="font-size:40px; color:var(--primary); font-weight:900;">‘O</div>
+    <div style="font-size:50px; color:var(--primary); font-weight:900; border:3px solid var(--primary); width:80px; height:80px; display:flex; align-items:center; justify-content:center; border-radius:50%;">‘O</div>
+    <div style="margin-top:15px; font-weight:800; letter-spacing:3px;">PRECISION AUDIO</div>
 </div>
 
-<header>
-    <h1>‘ŌLELO HIWA</h1>
-    <div style="font-size: 10px; color: var(--gold);">4,000 FT CAMPUS</div>
-</header>
+<header><h1>‘ŌLELO HIWA</h1></header>
 
 <div class="tray">
-    <a href="https://wehewehe.org" target="_blank" class="tray-btn">📖 WEHEWEHE (DICT)</a>
-    <a href="https://ulukau.org" target="_blank" class="tray-btn">🏛️ ULUKAU (ARCHIVE)</a>
-    <a href="https://www.youtube.com/results?search_query=kulaiwi+hawaiian" target="_blank" class="tray-btn">📺 KULĀIWI (LESSONS)</a>
+    <a href="https://wehewehe.org" target="_blank" class="tray-btn">DICTIONARY</a>
+    <a href="https://ulukau.org" target="_blank" class="tray-btn">ARCHIVES</a>
+    <a href="https://www.youtube.com/results?search_query=kulaiwi+hawaiian" target="_blank" class="tray-btn">VIDEO LESSONS</a>
 </div>
 
 <div class="card" id="mainCard" onclick="this.classList.toggle('revealed')">
-    <div id="cat" style="font-size:9px; color:var(--gold); font-weight:800; margin-bottom:10px;">...</div>
+    <div id="cat" style="font-size:9px; color:var(--gold); font-weight:800; margin-bottom:10px; letter-spacing:1px;">...</div>
     <div class="haw-word" id="haw">...</div>
+    <div class="phonetic" id="phonetic">...</div>
     <div class="eng-word" id="eng">...</div>
     <div class="mana-o" id="note">...</div>
-    
-    <div class="srs-btns" onclick="event.stopPropagation()">
-        <button class="srs-btn hard" onclick="next('hard')">HARD</button>
-        <button class="srs-btn mid" onclick="next('mid')">MID</button>
-        <button class="srs-btn easy" onclick="next('easy')">EASY</button>
-    </div>
 </div>
 
 <div class="main-controls">
@@ -97,33 +87,27 @@
     <button class="btn-next" onclick="next()">HULI (NEXT WORD)</button>
 </div>
 
-<div id="log" style="margin-top: 20px; font-size: 12px; color: #747d8c;"></div>
-
-<div class="footer">
-    ‘ŌLELO HIWA — VERSION 1.2.0 — RESEARCH & SRS ENGINE
-</div>
+<div class="footer">‘ŌLELO HIWA — v1.3.0 — PRECISION AUDIO ENGINE</div>
 
 <script>
     const dictionary = [
-        {h: "‘Io", e: "Hawaiian Hawk", c: "NA MANU", m: "The endemic hawk. Symbol of royalty and clear vision."},
-        {h: "‘Ōhi‘a Lehua", e: "Native Tree", c: "NA LĀ‘AU", m: "Sacred tree of Pele. The foundation of the native ecosystem."},
-        {h: "Mauka", e: "Mountainward", c: "WAIHO‘INA", m: "A critical direction on the islands. Towards the mountain peak."},
-        {h: "Mālama", e: "To Care For", c: "PILI", m: "To preserve, protect, or maintain. A core cultural value."},
-        {h: "Kuleana", e: "Responsibility", c: "PILI", m: "A privilege that carries a weight of duty."},
-        {h: "Ua Kanilehua", e: "Lehua-Rustling Rain", c: "ANILA‘I", m: "Famous rain of Hilo that makes a unique sound on the lehua leaves."},
-        {h: "Aia I Hea...", e: "Where is...", c: "HA‘INA", m: "Common phrase starter for locating objects or people."}
+        {h: "‘Ōhi‘a Lehua", p: "oh-hee-ah leh-hoo-ah", e: "Endemic Canopy Tree", c: "LĀ‘AU", m: "The 'okina (glottal stop) in 'Ōhi'a is a brief catch in the throat. Keep the 'e' in Lehua short like 'red'."},
+        {h: "‘Io", p: "ee-oh", e: "Hawaiian Hawk", c: "MANU", m: "The 'ee' sound is sharp. The transition from 'ee' to 'oh' should be distinct, separated by the glottal stop."},
+        {h: "Mauka", p: "mow-kah", e: "Mountainward", c: "WAIHO‘INA", m: "The 'au' sounds like the 'ow' in 'now'. In Hawaii, directions are visceral, always relative to the mountain."},
+        {h: "Kuleana", p: "koo-leh-ah-nah", e: "Responsibility", c: "PILI", m: "A four-syllable word. Every vowel is pronounced. No vowels are silent in 'Ōlelo Hawai'i."},
+        {h: "‘Apapane", p: "ah-pah-pah-neh", e: "Red Honeycreeper", c: "MANU", m: "Note the rhythm. Each 'a' is open and clear like 'ah'. The final 'e' is short."},
+        {h: "Aumakua", p: "ow-mah-koo-ah", e: "Ancestral Guardian", c: "SPIRIT", m: "A compound of 'au' (group) and 'makua' (parent). Pronounce the 'koo-ah' as a smooth slide."},
+        {h: "Mālama", p: "maa-lah-mah", e: "To Care For", c: "PILI", m: "The kahakō over the first 'ā' means you hold that sound twice as long as the other 'a's."}
     ];
 
     let current = {};
 
-    function next(difficulty) {
-        // SRS Logic simulation: If 'easy', we could pop it from the current session array
-        const card = document.getElementById('mainCard');
-        card.classList.remove('revealed');
-        
+    function next() {
+        document.getElementById('mainCard').classList.remove('revealed');
         setTimeout(() => {
             current = dictionary[Math.floor(Math.random() * dictionary.length)];
             document.getElementById('haw').innerText = current.h;
+            document.getElementById('phonetic').innerText = `[ ${current.p} ]`;
             document.getElementById('eng').innerText = current.e;
             document.getElementById('cat').innerText = current.c;
             document.getElementById('note').innerText = current.m;
@@ -131,17 +115,29 @@
     }
 
     function speak() {
-        const msg = new SpeechSynthesisUtterance(current.h);
-        msg.rate = 0.6;
+        if (!current.h) return;
+        
+        // PHONETIC FILTER: Pre-processing for TTS Accuracy
+        // 1. Replace 'okina with a punctuation pause
+        // 2. Add extra vowels for kahakō (long vowels) to force elongation
+        let filteredText = current.h
+            .replace(/‘/g, "... ") // Force a tiny pause for the glottal stop
+            .replace(/ā/g, "aa")
+            .replace(/ē/g, "ee")
+            .replace(/ī/g, "ii")
+            .replace(/ō/g, "oo")
+            .replace(/ū/g, "uu");
+
+        const msg = new SpeechSynthesisUtterance(filteredText);
+        msg.rate = 0.5; // Slowed down for clarity
+        msg.pitch = 1.0;
+        msg.lang = 'en-US'; // Best phonetic base for HAW vowels
         window.speechSynthesis.speak(msg);
     }
 
-    function save() {
-        const log = document.getElementById('log');
-        log.innerHTML = `<div style="padding:10px; background:rgba(255,255,255,0.03); border-radius:10px; margin-bottom:5px;">⭐ Saved: ${current.h}</div>` + log.innerHTML;
-    }
+    function save() { /* Optional: Add persistence here */ }
 
-    setTimeout(() => document.getElementById('splash').classList.add('splash-hidden'), 1000);
+    setTimeout(() => document.getElementById('splash').classList.add('splash-hidden'), 1200);
     next();
 </script>
 
