@@ -3,34 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ARTEMIS II | COMMAND CENTER v1.4.1</title>
+    <title>ARTEMIS II | COMMAND CENTER v1.4.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        /* FIX: Removed 'overflow: hidden' to allow scrolling */
-        body { 
-            background-color: #05070a; 
-            color: #e2e8f0; 
-            font-family: 'Inter', sans-serif; 
-            min-height: 100vh;
-            overflow-y: auto; 
-        }
+        body { background-color: #05070a; color: #e2e8f0; font-family: 'Inter', sans-serif; min-height: 100vh; overflow-y: auto; }
         .font-orbitron { font-family: 'Orbitron', sans-serif; }
-        /* Map height is now responsive */
-        #map { 
-            height: 400px; 
-            width: 100%; 
-            filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); 
-            border-radius: 8px; 
-        }
-        @media (min-width: 1024px) {
-            #map { height: 550px; }
-        }
+        #map { height: 400px; width: 100%; filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); border-radius: 8px; }
+        @media (min-width: 1024px) { #map { height: 550px; } }
         .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
         .glow-blue { box-shadow: 0 0 15px rgba(59, 130, 246, 0.2); }
+        .hst-highlight { border-left: 2px solid #3b82f6; padding-left: 12px; }
     </style>
 </head>
 <body class="p-4 md:p-8 lg:p-10" x-data="missionControl()" x-init="initApp()">
@@ -41,14 +27,20 @@
                 <h1 class="text-2xl md:text-3xl font-orbitron font-bold tracking-widest text-white uppercase">Artemis II <span class="text-blue-500">Live</span></h1>
                 <p class="text-[10px] text-slate-500 mt-1 uppercase tracking-[0.4em]">Flight Systems Recovery Interface</p>
             </div>
-            <div class="text-left md:text-right mt-4 md:mt-0">
-                <div class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">T-Minus Splashdown</div>
-                <div class="text-2xl md:text-3xl font-orbitron text-white tabular-nums" x-text="countdown">04:47:02</div>
+            
+            <div class="flex flex-col md:flex-row gap-6 md:gap-12 mt-4 md:mt-0">
+                <div class="hst-highlight">
+                    <div class="text-[10px] text-blue-400 uppercase tracking-widest font-bold">HST Landing Est.</div>
+                    <div class="text-xl md:text-2xl font-orbitron text-white">14:07:00</div>
+                </div>
+                <div class="text-left md:text-right">
+                    <div class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">T-Minus Splashdown</div>
+                    <div class="text-2xl md:text-3xl font-orbitron text-white tabular-nums" x-text="countdown">--:--:--</div>
+                </div>
             </div>
         </header>
 
         <main class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            
             <div class="space-y-4">
                 <div class="glass p-5 rounded-lg glow-blue">
                     <p class="text-[10px] text-slate-500 font-bold uppercase mb-2">Velocity</p>
@@ -85,7 +77,7 @@
                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                             <span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
                         </span>
-                        <span class="text-[11px] font-mono uppercase tracking-wider">Trajectory Status: Nominal | Atmospheric Entry Interface Predicted T-52m</span>
+                        <span class="text-[11px] font-mono uppercase tracking-wider">Trajectory Status: Nominal | Preparing for Entry Interface</span>
                     </div>
                 </div>
             </div>
@@ -94,7 +86,7 @@
         <footer class="mt-12 py-8 border-t border-slate-900 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] tracking-[0.2em] text-slate-600">
             <div>MISSION ELAPSED TIME: 009:17:58:22</div>
             <div class="bg-slate-900 px-4 py-1 rounded-full border border-slate-800">
-                BUILD_VER: <span class="text-blue-500 font-bold">1.4.1-SCROLL-FIX</span>
+                BUILD_VER: <span class="text-blue-500 font-bold">1.4.2-HST-TIMING</span>
             </div>
         </footer>
     </div>
@@ -102,17 +94,24 @@
     <script>
         function missionControl() {
             return {
-                velocity: 24205, altitude: 41020, lat: 26.54, lng: -140.12, countdown: "04:47:02", map: null, marker: null,
+                velocity: 24205, 
+                altitude: 41020, 
+                lat: 26.54, 
+                lng: -140.12, 
+                // Set countdown for roughly 1:40 PM HST (just over an hour to go!)
+                countdown: "01:12:42", 
+                map: null, 
+                marker: null,
                 initApp() {
                     this.map = L.map('map', { center: [25, -135], zoom: 4, zoomControl: false, attributionControl: false });
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.map);
                     const icon = L.divIcon({ className: 'custom-icon', html: "<div style='background-color:#3b82f6; width:12px; height:12px; border-radius:50%; box-shadow: 0 0 15px #3b82f6; border: 2px solid white;'></div>" });
                     this.marker = L.marker([this.lat, this.lng], {icon: icon}).addTo(this.map);
                     setInterval(() => {
-                        this.velocity += 8; this.altitude -= 1.1; this.lat += 0.003; this.lng += 0.008;
+                        this.velocity += 12; this.altitude -= 1.1; this.lat += 0.003; this.lng += 0.008;
                         this.marker.setLatLng([this.lat, this.lng]);
                         let [h, m, s] = this.countdown.split(':').map(Number);
-                        if (s > 0) s--; else { s = 59; if (m > 0) m--; else { m = 59; h--; } }
+                        if (s > 0) s--; else { s = 59; if (m > 0) m--; else { m = 59; if(h > 0) h--; } }
                         this.countdown = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
                     }, 1000);
                 }
