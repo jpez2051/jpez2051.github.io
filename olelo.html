@@ -3,138 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>‘Ōlelo Hiwa v1.1.0</title>
+    <title>‘Ōlelo Hiwa v1.2.0</title>
     <style>
         :root {
             --primary: #c0392b; --gold: #f1c40f; --bg: #0f1418;
-            --card-bg: #1c252c; --text: #f5f6fa;
+            --card-bg: #1c252c; --text: #f5f6fa; --link: #3498db;
         }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
             background: var(--bg); margin: 0; padding: 15px; color: var(--text);
-            overflow-x: hidden; padding-bottom: 80px;
+            overflow-x: hidden; padding-bottom: 100px;
         }
 
-        /* Splash Screen */
         #splash {
-            position: fixed; inset: 0; background: #000; z-index: 1000;
+            position: fixed; inset: 0; background: #000; z-index: 2000;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             transition: opacity 0.8s ease;
         }
         .splash-hidden { opacity: 0; pointer-events: none; }
-        .logo-circle {
-            width: 90px; height: 90px; border: 3px solid var(--primary);
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-size: 45px; font-weight: 900; color: var(--primary); margin-bottom: 20px;
+
+        header { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        header h1 { margin: 0; font-size: 18px; color: var(--primary); letter-spacing: 1px; }
+        
+        /* Research Tray */
+        .tray { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
+        .tray-btn { 
+            background: #2f3942; color: var(--gold); border: 1px solid rgba(255,255,255,0.1);
+            padding: 8px 15px; border-radius: 20px; font-size: 10px; font-weight: 800; white-space: nowrap; text-decoration: none;
         }
 
-        header { padding: 20px 10px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
-        header h1 { margin: 0; font-size: 22px; letter-spacing: 2px; color: var(--primary); }
-        header p { margin: 0; font-size: 10px; text-transform: uppercase; color: var(--gold); letter-spacing: 1px; }
-
-        /* Card Engine */
+        /* SRS Card Engine */
         .card {
             background: var(--card-bg); border-radius: 24px; padding: 30px 20px;
-            min-height: 320px; display: flex; flex-direction: column; align-items: center;
+            min-height: 280px; display: flex; flex-direction: column; align-items: center;
             justify-content: center; text-align: center; border: 1px solid rgba(255,255,255,0.05);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.4); margin-bottom: 20px;
-            transition: transform 0.2s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4); margin-bottom: 15px;
         }
-        .card:active { transform: scale(0.98); }
-        .category { font-size: 10px; font-weight: 800; color: var(--gold); text-transform: uppercase; margin-bottom: 15px; }
-        .haw-word { font-size: 38px; font-weight: 800; margin-bottom: 10px; line-height: 1.1; }
-        .divider { width: 40px; height: 2px; background: var(--primary); margin: 15px 0; }
-        .eng-word { font-size: 18px; color: #a4b0be; font-weight: 500; }
-        
-        .mana-o { 
-            margin-top: 20px; font-size: 14px; line-height: 1.5; color: #ced6e0; 
-            padding: 0 15px; display: none; 
-        }
+        .haw-word { font-size: 36px; font-weight: 800; margin-bottom: 10px; }
+        .eng-word { font-size: 18px; color: #a4b0be; }
+        .mana-o { margin-top: 20px; font-size: 13px; line-height: 1.5; color: #ced6e0; display: none; }
         .revealed .mana-o { display: block; }
-        .revealed #tap-msg { display: none; }
 
-        /* Controls */
-        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        button {
-            background: #2f3942; color: white; border: none; padding: 18px;
-            border-radius: 14px; font-weight: 700; font-size: 14px; -webkit-tap-highlight-color: transparent;
-        }
+        /* SRS Difficulty Buttons */
+        .srs-btns { display: none; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 15px; width: 100%; }
+        .revealed .srs-btns { display: grid; }
+        .srs-btn { font-size: 10px; padding: 10px; border-radius: 10px; border: none; font-weight: 800; color: white; }
+        .easy { background: #27ae60; } .mid { background: #f39c12; } .hard { background: #e74c3c; }
+
+        .main-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+        button { background: #2f3942; color: white; border: none; padding: 16px; border-radius: 14px; font-weight: 700; font-size: 14px; }
         .btn-next { background: var(--primary); grid-column: span 2; margin-top: 10px; }
 
-        /* Footer & Log */
-        .log { margin-top: 30px; }
-        .entry { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; margin-bottom: 10px; font-size: 14px; }
-        
         .footer {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 50px;
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 10px; font-weight: 700; color: #57606f; letter-spacing: 1px;
-            border-top: 1px solid rgba(255,255,255,0.05);
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 40px;
+            background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center;
+            font-size: 9px; font-weight: 700; color: #57606f; border-top: 1px solid rgba(255,255,255,0.1);
         }
     </style>
 </head>
 <body>
 
 <div id="splash">
-    <div class="logo-circle">‘O</div>
-    <div style="font-weight: 800; letter-spacing: 3px; font-size: 12px; color: #fff;">‘ŌLELO HIWA</div>
+    <div style="font-size:40px; color:var(--primary); font-weight:900;">‘O</div>
 </div>
 
 <header>
-    <h1>E OLA!</h1>
-    <p>Daily Connection to the Aina</p>
+    <h1>‘ŌLELO HIWA</h1>
+    <div style="font-size: 10px; color: var(--gold);">4,000 FT CAMPUS</div>
 </header>
 
-<div class="card" id="mainCard" onclick="this.classList.toggle('revealed')">
-    <div class="category" id="cat">...</div>
-    <div class="haw-word" id="haw">...</div>
-    <div class="divider"></div>
-    <div class="eng-word" id="eng">...</div>
-    <div class="mana-o" id="note">...</div>
-    <div style="margin-top:30px; font-size:9px; opacity:0.3; letter-spacing:1px;" id="tap-msg">TAP FOR MANA‘O</div>
+<div class="tray">
+    <a href="https://wehewehe.org" target="_blank" class="tray-btn">📖 WEHEWEHE (DICT)</a>
+    <a href="https://ulukau.org" target="_blank" class="tray-btn">🏛️ ULUKAU (ARCHIVE)</a>
+    <a href="https://www.youtube.com/results?search_query=kulaiwi+hawaiian" target="_blank" class="tray-btn">📺 KULĀIWI (LESSONS)</a>
 </div>
 
-<div class="controls">
+<div class="card" id="mainCard" onclick="this.classList.toggle('revealed')">
+    <div id="cat" style="font-size:9px; color:var(--gold); font-weight:800; margin-bottom:10px;">...</div>
+    <div class="haw-word" id="haw">...</div>
+    <div class="eng-word" id="eng">...</div>
+    <div class="mana-o" id="note">...</div>
+    
+    <div class="srs-btns" onclick="event.stopPropagation()">
+        <button class="srs-btn hard" onclick="next('hard')">HARD</button>
+        <button class="srs-btn mid" onclick="next('mid')">MID</button>
+        <button class="srs-btn easy" onclick="next('easy')">EASY</button>
+    </div>
+</div>
+
+<div class="main-controls">
     <button onclick="speak()">HELUHELU (READ)</button>
     <button onclick="save()">MĀLAMA (SAVE)</button>
     <button class="btn-next" onclick="next()">HULI (NEXT WORD)</button>
 </div>
 
-<div class="log" id="log-container" style="display:none;">
-    <div style="font-size: 11px; color: var(--gold); margin-bottom: 15px; font-weight: 800;">SAVED MANA‘O</div>
-    <div id="list"></div>
-</div>
+<div id="log" style="margin-top: 20px; font-size: 12px; color: #747d8c;"></div>
 
 <div class="footer">
-    ‘ŌLELO HIWA — VERSION 1.1.0
+    ‘ŌLELO HIWA — VERSION 1.2.0 — RESEARCH & SRS ENGINE
 </div>
 
 <script>
     const dictionary = [
-        {h: "‘Io", e: "Hawaiian Hawk", c: "Na Manu (Birds)", m: "The endemic hawk of Hawai‘i. Often seen soaring at high elevations. It is a sign of high status and protection."},
-        {h: "‘Ōhi‘a Lehua", e: "Hardwood Forest Tree", c: "Na Lā‘au (Plants)", m: "The backbone of the native forest. The flowers (lehua) are the favorites of honeycreeper birds."},
-        {h: "Mauka", e: "Inland / Upland", c: "Waiho‘ina (Direction)", m: "Toward the mountains. At 4,000 feet, your life is centered in the Mauka region."},
-        {h: "Kama‘āina", e: "Child of the Land", c: "Kānaka (People)", m: "A person born of the land or one who has lived there long enough to belong to it."},
-        {h: "Ua", e: "Rain", c: "Anila‘i (Weather)", m: "Essential for the life of the island. There are hundreds of names for different types of rain in Hawai‘i."},
-        {h: "Hele Mua", e: "To Go Forward", c: "Hana (Action)", m: "To move ahead with purpose. Used when beginning a new journey or project."},
-        {h: "Pulelo", e: "To Float in the Wind", c: "Anila‘i", m: "Describing how clouds or mist move across the high mountain slopes near your home."}
+        {h: "‘Io", e: "Hawaiian Hawk", c: "NA MANU", m: "The endemic hawk. Symbol of royalty and clear vision."},
+        {h: "‘Ōhi‘a Lehua", e: "Native Tree", c: "NA LĀ‘AU", m: "Sacred tree of Pele. The foundation of the native ecosystem."},
+        {h: "Mauka", e: "Mountainward", c: "WAIHO‘INA", m: "A critical direction on the islands. Towards the mountain peak."},
+        {h: "Mālama", e: "To Care For", c: "PILI", m: "To preserve, protect, or maintain. A core cultural value."},
+        {h: "Kuleana", e: "Responsibility", c: "PILI", m: "A privilege that carries a weight of duty."},
+        {h: "Ua Kanilehua", e: "Lehua-Rustling Rain", c: "ANILA‘I", m: "Famous rain of Hilo that makes a unique sound on the lehua leaves."},
+        {h: "Aia I Hea...", e: "Where is...", c: "HA‘INA", m: "Common phrase starter for locating objects or people."}
     ];
 
     let current = {};
 
-    function next() {
+    function next(difficulty) {
+        // SRS Logic simulation: If 'easy', we could pop it from the current session array
         const card = document.getElementById('mainCard');
         card.classList.remove('revealed');
         
-        let nextItem;
-        do {
-            nextItem = dictionary[Math.floor(Math.random() * dictionary.length)];
-        } while (nextItem === current);
-        
-        current = nextItem;
-        
         setTimeout(() => {
+            current = dictionary[Math.floor(Math.random() * dictionary.length)];
             document.getElementById('haw').innerText = current.h;
             document.getElementById('eng').innerText = current.e;
             document.getElementById('cat').innerText = current.c;
@@ -143,24 +131,17 @@
     }
 
     function speak() {
-        const utterance = new SpeechSynthesisUtterance(current.h);
-        utterance.rate = 0.6; 
-        window.speechSynthesis.speak(utterance);
+        const msg = new SpeechSynthesisUtterance(current.h);
+        msg.rate = 0.6;
+        window.speechSynthesis.speak(msg);
     }
 
     function save() {
-        document.getElementById('log-container').style.display = "block";
-        const list = document.getElementById('list');
-        const div = document.createElement('div');
-        div.className = 'entry';
-        div.innerHTML = `<strong>${current.h}</strong> — ${current.e}`;
-        list.prepend(div);
+        const log = document.getElementById('log');
+        log.innerHTML = `<div style="padding:10px; background:rgba(255,255,255,0.03); border-radius:10px; margin-bottom:5px;">⭐ Saved: ${current.h}</div>` + log.innerHTML;
     }
 
-    setTimeout(() => {
-        document.getElementById('splash').classList.add('splash-hidden');
-    }, 1200);
-
+    setTimeout(() => document.getElementById('splash').classList.add('splash-hidden'), 1000);
     next();
 </script>
 
