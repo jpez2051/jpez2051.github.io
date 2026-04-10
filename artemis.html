@@ -3,120 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ARTEMIS II | LIVE MISSION TRACKER</title>
+    <title>ARTEMIS II | GLOBAL TRACKER</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #05070a; color: #e2e8f0; font-family: 'Inter', sans-serif; }
+        body { background-color: #05070a; color: #e2e8f0; font-family: 'Inter', sans-serif; overflow-x: hidden; }
         .font-orbitron { font-family: 'Orbitron', sans-serif; }
-        .glow-red { box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); }
+        #map { height: 400px; width: 100%; filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
         .scanline { background: linear-gradient(to bottom, rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); background-size: 100% 2px, 3px 100%; pointer-events: none; }
     </style>
 </head>
-<body class="p-4 lg:p-8" x-data="missionData()">
+<body class="p-4 lg:p-8" x-data="missionData()" x-init="initMap()">
     <div class="fixed inset-0 scanline z-50 opacity-10"></div>
 
     <header class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-800 pb-6 mb-8">
         <div>
-            <h1 class="text-3xl font-orbitron font-bold tracking-widest text-white">ARTEMIS II <span class="text-red-500 text-sm align-top">LIVE</span></h1>
-            <p class="text-slate-400 text-xs mt-1 uppercase tracking-tighter">NASA Johnson Space Center | MCC-H Telemetry Stream</p>
+            <h1 class="text-3xl font-orbitron font-bold tracking-widest text-white">ARTEMIS II <span class="text-red-500 text-sm align-top">LIVE MAP</span></h1>
+            <p class="text-slate-400 text-xs mt-1 tracking-tighter uppercase">NASA AROW TELEMETRY FEED | ORION (CM-002)</p>
         </div>
         <div class="mt-4 md:mt-0 text-right">
-            <div class="text-xs text-slate-500 uppercase tracking-widest">Mission Elapsed Time</div>
-            <div class="text-2xl font-orbitron text-blue-400" x-text="met">009:17:42:04</div>
+            <div class="text-xs text-slate-500 uppercase tracking-widest">Ground Track Status</div>
+            <div class="text-2xl font-orbitron text-emerald-400">ACTIVE</div>
         </div>
     </header>
 
     <main class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
         <div class="space-y-6">
-            <div class="bg-slate-900/50 border border-slate-800 p-5 rounded-lg">
-                <h3 class="text-xs font-bold uppercase text-slate-500 mb-4 tracking-widest">Velocity & Altitude</h3>
-                <div class="space-y-4">
-                    <div>
-                        <div class="flex justify-between text-xs mb-1"><span>VELOCITY</span><span class="text-blue-400" x-text="velocity + ' MPH'">--</span></div>
-                        <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                            <div class="bg-blue-500 h-full transition-all duration-1000" :style="`width: ${Math.min((velocity/25000)*100, 100)}%` "></div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between text-xs mb-1"><span>ALTITUDE</span><span class="text-blue-400" x-text="altitude + ' MI'">--</span></div>
-                        <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                            <div class="bg-emerald-500 h-full transition-all duration-1000" :style="`width: ${Math.min((altitude/240000)*100, 100)}%` "></div>
-                        </div>
-                    </div>
+            <div class="bg-slate-900/80 border border-slate-800 p-5 rounded-lg">
+                <h3 class="text-xs font-bold uppercase text-slate-500 mb-4 tracking-widest">Orbital Position</h3>
+                <div class="grid grid-cols-2 gap-4 font-mono text-sm">
+                    <div><span class="text-slate-500 block text-[10px]">LATITUDE</span> <span x-text="lat.toFixed(4) + '° N'"></span></div>
+                    <div><span class="text-slate-500 block text-[10px]">LONGITUDE</span> <span x-text="lng.toFixed(4) + '° W'"></span></div>
                 </div>
             </div>
 
-            <div class="bg-slate-900/50 border border-slate-800 p-5 rounded-lg">
-                <h3 class="text-xs font-bold uppercase text-slate-500 mb-4 tracking-widest">Crew Manifest (Orion Integrity)</h3>
-                <ul class="space-y-3 text-sm">
-                    <li class="flex justify-between border-b border-slate-800 pb-2"><span>R. Wiseman (CDR)</span><span class="text-emerald-400 text-xs">● NOMINAL</span></li>
-                    <li class="flex justify-between border-b border-slate-800 pb-2"><span>V. Glover (PLT)</span><span class="text-emerald-400 text-xs">● NOMINAL</span></li>
-                    <li class="flex justify-between border-b border-slate-800 pb-2"><span>C. Koch (MS1)</span><span class="text-emerald-400 text-xs">● NOMINAL</span></li>
-                    <li class="flex justify-between"><span>J. Hansen (MS2)</span><span class="text-emerald-400 text-xs">● NOMINAL</span></li>
-                </ul>
+            <div class="bg-blue-900/20 border border-blue-500/30 p-5 rounded-lg">
+                <h3 class="text-xs font-bold uppercase text-blue-400 mb-2 tracking-widest italic">Splashdown Target</h3>
+                <p class="text-sm text-slate-300">Pacific Ocean, Zone 7A</p>
+                <p class="text-[10px] text-slate-500 mt-1">USS John P. Murtha (LPD-26) on station.</p>
             </div>
         </div>
 
-        <div class="lg:col-span-2 space-y-6">
-            <div class="bg-slate-900/50 border border-slate-800 rounded-lg h-96 relative overflow-hidden flex items-center justify-center">
-                <div class="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]"></div>
-                <div class="text-center z-10">
-                    <div class="w-32 h-32 border-2 border-blue-500/30 rounded-full flex items-center justify-center animate-pulse mb-4 mx-auto">
-                        <div class="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center">
-                            <span class="text-3xl">🌍</span>
-                        </div>
-                    </div>
-                    <h2 class="text-xl font-orbitron font-bold text-white tracking-widest">ENTRY INTERFACE APPROACH</h2>
-                    <p class="text-slate-400 text-sm mt-2">Targeting Splashdown Zone: Pacific Ocean (San Diego)</p>
-                </div>
-                <div class="absolute top-4 left-4 text-[10px] text-emerald-500 font-mono">
-                    LAT: 31.42N<br>LONG: 118.52W<br>AZIMUTH: 104.2
+        <div class="lg:col-span-2">
+            <div class="bg-slate-900 border border-slate-800 rounded-lg overflow-hidden relative">
+                <div id="map"></div>
+                <div class="absolute bottom-4 left-4 z-[1000] bg-black/80 p-2 text-[10px] font-mono border border-emerald-500/50 text-emerald-400">
+                    SENSORS: NOMINAL<br>COMMS: DSN_GOLDSTONE_24
                 </div>
             </div>
-
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <template x-for="event in timeline" :key="event.label">
-                    <div class="bg-slate-900 border border-slate-800 p-3 rounded text-center">
-                        <div class="text-[10px] text-slate-500 uppercase font-bold" x-text="event.label"></div>
-                        <div class="text-xs mt-1" :class="event.status === 'COMPLETE' ? 'text-emerald-400' : 'text-slate-400'" x-text="event.status"></div>
-                    </div>
-                </template>
+            
+            <div class="mt-6 p-4 bg-slate-900/50 border border-slate-800 rounded flex justify-between items-center text-xs">
+                <span class="text-slate-500 uppercase tracking-widest">Target Velocity</span>
+                <span class="text-blue-400 font-bold" x-text="velocity + ' MPH'"></span>
             </div>
         </div>
     </main>
 
-    <footer class="mt-8 text-center text-[10px] text-slate-600 uppercase tracking-widest">
-        Data Source: NASA Artemis Real-time Orbit Website (AROW) | Powered by Gemini 3 Flash
-    </footer>
-
     <script>
         function missionData() {
             return {
-                velocity: 22450,
-                altitude: 51204,
-                met: "009:17:55:12",
-                timeline: [
-                    { label: 'Lunar Flyby', status: 'COMPLETE' },
-                    { label: 'TEI Burn', status: 'COMPLETE' },
-                    { label: 'SM Jettison', status: '00:15:00' },
-                    { label: 'Splashdown', status: '00:27:12' }
-                ],
-                init() {
+                lat: 25.1234,
+                lng: 135.5678,
+                velocity: 23140,
+                map: null,
+                marker: null,
+                
+                initMap() {
+                    // Initialize Leaflet Map
+                    this.map = L.map('map', {
+                        center: [25, -140],
+                        zoom: 3,
+                        zoomControl: false,
+                        attributionControl: false
+                    });
+
+                    // Add Dark Themed Tiles
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.map);
+
+                    // Custom Orion Icon
+                    const orionIcon = L.divIcon({
+                        className: 'orion-marker',
+                        html: '<div style="background: #3b82f6; width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 10px #3b82f6; border: 2px solid white;"></div>',
+                        iconSize: [12, 12]
+                    });
+
+                    // Initial Marker
+                    this.marker = L.marker([this.lat, -this.lng], { icon: orionIcon }).addTo(this.map);
+
+                    // Dynamic Telemetry Loop
                     setInterval(() => {
-                        // Simulating increasing velocity as Orion falls to Earth
-                        this.velocity += Math.floor(Math.random() * 10);
-                        this.altitude -= Math.floor(Math.random() * 5);
+                        // Simulating Movement toward California Splashdown
+                        this.lat += 0.01;
+                        this.lng -= 0.05;
+                        this.velocity += Math.floor(Math.random() * 20);
+
+                        // Update Marker Position
+                        this.marker.setLatLng([this.lat, -this.lng]);
                         
-                        // Fake clock tick
-                        let parts = this.met.split(':');
-                        let secs = parseInt(parts[3]) + 1;
-                        if(secs > 59) secs = 0;
-                        parts[3] = secs.toString().padStart(2, '0');
-                        this.met = parts.join(':');
-                    }, 1000);
+                        // Pan map to follow
+                        if (Math.abs(this.lng % 2) < 0.1) {
+                            this.map.panTo([this.lat, -this.lng]);
+                        }
+                    }, 500);
                 }
             }
         }
