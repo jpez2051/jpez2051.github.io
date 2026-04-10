@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="haw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>‘Ōlelo Hiwa</title>
+    <style>
+        :root {
+            --lava: #c0392b; --lehua: #e74c3c; --forest: #1b1464; 
+            --gold: #f1c40f; --bark: #44321b; --sand: #f5f6fa;
+        }
+        body { 
+            font-family: -apple-system, sans-serif; background: #0c0c0c; 
+            margin: 0; padding: 15px; color: var(--sand); line-height: 1.6;
+        }
+        .container { max-width: 500px; margin: 0 auto; }
+        
+        .header { text-align: left; padding: 20px 10px; border-bottom: 2px solid var(--lehua); margin-bottom: 20px; }
+        .header h1 { margin: 0; font-size: 24px; font-weight: 900; color: var(--lehua); letter-spacing: 1px; }
+        .header p { margin: 5px 0 0; font-size: 11px; text-transform: uppercase; color: var(--gold); font-weight: 700; }
+
+        /* Practice Card */
+        .card {
+            background: linear-gradient(145deg, #1e272e, #131a20); border-radius: 20px;
+            padding: 30px 20px; min-height: 280px; position: relative;
+            display: flex; flex-direction: column; justify-content: center;
+            border: 1px solid rgba(255,255,255,0.05); text-align: center;
+        }
+        .tag { font-size: 9px; color: var(--gold); font-weight: 800; text-transform: uppercase; margin-bottom: 15px; letter-spacing: 2px; }
+        .haw-word { font-size: 42px; font-weight: 800; color: #fff; margin-bottom: 10px; }
+        .eng-meaning { font-size: 16px; color: var(--lehua); font-weight: 600; font-style: italic; opacity: 0; transition: 0.4s; }
+        .context-note { font-size: 13px; color: #a4b0be; margin-top: 15px; opacity: 0; transition: 0.6s; padding: 0 10px; }
+        
+        .revealed .eng-meaning, .revealed .context-note { opacity: 1; }
+
+        /* Interaction */
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+        button { 
+            background: #2f3640; color: #fff; border: none; padding: 15px; 
+            border-radius: 12px; font-weight: 700; font-size: 13px;
+        }
+        .btn-main { background: var(--lehua); grid-column: span 2; margin-top: 10px; }
+
+        /* Observation Log */
+        .log-section { margin-top: 30px; }
+        .log-title { font-size: 12px; color: var(--gold); font-weight: 800; margin-bottom: 15px; border-bottom: 1px solid #2f3640; padding-bottom: 5px; }
+        .log-entry { 
+            background: rgba(255,255,255,0.03); padding: 12px; border-radius: 10px; 
+            margin-bottom: 8px; font-size: 14px; border-left: 3px solid var(--lehua);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>‘ŌLELO HIWA</h1>
+        <p>Aia i hea ka ‘io? — Where is the hawk?</p>
+    </div>
+
+    <div class="card" id="practice-card" onclick="this.classList.toggle('revealed')">
+        <div id="word-tag" class="tag">NA LĀ‘AU (PLANTS)</div>
+        <div id="haw-text" class="haw-word">‘Ōhi‘a Lehua</div>
+        <div id="eng-text" class="eng-meaning">The tree of the Lehua flower</div>
+        <div id="context-text" class="context-note">First to grow on new lava. Sacred to Pele and Hi‘iaka. Do not pick the flower unless you are prepared for rain.</div>
+        <div style="position: absolute; bottom: 15px; width: 100%; left: 0; font-size: 9px; opacity: 0.3; letter-spacing: 1px;">TAP TO REVEAL MANA‘O</div>
+    </div>
+
+    <div class="controls">
+        <button onclick="event.stopPropagation(); speak()">HELUHELU (READ)</button>
+        <button onclick="event.stopPropagation(); logEntry()">MĀLAMA (SAVE)</button>
+        <button class="btn-main" onclick="event.stopPropagation(); nextItem()">HULI (NEXT WORD)</button>
+    </div>
+
+    <div class="log-section">
+        <div class="log-title">RECENT OBSERVATIONS</div>
+        <div id="obs-list"></div>
+    </div>
+</div>
+
+<script>
+    const data = [
+        {h: "‘Io", e: "Hawaiian Hawk", t: "NA MANU", c: "Endemic to the Big Island. A symbol of royalty. Seeing one is a sign to pay attention to your surroundings."},
+        {h: "‘Apapane", e: "Crimson Honeycreeper", t: "NA MANU", c: "Listen for the unique whirring sound of their wings. They love the nectar of the ‘Ōhi‘a."},
+        {h: "Mālama I Ka ‘Āina", e: "To care for the land", t: "PILI (RELATIONSHIP)", c: "Not just 'recycling'—it means a deep, reciprocal relationship where you care for the land and it cares for you."},
+        {h: "Mauna Kea", e: "White Mountain", t: "WAIHO‘INA (LAND)", c: "Home of Poliahu. In the native context, we refer to the peaks with reverence, as they are the piko (umbilicus) of the islands."},
+        {h: "Ua Kanilehua", e: "Rain that rustles the Lehua", t: "KE ANILA‘I (WEATHER)", c: "A famous rain of Hilo. It sounds like a gentle patter against the leaves of the forest."},
+        {h: "Mauka", e: "Toward the mountains", t: "WAIHO‘INA", c: "Used for directions at all times. Since you are at 4,000 ft, most things in your yard are 'Mauka' of the coastline."},
+        {h: "Hau‘oli", e: "Happiness / Joy", t: "MO‘OKŪ‘AUHAU", c: "Often used in greetings. 'Hau‘oli Lā Hānau' (Happy Birthday)."}
+    ];
+
+    let current = data[0];
+
+    function nextItem() {
+        const card = document.getElementById('practice-card');
+        card.classList.remove('revealed');
+        
+        // Don't pick the same one twice in a row
+        let next;
+        do {
+            next = data[Math.floor(Math.random() * data.length)];
+        } while (next === current);
+        
+        current = next;
+        
+        setTimeout(() => {
+            document.getElementById('haw-text').innerText = current.h;
+            document.getElementById('eng-text').innerText = current.e;
+            document.getElementById('context-text').innerText = current.c;
+            document.getElementById('word-tag').innerText = current.t;
+        }, 200);
+    }
+
+    function logEntry() {
+        const list = document.getElementById('obs-list');
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.innerHTML = `<strong>${current.h}</strong> — ${current.e}`;
+        list.prepend(entry);
+    }
+
+    function speak() {
+        const utterance = new SpeechSynthesisUtterance(current.h);
+        utterance.lang = 'en-US'; // Best fallback for glottal stops if native HAW is unavailable
+        utterance.rate = 0.6;
+        window.speechSynthesis.speak(utterance);
+    }
+
+    // Initialize
+    nextItem();
+</script>
+
+</body>
+</html>
