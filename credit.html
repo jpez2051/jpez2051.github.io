@@ -4,109 +4,56 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Destroyer v1.7.5</title>
+    <title>Debt Destroyer v1.7.6</title>
     <script id="chart-js" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { 
-            --bg: #f4f7f6; --card: #ffffff; --primary: #2ecc71; --accent: #3498db; 
-            --danger: #ff4757; --text: #2f3542; 
-        }
-        
-        body { 
-            font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; 
-            padding: 10px; padding-bottom: 140px; color: var(--text); 
-            overscroll-behavior-y: contain; overflow-x: hidden; 
-        }
-
-        #splash-screen {
-            position: fixed; inset: 0; background: #1e272e; z-index: 3000;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: opacity 0.5s ease-out, visibility 0.5s;
-        }
-        .splash-logo {
-            width: 80px; height: 80px; border: 4px solid var(--primary); border-radius: 18px;
-            display: flex; align-items: center; justify-content: center;
-            color: white; font-size: 40px; font-weight: 900; margin-bottom: 20px;
-        }
+        :root { --bg: #f4f7f6; --card: #ffffff; --primary: #2ecc71; --accent: #3498db; --danger: #ff4757; --text: #2f3542; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 10px; padding-bottom: 140px; color: var(--text); overflow-x: hidden; }
+        #splash-screen { position: fixed; inset: 0; background: #1e272e; z-index: 3000; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s; }
         .splash-hidden { opacity: 0; visibility: hidden; }
-
         .dashboard { background: linear-gradient(135deg, #1e272e, #000); color: white; border-radius: 18px; padding: 18px; margin-bottom: 12px; text-align: center; }
         .main-total { font-size: 34px; font-weight: 800; }
         .prog-bg { width: 100%; background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; margin: 10px 0; overflow: hidden; }
         .prog-fill { width: 0%; height: 100%; background: var(--primary); transition: width 0.5s; }
-
-        .card-container { perspective: 1000px; margin-bottom: 15px; min-height: 280px; position: relative; }
-        .card-inner { 
-            position: relative; width: 100%; height: 100%; min-height: 280px;
-            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); 
-            transform-style: preserve-3d; 
-        }
+        .card-container { perspective: 1000px; margin-bottom: 15px; min-height: 280px; }
+        .card-inner { position: relative; width: 100%; height: 100%; min-height: 280px; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d; }
         .card-container.flipped .card-inner { transform: rotateY(180deg); }
-
-        .card-front, .card-back { 
-            position: absolute; width: 100%; height: 100%; 
-            -webkit-backface-visibility: hidden; backface-visibility: hidden; 
-            border-radius: 18px; padding: 25px 15px;
-            border: 1px solid #e1e8ed; box-shadow: 0 4px 12px rgba(0,0,0,0.03); 
-            background: var(--card); box-sizing: border-box; top: 0; left: 0;
-        }
-        
+        .card-front, .card-back { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; border-radius: 18px; padding: 25px 15px; border: 1px solid #e1e8ed; background: var(--card); box-sizing: border-box; top: 0; left: 0; }
         .card-back { transform: rotateY(180deg); display: flex; flex-direction: column; z-index: 10; }
         .card-front { z-index: 20; }
-
         .mini-prog-container { height: 8px; background: #eee; border-radius: 4px; margin: 8px 0; overflow: hidden; width: 100%; }
-        .mini-prog-fill { height: 100%; transition: width 0.6s ease; }
         .input-row { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 8px; margin: 10px 0; }
         label { font-size: 8px; font-weight: 800; color: #a4b0be; text-transform: uppercase; margin-bottom: 3px; display: block; }
         input { width: 100%; padding: 10px 6px; border: 1px solid #eceff1; border-radius: 8px; font-size: 13px; background: #fbfcfc; box-sizing: border-box; }
         button { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 700; width: 100%; }
-        
-        .history-list { margin-top: 12px; border-top: 2px solid #f1f2f6; padding-top: 10px; flex-grow: 1; overflow-y: auto; max-height: 100px; display: block !important; }
+        .history-list { margin-top: 12px; border-top: 2px solid #f1f2f6; padding-top: 10px; flex-grow: 1; overflow-y: auto; max-height: 100px; }
         .history-item { display: flex; justify-content: space-between; font-size: 11px; padding: 6px 0; border-bottom: 1px dotted #f1f2f6; }
-        
-        .back-balance-display { background: #f8fafb; padding: 10px; border-radius: 12px; margin-bottom: 8px; text-align: center; }
-        .delta-pill { font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
-        .delta-neg { color: var(--primary); background: rgba(46, 204, 113, 0.1); }
-
-        .log-badge { background: #f1f2f6; color: #a4b0be; font-size: 8px; padding: 2px 6px; border-radius: 10px; float: right; }
-
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 4px; }
         .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); text-align: center; padding: 15px 0; font-size: 9px; border-top: 1px solid #eee; z-index: 100; display: flex; justify-content: space-around; }
-        .chart-card { background: var(--card); border-radius: 20px; padding: 25px 20px; margin-bottom: 12px; border: 1px solid #e1e8ed; display: flex; overflow-x: auto; scrollbar-width: none; }
-        .chart-slide { flex: 0 0 100%; text-align: center; }
-        canvas { max-height: 150px !important; margin: 0 auto; }
     </style>
 </head>
 <body>
 
-<div id="splash-screen">
-    <div class="splash-logo">$</div>
-    <div style="color:white; font-size:14px; font-weight:800; letter-spacing:4px;">AVALANCHE PRO</div>
-</div>
+<div id="splash-screen"><div style="color:white; font-size:40px; font-weight:900; border:4px solid var(--primary); padding:15px; border-radius:20px;">$</div></div>
 
 <div class="dashboard">
     <div class="main-total" id="main-debt">$0.00</div>
     <div class="prog-bg"><div id="progress-bar" class="prog-fill"></div></div>
-    <div id="main-freedom" style="font-size: 10px; color: var(--primary); font-weight: 700;">CALCULATING...</div>
-</div>
-
-<div class="chart-card">
-    <div class="chart-slide"><b>Balance Split</b><canvas id="debtChart"></canvas></div>
+    <div id="main-freedom" style="font-size: 10px; color: var(--primary); font-weight: 700;">AVALANCHE MODE</div>
 </div>
 
 <div id="card-list"></div>
-<button onclick="addCard()" style="background:#2f3542; color:white; padding:15px; border-radius:12px; border:none; font-weight:700; width:100%; margin-bottom:20px;">+ ADD NEW CARD</button>
+<button onclick="addCard()" style="background:#2f3542; color:white; padding:15px; border-radius:12px; border:none; width:100%; margin-bottom:20px;">+ ADD CARD</button>
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight:bold;">Backup CSV</span>
-    <span>v1.7.5</span>
-    <span onclick="nuke()" style="color:var(--danger)">Reset Data</span>
+    <span>v1.7.6</span>
+    <span onclick="nuke()" style="color:var(--danger)">Reset</span>
 </div>
 
 <script>
 const KEY = 'debt_v125';
 const COLORS = ['#2ecc71', '#3498db', '#9b59b6', '#f1c40f', '#e67e22', '#1abc9c', '#e74c3c', '#34495e'];
-let debtChart;
 let cards = JSON.parse(localStorage.getItem(KEY)) || [];
 
 function toggleFlip(el) { el.closest('.card-container').classList.toggle('flipped'); }
@@ -114,30 +61,24 @@ function toggleFlip(el) { el.closest('.card-container').classList.toggle('flippe
 function initUI() {
     const list = document.getElementById('card-list');
     list.innerHTML = '';
-    const now = new Date();
-
     cards.forEach((c, i) => {
-        // Recovery: Force history to be an array
         if (!Array.isArray(c.history)) c.history = [];
         if (c.highestBal === undefined || c.bal > c.highestBal) c.highestBal = c.bal;
         if (c.prevBal === undefined) c.prevBal = c.bal;
 
-        const themeColor = COLORS[i % COLORS.length];
-        const progress = c.highestBal > 0 ? ((c.highestBal - c.bal) / c.highestBal) * 100 : 0;
+        const color = COLORS[i % COLORS.length];
+        const prog = c.highestBal > 0 ? ((c.highestBal - c.bal) / c.highestBal) * 100 : 0;
         const diff = c.bal - c.prevBal;
 
-        let historyHtml = c.history.slice(-5).reverse().map(h => `
-            <div class="history-item">
-                <span style="color:#747d8c">${h.date}</span>
-                <span style="font-weight:700; color:var(--primary)">+$${h.amt.toLocaleString()}</span>
-            </div>
-        `).join('') || '<div style="font-size:10px; color:#ccc; text-align:center; padding:15px;">No payments recorded</div>';
+        let hist = c.history.slice(-5).reverse().map(h => `
+            <div class="history-item"><span>${h.date}</span><span style="color:var(--primary); font-weight:700;">+$${h.amt.toLocaleString()}</span></div>
+        `).join('') || '<div style="font-size:10px; color:#ccc; text-align:center; padding:10px;">No payments found</div>';
 
         list.innerHTML += `
             <div class="card-container">
                 <div class="card-inner">
-                    <div class="card-front" onclick="toggleFlip(this)" style="border-left: 6px solid ${themeColor}">
-                        <input type="text" oninput="updateData(${i}, 'name', this.value)" value="${c.name}" style="border:none; font-weight:800; font-size:16px; background:none; margin-bottom:10px;">
+                    <div class="card-front" onclick="toggleFlip(this)" style="border-left: 6px solid ${color}">
+                        <input type="text" oninput="updateData(${i}, 'name', this.value)" value="${c.name}" style="border:none; font-weight:800; font-size:16px; background:none;">
                         <div class="input-row" onclick="event.stopPropagation()">
                             <div><label>Balance</label><input type="number" oninput="updateData(${i}, 'bal', this.value)" value="${c.bal}"></div>
                             <div><label>Min $</label><input type="number" oninput="updateData(${i}, 'min', this.value)" value="${c.min}"></div>
@@ -148,22 +89,16 @@ function initUI() {
                             <button onclick="applyPayment(${i})">Apply</button>
                         </div>
                     </div>
-                    <div class="card-back" onclick="toggleFlip(this)" style="border-left: 6px solid ${themeColor}">
-                        <div class="back-balance-display">
-                            <label>Remaining Balance</label>
-                            <span style="font-size:18px; font-weight:800;">$${c.bal.toLocaleString()}</span>
-                            ${diff < 0 ? `<span class="delta-pill delta-neg">-${Math.abs(diff).toLocaleString()}</span>` : ''}
+                    <div class="card-back" onclick="toggleFlip(this)" style="border-left: 6px solid ${color}">
+                        <div style="text-align:center; background:#f8fafb; padding:10px; border-radius:12px;">
+                            <label>Balance: $${c.bal.toLocaleString()}</label>
+                            ${diff < 0 ? `<span style="color:var(--primary); font-size:10px;">(-$${Math.abs(diff)})</span>` : ''}
                         </div>
-                        <div style="padding:0 5px;">
-                            <label>Progress: ${progress.toFixed(1)}% <span class="log-badge">${c.history.length} Logs</span></label>
-                            <div class="mini-prog-container">
-                                <div class="mini-prog-fill" style="width: ${progress}%; background: ${themeColor}"></div>
-                            </div>
+                        <div style="margin-top:10px;">
+                            <label><span class="status-dot" style="background:${c.history.length > 0 ? 'var(--primary)' : '#ccc'}"></span>Progress: ${prog.toFixed(1)}%</label>
+                            <div class="mini-prog-container"><div style="width:${prog}%; height:100%; background:${color}"></div></div>
                         </div>
-                        <div class="history-list" onclick="event.stopPropagation()">
-                            <label>Payment History</label>
-                            ${historyHtml}
-                        </div>
+                        <div class="history-list">${hist}</div>
                     </div>
                 </div>
             </div>`;
@@ -179,42 +114,34 @@ function applyPayment(i) {
         cards[i].bal = Math.max(0, cards[i].bal - amt);
         const d = new Date();
         cards[i].history.push({ amt, date: (d.getMonth()+1)+'/'+d.getDate() });
-        saveAndRefresh();
+        input.value = '';
+        saveData();
     }
 }
 
-function updateData(i, field, value) {
-    cards[i][field] = (field === 'name') ? value : parseFloat(value) || 0;
-    if (field === 'bal' && cards[i].bal > (cards[i].highestBal || 0)) cards[i].highestBal = cards[i].bal;
-    saveAndRefresh();
+function updateData(i, f, v) {
+    cards[i][f] = (f === 'name') ? v : parseFloat(v) || 0;
+    if (f === 'bal' && cards[i].bal > (cards[i].highestBal || 0)) cards[i].highestBal = cards[i].bal;
+    saveData();
 }
 
-function saveAndRefresh() {
+function saveData() {
+    localStorage.removeItem(KEY);
     localStorage.setItem(KEY, JSON.stringify(cards));
     initUI();
 }
 
 function calculate() {
-    let total = 0, totalMin = 0;
-    let bData = [], labels = [];
-    cards.forEach(c => {
-        total += c.bal; totalMin += c.min;
-        bData.push(c.bal); labels.push(c.name);
-    });
+    let total = 0; cards.forEach(c => total += c.bal);
     document.getElementById('main-debt').innerText = '$' + total.toLocaleString();
-    if (debtChart) debtChart.destroy();
-    const ctx = document.getElementById('debtChart').getContext('2d');
-    debtChart = new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data: bData, backgroundColor: COLORS, borderWidth: 0 }] }, options: { cutout: '75%', plugins: { legend: { display: false } } } });
+    document.getElementById('progress-bar').style.width = '25%';
 }
 
-function addCard() { cards.push({name: "New Card", bal: 0, min: 0, apr: 0, highestBal: 0, history: []}); saveAndRefresh(); }
-function nuke() { if(confirm("Wipe all data?")) { localStorage.clear(); location.reload(); } }
-function exportCSV() { 
-    let csv = "Name,Balance,Min,APR\n" + cards.map(c => `${c.name},${c.bal},${c.min},${c.apr}`).join('\n');
-    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'})); a.download = 'Debt_Backup.csv'; a.click();
-}
+function addCard() { cards.push({name: "New Card", bal: 0, min: 0, apr: 0, history: []}); saveData(); }
+function nuke() { if(confirm("Clear data?")) { localStorage.clear(); location.reload(); } }
+function exportCSV() { alert("CSV data logged to console. Check browser inspector."); console.log(cards); }
 
-setTimeout(() => document.getElementById('splash-screen').classList.add('splash-hidden'), 1000);
+setTimeout(() => document.getElementById('splash-screen').classList.add('splash-hidden'), 800);
 initUI();
 </script>
 </body>
