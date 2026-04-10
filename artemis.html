@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ARTEMIS II | COMMAND CENTER v1.6.0</title>
+    <title>ARTEMIS II | COMMAND CENTER v1.6.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -14,24 +14,10 @@
     <style>
         body { background-color: #05070a; color: #e2e8f0; font-family: 'Inter', sans-serif; min-height: 100vh; overflow-y: auto; }
         .font-orbitron { font-family: 'Orbitron', sans-serif; }
-        
-        /* New Strategic Map Styling */
-        #map { 
-            height: 450px; 
-            width: 100%; 
-            background: #0a0c10;
-            filter: invert(100%) hue-rotate(180deg) brightness(80%) contrast(110%) saturate(0%); 
-            border-radius: 8px; 
-        }
+        #map { height: 450px; width: 100%; background: #0a0c10; filter: invert(100%) hue-rotate(180deg) brightness(80%) contrast(110%) saturate(0%); border-radius: 8px; }
         @media (min-width: 1024px) { #map { height: 600px; } }
-        
         .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
-        .swiper { width: 100%; border-radius: 8px; }
         .hst-highlight { border-left: 2px solid #3b82f6; padding-left: 12px; }
-        
-        /* Orbit Path Animation */
-        .orbit-path { stroke-dasharray: 10; animation: dash 20s linear infinite; }
-        @keyframes dash { to { stroke-dashoffset: -100; } }
     </style>
 </head>
 <body class="p-4 md:p-8 lg:p-10" x-data="missionControl()" x-init="initApp()">
@@ -40,7 +26,7 @@
         <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b border-slate-800 pb-6">
             <div>
                 <h1 class="text-2xl md:text-3xl font-orbitron font-bold tracking-widest text-white uppercase">Artemis II <span class="text-blue-500">Live</span></h1>
-                <p class="text-[10px] text-slate-500 mt-1 uppercase tracking-[0.4em]">Deep Space Orbital Tracker</p>
+                <p class="text-[10px] text-slate-500 mt-1 uppercase tracking-[0.4em]">Integrated Trajectory Network</p>
             </div>
             
             <div class="flex flex-col md:flex-row gap-6 md:gap-12 mt-4 md:mt-0">
@@ -50,7 +36,7 @@
                 </div>
                 <div class="text-left md:text-right">
                     <div class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">T-Minus Splashdown</div>
-                    <div class="text-2xl md:text-3xl font-orbitron text-white tabular-nums" x-text="countdown">--:--:--</div>
+                    <div class="text-2xl md:text-3xl font-orbitron text-white tabular-nums" x-text="countdown">01:08:00</div>
                 </div>
             </div>
         </header>
@@ -58,14 +44,14 @@
         <main class="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <div class="space-y-4">
                 <div class="glass p-5 rounded-lg border-l-4 border-blue-500">
-                    <p class="text-[10px] text-slate-500 font-bold uppercase mb-4">Trajectory Status</p>
+                    <p class="text-[10px] text-slate-500 font-bold uppercase mb-4">Telemetry Stream</p>
                     <div class="space-y-4">
                         <div>
-                            <span class="text-[9px] text-slate-400">EARTH-RELATIVE SPEED</span>
+                            <span class="text-[9px] text-slate-400">VELOCITY</span>
                             <div class="text-xl font-orbitron text-white" x-text="velocity.toLocaleString() + ' MPH'"></div>
                         </div>
                         <div>
-                            <span class="text-[9px] text-slate-400">RADIAL DISTANCE</span>
+                            <span class="text-[9px] text-slate-400">ALTITUDE</span>
                             <div class="text-xl font-orbitron text-emerald-400" x-text="altitude.toLocaleString() + ' MI'"></div>
                         </div>
                     </div>
@@ -75,21 +61,11 @@
                     <div class="swiper-wrapper">
                         <div class="swiper-slide">
                             <div class="glass p-5 rounded-lg h-full">
-                                <p class="text-[10px] text-slate-500 font-bold uppercase mb-3">Crew Condition</p>
+                                <p class="text-[10px] text-slate-500 font-bold uppercase mb-3 text-blue-400">Crew Manifest</p>
                                 <div class="space-y-2 text-[11px] font-mono">
                                     <template x-for="name in ['WISEMAN', 'GLOVER', 'KOCH', 'HANSEN']">
                                         <div class="flex justify-between border-b border-slate-800 pb-1"><span x-text="name"></span> <span class="text-emerald-500">GO</span></div>
                                     </template>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="swiper-slide">
-                            <div class="glass p-5 rounded-lg h-full border-t-2 border-orange-500">
-                                <p class="text-[10px] text-slate-500 font-bold uppercase mb-3">Vehicle Health</p>
-                                <div class="text-[11px] space-y-2">
-                                    <div class="flex justify-between"><span>CABIN O2</span> <span class="text-emerald-400">21.2%</span></div>
-                                    <div class="flex justify-between"><span>BATTERY A</span> <span class="text-emerald-400">94%</span></div>
-                                    <div class="flex justify-between"><span>SERVICE MOD</span> <span class="text-blue-400">ATTACHED</span></div>
                                 </div>
                             </div>
                         </div>
@@ -100,33 +76,24 @@
             <div class="lg:col-span-3 space-y-6">
                 <div class="glass p-2 rounded-lg relative overflow-hidden">
                     <div id="map"></div>
-                    
-                    <div class="absolute bottom-6 left-6 z-[1000] glass p-3 rounded-lg border border-slate-700 bg-slate-900/90">
-                        <div class="text-[9px] text-blue-400 font-bold uppercase mb-1">Recovery Sector</div>
-                        <div class="text-[11px] text-white font-mono">PACIFIC - ZONE 1-ALPHA</div>
-                        <div class="text-[9px] text-slate-500 mt-1 uppercase">Assets: USS John P. Murtha</div>
-                    </div>
-
-                    <div class="absolute top-6 right-6 z-[1000] flex flex-col gap-2">
-                        <div class="glass px-3 py-1 rounded-full text-[9px] text-emerald-400 font-bold uppercase tracking-tighter border border-emerald-500/30">
-                            Satellite Link: ACTIVE (TDRS-M)
-                        </div>
+                    <div class="absolute bottom-6 left-6 z-[1000] glass p-3 rounded-lg border border-slate-700 bg-slate-900/90 text-[11px] font-mono">
+                        TARGET: <span class="text-blue-400">SAN DIEGO COAST (30.5N, 118.5W)</span>
                     </div>
                 </div>
 
                 <div class="glass p-4 rounded-lg flex items-center gap-4">
-                    <div class="bg-blue-500/20 text-blue-400 p-2 rounded text-xs font-bold font-orbitron">LOG</div>
+                    <div class="bg-blue-500/20 text-blue-400 p-2 rounded text-xs font-bold font-orbitron">SYNC</div>
                     <p class="text-[11px] text-slate-300 font-mono tracking-tight">
-                        [12:32 HST] Orion is tracking on a nominal free-return trajectory. Separation of Service Module expected in T-4 hours.
+                        Dashboard synchronized with Local Hawaii Time. Current status: Post-TEI Return Coast.
                     </p>
                 </div>
             </div>
         </main>
 
         <footer class="mt-12 py-8 border-t border-slate-900 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] tracking-[0.2em] text-slate-600">
-            <div>LOCAL DEVICE TIME: <span x-text="formatHST()"></span></div>
-            <div class="bg-slate-900 px-4 py-1 rounded-full border border-slate-800">
-                BUILD_VER: <span class="text-blue-500 font-bold">1.6.0-STRATEGIC-MAP</span>
+            <div>CURRENT TIME (HST): <span x-text="formatHST()"></span></div>
+            <div class="bg-slate-900 px-4 py-1 rounded-full border border-slate-800 uppercase">
+                BUILD_VER: <span class="text-blue-500 font-bold">1.6.1-SYNC-FIX</span>
             </div>
         </footer>
     </div>
@@ -134,47 +101,37 @@
     <script>
         function missionControl() {
             return {
-                velocity: 23864, altitude: 42105, lat: 21.3, lng: -157.8, countdown: "01:27:08", map: null, marker: null,
+                velocity: 24500, altitude: 38000, lat: 21.0, lng: -156.0, countdown: "01:08:00", map: null, marker: null,
                 initApp() {
-                    // Initialize Map with a global, desaturated projection
-                    this.map = L.map('map', { 
-                        center: [20, -150], 
-                        zoom: 3, 
-                        zoomControl: false, 
-                        attributionControl: false,
-                        scrollWheelZoom: false 
-                    });
-                    
+                    this.map = L.map('map', { center: [20, -145], zoom: 3, zoomControl: false, attributionControl: false });
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.map);
-
-                    // Add a "Splashdown Zone" circle
-                    L.circle([30.5, -118.5], {
-                        color: '#3b82f6',
-                        fillColor: '#3b82f6',
-                        fillOpacity: 0.1,
-                        radius: 500000
-                    }).addTo(this.map);
-
-                    const icon = L.divIcon({ 
-                        className: 'custom-icon', 
-                        html: "<div style='background-color:#fff; width:10px; height:10px; border-radius:50%; box-shadow: 0 0 20px #fff; border: 2px solid #3b82f6;'></div>" 
-                    });
-
+                    const icon = L.divIcon({ className: 'c', html: "<div style='background:#fff; width:10px; height:10px; border-radius:50%; box-shadow: 0 0 20px #fff; border: 2px solid #3b82f6;'></div>" });
                     this.marker = L.marker([this.lat, this.lng], {icon: icon}).addTo(this.map);
-
-                    // Initialize Swiper
                     new Swiper(".mySwiper", { loop: true, autoplay: { delay: 4000 } });
 
-                    // Update Loop
                     setInterval(() => {
-                        this.velocity += 15; this.altitude -= 1.4; 
+                        this.updateCountdown();
+                        this.velocity += 10; this.altitude -= 1.2;
                         this.lat += 0.005; this.lng += 0.012;
                         this.marker.setLatLng([this.lat, this.lng]);
-                        
-                        let [h, m, s] = this.countdown.split(':').map(Number);
-                        if (s > 0) s--; else { s = 59; if (m > 0) m--; else { m = 59; if(h > 0) h--; } }
-                        this.countdown = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
                     }, 1000);
+                },
+                updateCountdown() {
+                    const now = new Date();
+                    // Set Target to Today at 2:07 PM (14:07)
+                    const target = new Date();
+                    target.setHours(14, 7, 0, 0);
+
+                    let diff = target - now;
+                    if (diff < 0) {
+                        this.countdown = "00:00:00";
+                        return;
+                    }
+
+                    const h = Math.floor(diff / 3600000);
+                    const m = Math.floor((diff % 3600000) / 60000);
+                    const s = Math.floor((diff % 60000) / 1000);
+                    this.countdown = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
                 },
                 formatHST() {
                     return new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
