@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Destroyer v1.7.4</title>
+    <title>Debt Destroyer v1.7.5</title>
     <script id="chart-js" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { 
             --bg: #f4f7f6; --card: #ffffff; --primary: #2ecc71; --accent: #3498db; 
-            --danger: #ff4757; --warning: #f1c40f; --text: #2f3542; 
+            --danger: #ff4757; --text: #2f3542; 
         }
         
         body { 
@@ -36,9 +36,9 @@
         .prog-bg { width: 100%; background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; margin: 10px 0; overflow: hidden; }
         .prog-fill { width: 0%; height: 100%; background: var(--primary); transition: width 0.5s; }
 
-        .card-container { perspective: 1000px; margin-bottom: 15px; min-height: 250px; position: relative; }
+        .card-container { perspective: 1000px; margin-bottom: 15px; min-height: 280px; position: relative; }
         .card-inner { 
-            position: relative; width: 100%; height: 100%; min-height: 250px;
+            position: relative; width: 100%; height: 100%; min-height: 280px;
             transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); 
             transform-style: preserve-3d; 
         }
@@ -47,37 +47,34 @@
         .card-front, .card-back { 
             position: absolute; width: 100%; height: 100%; 
             -webkit-backface-visibility: hidden; backface-visibility: hidden; 
-            border-radius: 18px; padding: 30px 15px 15px 15px;
+            border-radius: 18px; padding: 25px 15px;
             border: 1px solid #e1e8ed; box-shadow: 0 4px 12px rgba(0,0,0,0.03); 
             background: var(--card); box-sizing: border-box; top: 0; left: 0;
         }
         
-        .card-back { transform: rotateY(180deg); display: flex; flex-direction: column; z-index: 1; }
-        .card-front { z-index: 2; }
+        .card-back { transform: rotateY(180deg); display: flex; flex-direction: column; z-index: 10; }
+        .card-front { z-index: 20; }
 
-        .mini-prog-container { height: 6px; background: #eee; border-radius: 3px; margin: 8px 0; overflow: hidden; width: 100%; }
+        .mini-prog-container { height: 8px; background: #eee; border-radius: 4px; margin: 8px 0; overflow: hidden; width: 100%; }
         .mini-prog-fill { height: 100%; transition: width 0.6s ease; }
         .input-row { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 8px; margin: 10px 0; }
         label { font-size: 8px; font-weight: 800; color: #a4b0be; text-transform: uppercase; margin-bottom: 3px; display: block; }
-        input { width: 100%; padding: 10px 6px; border: 1px solid #eceff1; border-radius: 8px; font-size: 13px; background: #fbfcfc; -webkit-appearance: none; box-sizing: border-box; }
+        input { width: 100%; padding: 10px 6px; border: 1px solid #eceff1; border-radius: 8px; font-size: 13px; background: #fbfcfc; box-sizing: border-box; }
         button { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 700; width: 100%; }
         
-        .done-btn { background: #ced6e0; color: #2f3542; font-size: 10px; padding: 6px 10px; border-radius: 6px; width: auto; font-weight: 800; border: none; }
-        .done-btn.active-paid { background: var(--primary); color: white; }
+        .history-list { margin-top: 12px; border-top: 2px solid #f1f2f6; padding-top: 10px; flex-grow: 1; overflow-y: auto; max-height: 100px; display: block !important; }
+        .history-item { display: flex; justify-content: space-between; font-size: 11px; padding: 6px 0; border-bottom: 1px dotted #f1f2f6; }
         
-        .history-list { margin-top: 10px; border-top: 1px solid #eee; padding-top: 8px; flex-grow: 1; overflow-y: auto; max-height: 85px; }
-        .history-item { display: flex; justify-content: space-between; font-size: 11px; padding: 4px 0; border-bottom: 1px dotted #f1f2f6; }
-        
-        .back-balance-display { background: #f8fafb; padding: 10px; border-radius: 12px; margin-bottom: 10px; text-align: center; }
+        .back-balance-display { background: #f8fafb; padding: 10px; border-radius: 12px; margin-bottom: 8px; text-align: center; }
         .delta-pill { font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
         .delta-neg { color: var(--primary); background: rgba(46, 204, 113, 0.1); }
-        .delta-pos { color: var(--danger); background: rgba(255, 71, 87, 0.1); }
 
-        .chart-card { background: var(--card); border-radius: 20px; padding: 25px 20px; margin-bottom: 12px; border: 1px solid #e1e8ed; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px; scrollbar-width: none; }
-        .chart-slide { flex: 0 0 100%; scroll-snap-align: start; text-align: center; }
-        canvas { max-height: 150px !important; margin: 0 auto; }
+        .log-badge { background: #f1f2f6; color: #a4b0be; font-size: 8px; padding: 2px 6px; border-radius: 10px; float: right; }
 
         .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); text-align: center; padding: 15px 0; font-size: 9px; border-top: 1px solid #eee; z-index: 100; display: flex; justify-content: space-around; }
+        .chart-card { background: var(--card); border-radius: 20px; padding: 25px 20px; margin-bottom: 12px; border: 1px solid #e1e8ed; display: flex; overflow-x: auto; scrollbar-width: none; }
+        .chart-slide { flex: 0 0 100%; text-align: center; }
+        canvas { max-height: 150px !important; margin: 0 auto; }
     </style>
 </head>
 <body>
@@ -90,16 +87,11 @@
 <div class="dashboard">
     <div class="main-total" id="main-debt">$0.00</div>
     <div class="prog-bg"><div id="progress-bar" class="prog-fill"></div></div>
-    <div id="main-freedom" style="font-size: 10px; color: var(--primary); font-weight: 700;">AVALANCHE MODE</div>
-    <div style="display: flex; justify-content: space-around; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
-        <div style="text-align: center;"><span id="stat-min" style="font-size: 18px; font-weight: 800;">$0</span><br><span style="font-size: 8px; opacity: 0.6;">Total Min Due</span></div>
-        <div style="text-align: center;"><span id="stat-apr" style="font-size: 18px; font-weight: 800;">0%</span><br><span style="font-size: 8px; opacity: 0.6;">Avg APR</span></div>
-    </div>
+    <div id="main-freedom" style="font-size: 10px; color: var(--primary); font-weight: 700;">CALCULATING...</div>
 </div>
 
 <div class="chart-card">
     <div class="chart-slide"><b>Balance Split</b><canvas id="debtChart"></canvas></div>
-    <div class="chart-slide"><b>Principal vs Interest</b><canvas id="ratioChart"></canvas></div>
 </div>
 
 <div id="card-list"></div>
@@ -107,14 +99,14 @@
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight:bold;">Backup CSV</span>
-    <span>v1.7.4</span>
-    <span onclick="nuke()" style="color:var(--danger)">Reset App</span>
+    <span>v1.7.5</span>
+    <span onclick="nuke()" style="color:var(--danger)">Reset Data</span>
 </div>
 
 <script>
 const KEY = 'debt_v125';
 const COLORS = ['#2ecc71', '#3498db', '#9b59b6', '#f1c40f', '#e67e22', '#1abc9c', '#e74c3c', '#34495e'];
-let debtChart, ratioChart;
+let debtChart;
 let cards = JSON.parse(localStorage.getItem(KEY)) || [];
 
 function toggleFlip(el) { el.closest('.card-container').classList.toggle('flipped'); }
@@ -123,79 +115,53 @@ function initUI() {
     const list = document.getElementById('card-list');
     list.innerHTML = '';
     const now = new Date();
-    const curMonthYear = `${now.getMonth()}-${now.getFullYear()}`;
-
-    cards.sort((a, b) => (a.bal === 0) - (b.bal === 0) || b.apr - a.apr);
-    const targetIndex = cards.findIndex(c => c.bal > 0);
 
     cards.forEach((c, i) => {
+        // Recovery: Force history to be an array
         if (!Array.isArray(c.history)) c.history = [];
-        if (c.prevBal === undefined) c.prevBal = c.bal;
         if (c.highestBal === undefined || c.bal > c.highestBal) c.highestBal = c.bal;
+        if (c.prevBal === undefined) c.prevBal = c.bal;
 
-        const isPaidOff = c.bal === 0;
         const themeColor = COLORS[i % COLORS.length];
-        
-        // Progress Logic
-        const progressRaw = c.highestBal > 0 ? ((c.highestBal - c.bal) / c.highestBal) * 100 : (isPaidOff ? 100 : 0);
-        const percentPaid = Math.max(0, Math.min(100, progressRaw));
-
-        const isTarget = (i === targetIndex && !isPaidOff);
-        const isThisMonthPaid = c.lastPaidMonth === curMonthYear;
-
+        const progress = c.highestBal > 0 ? ((c.highestBal - c.bal) / c.highestBal) * 100 : 0;
         const diff = c.bal - c.prevBal;
-        let deltaHtml = '';
-        if (diff < 0) deltaHtml = `<span class="delta-pill delta-neg">-${Math.abs(diff).toLocaleString()}</span>`;
-        else if (diff > 0) deltaHtml = `<span class="delta-pill delta-pos">+${diff.toLocaleString()}</span>`;
 
         let historyHtml = c.history.slice(-5).reverse().map(h => `
             <div class="history-item">
                 <span style="color:#747d8c">${h.date}</span>
                 <span style="font-weight:700; color:var(--primary)">+$${h.amt.toLocaleString()}</span>
             </div>
-        `).join('') || '<div style="font-size:10px; color:#ccc; text-align:center; margin-top:10px;">No history logged</div>';
+        `).join('') || '<div style="font-size:10px; color:#ccc; text-align:center; padding:15px;">No payments recorded</div>';
 
         list.innerHTML += `
             <div class="card-container">
                 <div class="card-inner">
-                    <div class="card-front" onclick="toggleFlip(this)" style="border-left: 6px solid ${themeColor}; opacity: ${isPaidOff ? 0.6 : 1}">
-                        <div style="display:flex; justify-content:space-between; align-items:center;" onclick="event.stopPropagation()">
-                            <input type="text" oninput="updateData(${i}, 'name', this.value)" value="${c.name}" style="border:none; font-weight:800; font-size:16px; background:none; color:var(--text); width: 60%;">
-                            <button class="done-btn ${isThisMonthPaid ? 'active-paid' : ''}" onclick="forceMarkPaid(${i})">
-                                ${isThisMonthPaid ? 'PAID ✓' : 'MARK PAID'}
-                            </button>
-                        </div>
+                    <div class="card-front" onclick="toggleFlip(this)" style="border-left: 6px solid ${themeColor}">
+                        <input type="text" oninput="updateData(${i}, 'name', this.value)" value="${c.name}" style="border:none; font-weight:800; font-size:16px; background:none; margin-bottom:10px;">
                         <div class="input-row" onclick="event.stopPropagation()">
-                            <div><label>Balance</label><input type="number" oninput="updateData(${i}, 'bal', this.value)" value="${c.bal || ''}"></div>
-                            <div><label>Min $</label><input type="number" oninput="updateData(${i}, 'min', this.value)" value="${c.min || ''}"></div>
-                            <div><label>Due</label><input type="date" onblur="updateData(${i}, 'dueDate', this.value)" value="${c.dueDate || ''}"></div>
+                            <div><label>Balance</label><input type="number" oninput="updateData(${i}, 'bal', this.value)" value="${c.bal}"></div>
+                            <div><label>Min $</label><input type="number" oninput="updateData(${i}, 'min', this.value)" value="${c.min}"></div>
+                            <div><label>APR %</label><input type="number" oninput="updateData(${i}, 'apr', this.value)" value="${c.apr}"></div>
                         </div>
-                        <div style="display: flex; gap: 8px;" onclick="event.stopPropagation()">
-                            <input type="number" id="p-${i}" placeholder="Quick Pay $" style="flex:1">
-                            <button style="flex:1" onclick="applyPayment(${i})">Apply</button>
+                        <div style="display: flex; gap: 8px; margin-top:10px;" onclick="event.stopPropagation()">
+                            <input type="number" id="p-${i}" placeholder="Pay $">
+                            <button onclick="applyPayment(${i})">Apply</button>
                         </div>
                     </div>
-                    <div class="card-back" onclick="toggleFlip(this)" style="border-left: 6px solid ${themeColor};">
+                    <div class="card-back" onclick="toggleFlip(this)" style="border-left: 6px solid ${themeColor}">
                         <div class="back-balance-display">
-                            <label>Current Balance</label>
+                            <label>Remaining Balance</label>
                             <span style="font-size:18px; font-weight:800;">$${c.bal.toLocaleString()}</span>
-                            ${deltaHtml}
+                            ${diff < 0 ? `<span class="delta-pill delta-neg">-${Math.abs(diff).toLocaleString()}</span>` : ''}
                         </div>
-                        <div style="text-align:center; padding: 0 10px;">
-                            <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom: 2px;">
-                                <label style="margin:0;">Payoff Progress</label>
-                                <span style="font-size: 12px; font-weight: 800; color: var(--text);">${percentPaid.toFixed(1)}%</span>
-                            </div>
+                        <div style="padding:0 5px;">
+                            <label>Progress: ${progress.toFixed(1)}% <span class="log-badge">${c.history.length} Logs</span></label>
                             <div class="mini-prog-container">
-                                <div class="mini-prog-fill" style="width: ${percentPaid}%; background: ${themeColor}"></div>
+                                <div class="mini-prog-fill" style="width: ${progress}%; background: ${themeColor}"></div>
                             </div>
-                        </div>
-                        <div style="display:flex; justify-content:space-around; margin-top:5px;" onclick="event.stopPropagation()">
-                            <div style="text-align:center;"><label>APR %</label><input type="number" style="width:50px; text-align:center; padding:5px;" oninput="updateData(${i}, 'apr', this.value)" value="${c.apr || 0}"></div>
-                            <div style="text-align:center;"><label>Freedom</label><span id="freedom-label-${i}" style="font-weight:800; font-size:12px;">--</span></div>
                         </div>
                         <div class="history-list" onclick="event.stopPropagation()">
-                            <label>Recent History</label>
+                            <label>Payment History</label>
                             ${historyHtml}
                         </div>
                     </div>
@@ -213,19 +179,13 @@ function applyPayment(i) {
         cards[i].bal = Math.max(0, cards[i].bal - amt);
         const d = new Date();
         cards[i].history.push({ amt, date: (d.getMonth()+1)+'/'+d.getDate() });
-        cards[i].lastPaidMonth = d.getMonth()+'-'+d.getFullYear();
-        input.value = '';
         saveAndRefresh();
     }
 }
 
 function updateData(i, field, value) {
-    if (field === 'bal') {
-        const val = parseFloat(value) || 0;
-        cards[i].prevBal = cards[i].bal;
-        if (val > (cards[i].highestBal || 0)) cards[i].highestBal = val;
-    }
-    cards[i][field] = (field === 'name' || field === 'dueDate') ? value : parseFloat(value) || 0;
+    cards[i][field] = (field === 'name') ? value : parseFloat(value) || 0;
+    if (field === 'bal' && cards[i].bal > (cards[i].highestBal || 0)) cards[i].highestBal = cards[i].bal;
     saveAndRefresh();
 }
 
@@ -234,51 +194,20 @@ function saveAndRefresh() {
     initUI();
 }
 
-function forceMarkPaid(i) {
-    const now = new Date();
-    cards[i].lastPaidMonth = now.getMonth()+'-'+now.getFullYear();
-    saveAndRefresh();
-}
-
 function calculate() {
-    let totalDebt = 0, totalInt = 0, maxMonths = 0, totalMin = 0, aprSum = 0;
+    let total = 0, totalMin = 0;
     let bData = [], labels = [];
-    cards.forEach((c, i) => {
-        totalDebt += c.bal; totalMin += c.min; aprSum += c.apr;
-        let mRate = (c.apr / 100) / 12;
-        let months = 0;
-        let pay = (c.history.length) ? c.history.reduce((a,b)=>a+b.amt,0)/c.history.length : c.min;
-        if (c.bal > 0 && pay > (c.bal * mRate)) {
-            let temp = c.bal;
-            while(temp > 0 && months < 600) { let mi = temp * mRate; totalInt += mi; temp = (temp + mi) - pay; months++; }
-            if (months > maxMonths) maxMonths = months;
-        }
-        const freedom = document.getElementById(`freedom-label-${i}`);
-        if(freedom) freedom.innerText = months > 0 ? `${months} mo` : (c.bal > 0 ? "∞" : "Paid");
+    cards.forEach(c => {
+        total += c.bal; totalMin += c.min;
         bData.push(c.bal); labels.push(c.name);
     });
-    document.getElementById('main-debt').innerText = '$' + totalDebt.toLocaleString(undefined, {minimumFractionDigits: 2});
-    document.getElementById('stat-min').innerText = '$' + Math.round(totalMin).toLocaleString();
-    document.getElementById('stat-apr').innerText = cards.length ? Math.round(aprSum / cards.length) + '%' : '0%';
-    const progress = totalDebt > 0 ? Math.max(5, 100 - (totalInt / (totalDebt + totalInt) * 100)) : 100;
-    document.getElementById('progress-bar').style.width = progress + '%';
-    if (maxMonths > 0) {
-        let d = new Date(); d.setMonth(d.getMonth() + maxMonths);
-        document.getElementById('main-freedom').innerText = "FREEDOM: " + d.toLocaleDateString('en-US', {month:'short', year:'numeric'}).toUpperCase();
-    }
-    updateCharts(labels, bData, totalDebt, totalInt);
-}
-
-function updateCharts(labels, bData, totalDebt, totalInt) {
-    if (typeof Chart === 'undefined') return;
-    const opt = { cutout: '72%', animation: false, plugins: { legend: { display: false } }, maintainAspectRatio: false };
+    document.getElementById('main-debt').innerText = '$' + total.toLocaleString();
     if (debtChart) debtChart.destroy();
-    debtChart = new Chart(document.getElementById('debtChart'), { type: 'doughnut', data: { labels, datasets: [{ data: bData, backgroundColor: COLORS, borderWidth: 0 }] }, options: opt });
-    if (ratioChart) ratioChart.destroy();
-    ratioChart = new Chart(document.getElementById('ratioChart'), { type: 'pie', data: { labels: ['Principal', 'Interest'], datasets: [{ data: [totalDebt, totalInt], backgroundColor: ['#2f3542', '#ff4757'], borderWidth: 0 }] }, options: opt });
+    const ctx = document.getElementById('debtChart').getContext('2d');
+    debtChart = new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data: bData, backgroundColor: COLORS, borderWidth: 0 }] }, options: { cutout: '75%', plugins: { legend: { display: false } } } });
 }
 
-function addCard() { cards.push({ name: "New Card", bal: 0, min: 0, apr: 0, highestBal: 0, history: [] }); saveAndRefresh(); }
+function addCard() { cards.push({name: "New Card", bal: 0, min: 0, apr: 0, highestBal: 0, history: []}); saveAndRefresh(); }
 function nuke() { if(confirm("Wipe all data?")) { localStorage.clear(); location.reload(); } }
 function exportCSV() { 
     let csv = "Name,Balance,Min,APR\n" + cards.map(c => `${c.name},${c.bal},${c.min},${c.apr}`).join('\n');
