@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whiskey Journal</title>
+    <style>
+        :root {
+            --amber: #FFBF00;
+            --dark-amber: #CC9900;
+            --glass: rgba(255, 255, 255, 0.1);
+            --bg: #121212;
+            --text: #e0e0e0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        h1 { color: var(--amber); margin-bottom: 0.5rem; }
+
+        .container {
+            width: 90%;
+            max-width: 500px;
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .input-group { margin-bottom: 1.5rem; }
+
+        label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--amber);
+            border-radius: 5px;
+            color: white;
+            box-sizing: border-box;
+        }
+
+        .stars {
+            display: flex;
+            gap: 10px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #444;
+        }
+
+        .star.active { color: var(--amber); }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: var(--amber);
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:active { transform: scale(0.98); }
+
+        hr { border: 0.5px solid rgba(255,255,255,0.1); margin: 2rem 0; }
+
+        .log-item {
+            background: rgba(255,255,255,0.05);
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .log-name { font-weight: bold; color: var(--amber); font-size: 1.1rem; }
+        .log-type { font-size: 0.8rem; opacity: 0.7; font-style: italic; }
+        .log-rating { color: var(--amber); margin-top: 5px; }
+        
+        .delete-btn {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            background: transparent;
+            color: #ff5555;
+            width: auto;
+            font-size: 0.8rem;
+        }
+
+        footer { margin-top: auto; padding: 2rem; font-size: 0.8rem; opacity: 0.5; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>The Whiskey Vault</h1>
+    <p>Distilling your memories, one glass at a time.</p>
+</header>
+
+<div class="container">
+    <div class="input-group">
+        <label>Whiskey Name</label>
+        <input type="text" id="whiskeyName" placeholder="e.g. Lagavulin 16">
+    </div>
+
+    <div class="input-group">
+        <label>Type</label>
+        <select id="whiskeyType">
+            <option value="Scotch">Scotch</option>
+            <option value="Bourbon">Bourbon</option>
+            <option value="Rye">Rye</option>
+            <option value="Irish">Irish</option>
+            <option value="Japanese">Japanese</option>
+            <option value="Other">Other</option>
+        </select>
+    </div>
+
+    <div class="input-group">
+        <label>Rating</label>
+        <div class="stars" id="starRating">
+            <span class="star" data-value="1">★</span>
+            <span class="star" data-value="2">★</span>
+            <span class="star" data-value="3">★</span>
+            <span class="star" data-value="4">★</span>
+            <span class="star" data-value="5">★</span>
+        </div>
+    </div>
+
+    <div class="input-group">
+        <label>Tasting Notes</label>
+        <textarea id="notes" rows="3" placeholder="Peaty, caramel, smooth..."></textarea>
+    </div>
+
+    <button onclick="saveWhiskey()">Log This Dram</button>
+
+    <hr>
+
+    <div id="whiskeyLog">
+        </div>
+</div>
+
+<footer>
+    Whiskey Journal v1.0.4 - 2026
+</footer>
+
+<script>
+    let currentRating = 0;
+    const stars = document.querySelectorAll('.star');
+
+    // Handle Star Selection
+    stars.forEach(star => {
+        star.addEventListener('click', () => {
+            currentRating = star.dataset.value;
+            updateStars();
+        });
+    });
+
+    function updateStars() {
+        stars.forEach(s => {
+            s.classList.toggle('active', s.dataset.value <= currentRating);
+        });
+    }
+
+    // Save to LocalStorage
+    function saveWhiskey() {
+        const name = document.getElementById('whiskeyName').value;
+        const type = document.getElementById('whiskeyType').value;
+        const notes = document.getElementById('notes').value;
+
+        if (!name) { alert("Please enter a name!"); return; }
+
+        const entry = {
+            id: Date.now(),
+            name,
+            type,
+            rating: currentRating,
+            notes
+        };
+
+        const history = JSON.parse(localStorage.getItem('whiskeyHistory') || '[]');
+        history.unshift(entry);
+        localStorage.setItem('whiskeyHistory', JSON.stringify(history));
+
+        // Reset Form
+        document.getElementById('whiskeyName').value = '';
+        document.getElementById('notes').value = '';
+        currentRating = 0;
+        updateStars();
+        
+        renderLog();
+    }
+
+    function deleteEntry(id) {
+        let history = JSON.parse(localStorage.getItem('whiskeyHistory') || '[]');
+        history = history.filter(item => item.id !== id);
+        localStorage.setItem('whiskeyHistory', JSON.stringify(history));
+        renderLog();
+    }
+
+    function renderLog() {
+        const history = JSON.parse(localStorage.getItem('whiskeyHistory') || '[]');
+        const logDiv = document.getElementById('whiskeyLog');
+        logDiv.innerHTML = '<h3>Recent Tastings</h3>';
+
+        history.forEach(item => {
+            const starsHtml = '★'.repeat(item.rating) + '☆'.repeat(5 - item.rating);
+            logDiv.innerHTML += `
+                <div class="log-item">
+                    <button class="delete-btn" onclick="deleteEntry(${item.id})">Delete</button>
+                    <div class="log-name">${item.name}</div>
+                    <div class="log-type">${item.type}</div>
+                    <div class="log-rating">${starsHtml}</div>
+                    <p style="font-size: 0.9rem; margin-top: 10px;">${item.notes}</p>
+                </div>
+            `;
+        });
+    }
+
+    // Initial Render
+    renderLog();
+</script>
+
+</body>
+</html>
