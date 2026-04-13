@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Debt Tracker v2.4.2</title>
+    <title>Debt Tracker v2.4.3</title>
     <style>
         :root { --bg: #1e272e; --primary: #2ecc71; --accent: #3498db; --danger: #ff4757; --text: #f4f7f6; --card-bg: #2f3640; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 10px; padding-bottom: 100px; color: var(--text); overflow-x: hidden; }
@@ -26,6 +26,8 @@
         label { font-size: 8px; font-weight: 800; color: #a4b0be; text-transform: uppercase; margin-bottom: 4px; display: block; }
         input { width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; font-size: 13px; background: rgba(0,0,0,0.2); color: #fff; box-sizing: border-box; }
         
+        .reset-link { font-size: 9px; color: var(--danger); opacity: 0.6; text-decoration: none; margin-top: 5px; text-align: right; display: block; font-weight: 700; cursor: pointer; }
+        
         .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.95); padding: 18px 0; font-size: 11px; display: flex; justify-content: space-around; z-index: 100; border-top: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
     </style>
 </head>
@@ -44,7 +46,7 @@
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight: 800;">EXPORT CSV</span>
-    <span style="opacity: 0.4;">v2.4.2</span>
+    <span style="opacity: 0.4;">v2.4.3</span>
     <span onclick="nuke()" style="color:var(--danger); font-weight: 800;">WIPE ALL</span>
 </div>
 
@@ -57,9 +59,7 @@ function loadData() {
         const raw = localStorage.getItem(KEY);
         cards = raw ? JSON.parse(raw) : [];
         renderUI();
-    } catch (e) {
-        cards = [];
-    }
+    } catch (e) { cards = []; }
 }
 
 function renderUI() {
@@ -73,7 +73,7 @@ function renderUI() {
         const isTarget = (i === targetIdx && parseFloat(c.bal) > 0);
         const bal = parseFloat(c.bal) || 0;
         const highest = parseFloat(c.highestBal) || bal;
-        const progPercent = highest > 0 ? Math.round(((highest - bal) / highest) * 100) : 0;
+        const progPercent = highest > bal ? Math.round(((highest - bal) / highest) * 100) : 0;
         const offset = 151 - (151 * (progPercent / 100));
 
         list.innerHTML += `
@@ -96,19 +96,23 @@ function renderUI() {
                     <div><label>APR %</label><input type="number" step="0.1" value="${c.apr || 0}" onchange="update(${i}, 'apr', this.value)"></div>
                     <div><label>Min Pay</label><input type="number" value="${c.min || 0}" onchange="update(${i}, 'min', this.value)"></div>
                 </div>
+                <span class="reset-link" onclick="resetHighest(${i})">RESET PROGRESS BASELINE</span>
             </div>`;
     });
     calculate();
 }
 
+function resetHighest(i) {
+    cards[i].highestBal = parseFloat(cards[i].bal) || 0;
+    localStorage.setItem(KEY, JSON.stringify(cards));
+    renderUI();
+}
+
 function update(i, field, val) {
     cards[i][field] = (field === 'name') ? val : parseFloat(val) || 0;
-    
-    // Update highest balance if current balance is manually increased
     if (field === 'bal' && cards[i].bal > (cards[i].highestBal || 0)) {
         cards[i].highestBal = cards[i].bal;
     }
-    
     localStorage.setItem(KEY, JSON.stringify(cards));
     if (field === 'apr' || field === 'bal') renderUI();
     else calculate();
