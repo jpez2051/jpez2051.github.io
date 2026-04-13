@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Snowball v2.2.6</title>
+    <title>Debt Snowball v2.2.7</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { 
@@ -96,7 +96,7 @@
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight:bold;">Backup</span>
-    <span>v2.2.6 Sync</span>
+    <span>v2.2.7</span>
     <span onclick="nuke()" style="color:var(--danger)">Reset</span>
 </div>
 
@@ -128,19 +128,4 @@ function initUI() {
     const now = new Date();
     const curMonthKey = (now.getMonth() + 1) + '-' + now.getFullYear();
 
-    cards.sort((a, b) => (a.bal <= 0) - (b.bal <= 0) || b.apr - a.apr);
-    const targetIdx = cards.findIndex(c => c.bal > 0);
-
-    cards.forEach((c, i) => {
-        const color = COLORS[i % COLORS.length];
-        const isTarget = (i === targetIdx && c.bal > 0);
-        const isPaidThisMonth = c.lastPaidMonth === curMonthKey;
-
-        if (c.highestBal === undefined || c.bal > c.highestBal) c.highestBal = c.bal;
-        const prog = c.highestBal > 0 ? ((c.highestBal - c.bal) / c.highestBal) * 100 : 0;
-        const ringOffset = 195 - (prog / 100) * 195;
-
-        list.innerHTML += `
-            <div class="card-container">
-                <div class="card-inner">
-                    <div class="card-front" onclick="toggleFlip(this)" style="border-left: 6px solid ${color};
+    cards.sort((a, b) => (a.bal
