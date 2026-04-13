@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Snowball v2.2.3</title>
+    <title>Debt Snowball v2.2.4</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { 
@@ -18,16 +18,9 @@
             padding: 10px; padding-bottom: 120px; color: var(--text); overflow-x: hidden; 
         }
 
-        #splash-screen {
-            position: fixed; inset: 0; background: #000; z-index: 3000;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: opacity 0.5s ease; pointer-events: none;
-        }
-        .splash-hidden { opacity: 0; visibility: hidden; }
-
         .dashboard { 
             background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(30,39,46,0) 100%); 
-            padding: 15px 12px; text-align: center; margin-bottom: 5px;
+            padding: 25px 12px 15px 12px; text-align: center; margin-bottom: 5px;
         }
         .main-total { font-size: 32px; font-weight: 800; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
         .main-freedom { background: rgba(46, 204, 113, 0.1); color: var(--primary); font-size: 11px; font-weight: 800; letter-spacing: 1.5px; padding: 5px 12px; border-radius: 20px; display: inline-block; margin-top: 8px; }
@@ -68,7 +61,6 @@
         .paid-btn { background: #353b48; color: #a4b0be; font-size: 9px; padding: 5px 10px; border-radius: 6px; width: auto; font-weight: 800; border: none; }
         .paid-btn.active { background: var(--primary); color: white; }
 
-        /* Progress Ring */
         .progress-ring { position: relative; width: 70px; height: 70px; margin: 0 auto; flex-shrink: 0; }
         .progress-ring svg { transform: rotate(-90deg); }
         .progress-ring__circle { 
@@ -82,10 +74,6 @@
     </style>
 </head>
 <body>
-
-<div id="splash-screen">
-    <div style="color:white; font-size:40px; font-weight:900; border:4px solid var(--primary); padding:12px; border-radius:18px;">$</div>
-</div>
 
 <div class="dashboard">
     <div class="main-total" id="main-debt">$0.00</div>
@@ -108,32 +96,10 @@
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight:bold;">Backup</span>
-    <span>v2.2.3</span>
+    <span>v2.2.4 (NoSplash)</span>
     <span onclick="nuke()" style="color:var(--danger)">Reset</span>
 </div>
 
 <script>
 const KEY = 'debt_v125';
-const COLORS = ['#2ecc71', '#3498db', '#9b59b6', '#f1c40f', '#e67e22', '#1abc9c', '#e74c3c'];
-let activeChart, currentView = 0;
-let cards = JSON.parse(localStorage.getItem(KEY)) || [];
-
-// Swipe Logic
-let touchStartX = 0;
-const chartZone = document.getElementById('chart-zone');
-chartZone.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, {passive: true});
-chartZone.addEventListener('touchend', e => {
-    let diff = touchStartX - e.changedTouches[0].screenX;
-    if (Math.abs(diff) > 50) {
-        currentView = diff > 0 ? (currentView + 1) % 3 : (currentView - 1 + 3) % 3;
-        calculate(); 
-    }
-}, {passive: true});
-
-function toggleFlip(el) { el.closest('.card-container').classList.toggle('flipped'); }
-
-function initUI() {
-    const list = document.getElementById('card-list');
-    list.innerHTML = '';
-    const now = new Date();
-    const curMonthKey = (now.getMonth() + 1) + '-' + now.getFullYear();
+const COLORS = ['#2ecc71', '#3498db', '#9b59b6', '#f1c40f', '#e67e22', '#1abc9c', '#
