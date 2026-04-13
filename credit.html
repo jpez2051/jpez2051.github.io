@@ -4,27 +4,108 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Debt Tracker v2.3.8</title>
+    <title>Debt Tracker v2.4.0</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #1e272e; --primary: #2ecc71; --accent: #3498db; --danger: #ff4757; --text: #f4f7f6; --card-bg: #2f3640; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 10px; padding-bottom: 100px; color: var(--text); overflow-x: hidden; }
-        .dashboard { background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(30,39,46,0) 100%); padding: 25px 12px 15px 12px; text-align: center; margin-bottom: 5px; }
+        .dashboard { background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(30,39,46,0) 100%); padding: 25px 12px 15px 12px; text-align: center; }
         .main-total { font-size: 32px; font-weight: 800; }
         .main-freedom { background: rgba(46, 204, 113, 0.1); color: var(--primary); font-size: 11px; font-weight: 800; padding: 5px 12px; border-radius: 20px; display: inline-block; margin-top: 8px; text-transform: uppercase; }
-        .stat-grid { display: flex; justify-content: space-around; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; }
-        .stat-val { font-size: 16px; font-weight: 800; display: block; }
-        .stat-lab { font-size: 8px; font-weight: 800; color: #a4b0be; text-transform: uppercase; }
-        .chart-carousel { background: rgba(255,255,255,0.03); border-radius: 18px; padding: 15px; margin-bottom: 20px; height: 190px; position: relative; }
-        .nav-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.2); display: inline-block; margin: 0 3px; }
-        .nav-dot.active { background: var(--accent); width: 12px; border-radius: 3px; }
-        .card-container { margin-bottom: 15px; perspective: 1200px; height: 280px; position: relative; }
-        .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d; }
-        .card-container.flipped .card-inner { transform: rotateY(180deg); }
-        .card-front, .card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 20px; padding: 18px; border: 1px solid rgba(255,255,255,0.08); background: var(--card-bg); box-sizing: border-box; display: flex; flex-direction: column; }
-        .card-back { transform: rotateY(180deg); }
-        .target-tag { background: var(--accent); color: white; font-size: 8px; font-weight: 900; padding: 3px 8px; border-radius: 5px; text-transform: uppercase; }
-        .paid-btn { background: #353b48; color: #a4b0be; font-size: 9px; padding: 5px 10px; border-radius: 6px; font-weight: 800; border: none; }
-        .paid-btn.active { background: var(--primary); color: white; }
-        label { font-size: 8px; font-weight: 800; color: #a4b0be; text-transform: uppercase; margin-bottom: 4px; display: block; }
-        input { width: 100%; padding: 10px; border: 1px solid rgba(255,25
+        .card-container { margin-bottom: 15px; border-radius: 20px; padding: 18px; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08); }
+        input { width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; font-size: 13px; background: rgba(0,0,0,0.2); color: #fff; box-sizing: border-box; }
+        .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.95); padding: 18px 0; font-size: 11px; display: flex; justify-content: space-around; z-index: 100; border-top: 1px solid rgba(255,255,255,0.1); }
+    </style>
+</head>
+<body>
+
+<div id="app-root">
+    <div class="dashboard">
+        <div class="main-total" id="main-debt">$0.00</div>
+        <div id="main-freedom" class="main-freedom">Ready</div>
+    </div>
+    
+    <div id="chart-zone" style="height:150px; margin: 20px 0;">
+        <canvas id="mainChart"></canvas>
+    </div>
+
+    <div id="card-list"></div>
+    
+    <button onclick="addCard()" style="background:var(--primary); color:white; padding:16px; border-radius:14px; width:100%; margin-top:20px; font-weight: 800; border:none;">+ ADD NEW DEBT</button>
+</div>
+
+<div class="footer">
+    <span onclick="exportCSV()" style="color:var(--accent); font-weight: 800;">EXPORT CSV</span>
+    <span style="opacity: 0.4;">v2.4.0</span>
+    <span onclick="nuke()" style="color:var(--danger); font-weight: 800;">WIPE ALL</span>
+</div>
+
+<script>
+const KEY = 'debt_v125';
+let cards = [];
+
+function loadData() {
+    try {
+        const raw = localStorage.getItem(KEY);
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+                cards = parsed;
+            }
+        }
+    } catch (e) {
+        console.error("Corrupted data found. Starting fresh.");
+        cards = [];
+    }
+    renderUI();
+}
+
+function renderUI() {
+    const list = document.getElementById('card-list');
+    list.innerHTML = '';
+    
+    cards.forEach((c, i) => {
+        list.innerHTML += `
+            <div class="card-container">
+                <input type="text" value="${c.name || ''}" placeholder="Name" onchange="update(${i}, 'name', this.value)">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
+                    <input type="number" value="${c.bal || 0}" placeholder="Balance" onchange="update(${i}, 'bal', this.value)">
+                    <input type="number" value="${c.apr || 0}" placeholder="APR %" onchange="update(${i}, 'apr', this.value)">
+                </div>
+            </div>`;
+    });
+    calculate();
+}
+
+function update(i, field, val) {
+    cards[i][field] = field === 'name' ? val : parseFloat(val) || 0;
+    localStorage.setItem(KEY, JSON.stringify(cards));
+    calculate();
+}
+
+function calculate() {
+    let total = cards.reduce((sum, c) => sum + (parseFloat(c.bal) || 0), 0);
+    document.getElementById('main-debt').innerText = '$' + total.toLocaleString();
+}
+
+function addCard() {
+    cards.push({name: "", bal: 0, apr: 0});
+    renderUI();
+}
+
+function nuke() {
+    if(confirm("Wipe all data?")) {
+        localStorage.clear();
+        location.reload();
+    }
+}
+
+function exportCSV() {
+    alert(JSON.stringify(cards));
+}
+
+// Start the app
+loadData();
+</script>
+</body>
+</html>
