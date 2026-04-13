@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Debt Tracker v2.3.0</title>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Debt Tracker v2.3.1</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { 
@@ -19,19 +20,18 @@
 
         .dashboard { 
             background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(30,39,46,0) 100%); 
-            padding: 25px 12px; text-align: center; margin-bottom: 5px;
+            padding: 25px 12px 15px 12px; text-align: center; margin-bottom: 5px;
         }
         .main-total { font-size: 32px; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-        .main-freedom { background: rgba(46, 204, 113, 0.1); color: var(--primary); font-size: 11px; font-weight: 800; letter-spacing: 1.5px; padding: 5px 12px; border-radius: 20px; display: inline-block; margin-top: 8px; }
+        .main-freedom { background: rgba(46, 204, 113, 0.1); color: var(--primary); font-size: 11px; font-weight: 800; letter-spacing: 1.5px; padding: 5px 12px; border-radius: 20px; display: inline-block; margin-top: 8px; text-transform: uppercase; }
 
-        .chart-carousel { background: rgba(255,255,255,0.03); border-radius: 18px; padding: 15px; margin-bottom: 20px; height: 180px; position: relative; }
+        .chart-carousel { background: rgba(255,255,255,0.03); border-radius: 18px; padding: 15px; margin-bottom: 20px; height: 190px; position: relative; overflow: hidden; touch-action: pan-y; }
+        .chart-nav { display: flex; justify-content: center; gap: 6px; margin-top: 8px; }
+        .nav-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.2); transition: all 0.3s; }
+        .nav-dot.active { background: var(--accent); width: 12px; border-radius: 3px; }
 
         .card-container { margin-bottom: 15px; perspective: 1200px; height: 260px; position: relative; }
-        .card-inner { 
-            position: relative; width: 100%; height: 100%;
-            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); 
-            transform-style: preserve-3d; 
-        }
+        .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d; }
         .card-container.flipped .card-inner { transform: rotateY(180deg); }
 
         .card-front, .card-back { 
@@ -43,10 +43,19 @@
         }
         
         .card-back { transform: rotateY(180deg); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .target-tag { background: var(--accent); color: white; font-size: 8px; font-weight: 900; padding: 3px 8px; border-radius: 5px; text-transform: uppercase; }
         
-        input { width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; font-size: 14px; background: rgba(0,0,0,0.2); box-sizing: border-box; color: #fff; margin-bottom: 8px; }
+        .paid-btn { background: #353b48; color: #a4b0be; font-size: 9px; padding: 5px 10px; border-radius: 6px; font-weight: 800; border: none; }
+        .paid-btn.active { background: var(--primary); color: white; }
+
+        .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 5px; }
+        label { font-size: 8px; font-weight: 800; color: #a4b0be; text-transform: uppercase; margin-bottom: 4px; display: block; }
+        input { width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; font-size: 14px; background: rgba(0,0,0,0.2); box-sizing: border-box; color: #fff; }
         
+        .pay-row { display: flex; gap: 8px; margin-top: auto; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); }
+        .btn-apply { background: var(--accent); color: white; border: none; padding: 10px; border-radius: 10px; font-weight: 700; flex: 0 0 80px; }
+
         .progress-ring { position: relative; width: 70px; height: 70px; margin: 0 auto; }
         .progress-ring svg { transform: rotate(-90deg); }
         .progress-ring__circle { stroke-dasharray: 195; stroke-dashoffset: 195; transition: stroke-dashoffset 0.5s ease; stroke-width: 8; fill: none; }
@@ -60,11 +69,14 @@
 
 <div class="dashboard">
     <div class="main-total" id="main-debt">$0.00</div>
-    <div id="main-freedom" class="main-freedom">AVALANCHE MODE</div>
+    <div id="main-freedom" class="main-freedom">Calculating...</div>
 </div>
 
-<div class="chart-carousel" id="chart-zone" onclick="rotateChart()">
+<div class="chart-carousel" id="chart-zone">
     <canvas id="mainChart"></canvas>
+    <div class="chart-nav" id="chart-nav">
+        <div class="nav-dot active"></div><div class="nav-dot"></div><div class="nav-dot"></div>
+    </div>
 </div>
 
 <div id="card-list"></div>
@@ -72,7 +84,7 @@
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight:bold;">Backup</span>
-    <span>v2.3.0</span>
+    <span>v2.3.1 Full</span>
     <span onclick="nuke()" style="color:var(--danger)">Reset</span>
 </div>
 
@@ -83,7 +95,19 @@ const COLORS = ['#2ecc71', '#3498db', '#9b59b6', '#f1c40f', '#e67e22', '#1abc9c'
 let activeChart, currentView = 0;
 let cards = [];
 
-function migrateAndLoad() {
+// Swipe Logic for Charts
+let touchStartX = 0;
+const chartZone = document.getElementById('chart-zone');
+chartZone.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, {passive: true});
+chartZone.addEventListener('touchend', e => {
+    let diff = touchStartX - e.changedTouches[0].screenX;
+    if (Math.abs(diff) > 50) {
+        currentView = diff > 0 ? (currentView + 1) % 3 : (currentView - 1 + 3) % 3;
+        calculate(); 
+    }
+}, {passive: true});
+
+function loadData() {
     let recovered = null;
     for (let k of LEGACY_KEYS) {
         let d = localStorage.getItem(k);
@@ -97,10 +121,18 @@ function migrateAndLoad() {
 function initUI() {
     const list = document.getElementById('card-list');
     list.innerHTML = '';
-    cards.sort((a, b) => (parseFloat(b.apr) || 0) - (parseFloat(a.apr) || 0));
+    const now = new Date();
+    const curMonthKey = (now.getMonth() + 1) + '-' + now.getFullYear();
+
+    // Avalanche Sort: Paid cards at bottom, then highest APR to lowest
+    cards.sort((a, b) => (a.bal <= 0) - (b.bal <= 0) || b.apr - a.apr);
+    const targetIdx = cards.findIndex(c => c.bal > 0);
 
     cards.forEach((c, i) => {
         const color = COLORS[i % COLORS.length];
+        const isTarget = (i === targetIdx && c.bal > 0);
+        const isPaidThisMonth = c.lastPaidMonth === curMonthKey;
+
         if (!c.highestBal || c.bal > c.highestBal) c.highestBal = c.bal;
         const prog = c.highestBal > 0 ? ((c.highestBal - c.bal) / c.highestBal) * 100 : 0;
         const ringOffset = 195 - (prog / 100) * 195;
@@ -108,11 +140,21 @@ function initUI() {
         list.innerHTML += `
             <div class="card-container">
                 <div class="card-inner">
-                    <div class="card-front" onclick="toggleFlip(this)" style="border-left: 6px solid ${color}">
-                        <input type="text" value="${c.name}" onchange="updateData(${i}, 'name', this.value)" onclick="event.stopPropagation()" style="font-weight:800; background:none; border:none; font-size:18px;">
-                        <div style="display:flex; gap:10px; margin-top:10px;">
-                            <div style="flex:1"><label style="font-size:9px; opacity:0.6;">BALANCE</label><input type="number" step="0.01" value="${c.bal}" onchange="updateData(${i}, 'bal', this.value)" onclick="event.stopPropagation()"></div>
-                            <div style="flex:1"><label style="font-size:9px; opacity:0.6;">APR %</label><input type="number" step="0.1" value="${c.apr}" onchange="updateData(${i}, 'apr', this.value)" onclick="event.stopPropagation()"></div>
+                    <div class="card-front" onclick="toggleFlip(this)" style="border-left: 6px solid ${color}; opacity: ${c.bal <= 0 ? 0.6 : 1}">
+                        <div class="card-header">
+                            <div>${isTarget ? '<span class="target-tag">TARGET</span>' : ''}</div>
+                            <button class="paid-btn ${isPaidThisMonth ? 'active' : ''}" onclick="event.stopPropagation(); markPaid(${i})">
+                                ${isPaidThisMonth ? 'PAID ✓' : 'MARK PAID'}
+                            </button>
+                        </div>
+                        <input type="text" value="${c.name}" onchange="updateData(${i}, 'name', this.value)" onclick="event.stopPropagation()" style="font-weight:800; background:none; border:none; font-size:18px; padding:0;">
+                        <div class="input-row" onclick="event.stopPropagation()">
+                            <div><label>Balance</label><input type="number" step="0.01" value="${c.bal}" onchange="updateData(${i}, 'bal', this.value)"></div>
+                            <div><label>APR %</label><input type="number" step="0.1" value="${c.apr}" onchange="updateData(${i}, 'apr', this.value)"></div>
+                        </div>
+                        <div class="pay-row" onclick="event.stopPropagation()">
+                            <input type="number" step="0.01" id="p-${i}" placeholder="Pay $">
+                            <button class="btn-apply" onclick="applyPayment(${i})">Apply</button>
                         </div>
                     </div>
                     <div class="card-back" onclick="toggleFlip(this)" style="border-left: 6px solid ${color}">
@@ -122,8 +164,9 @@ function initUI() {
                                 <div class="progress-label" id="label-${i}">${Math.round(prog)}%</div>
                             </div>
                             <div>
-                                <div style="font-size:22px; font-weight:900;" id="back-bal-${i}">$${(parseFloat(c.bal) || 0).toLocaleString()}</div>
-                                <div style="font-size:10px; opacity:0.5;">REMAINING</div>
+                                <label>REMAINING</label>
+                                <div style="font-size:22px; font-weight:900;" id="back-bal-${i}">$${(parseFloat(c.bal) || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+                                <div style="margin-top:10px;"><label>MIN PAYMENT</label><input type="number" value="${c.min || 0}" onchange="updateData(${i}, 'min', this.value)" style="width:80px; padding:5px;"></div>
                             </div>
                         </div>
                     </div>
@@ -134,56 +177,101 @@ function initUI() {
 }
 
 function updateData(i, f, v) {
-    cards[i][f] = (f === 'name') ? v : parseFloat(v) || 0;
+    cards[i][f] = (f === 'name' || f === 'lastPaidMonth') ? v : parseFloat(v) || 0;
     if (f === 'bal') {
         if (cards[i].bal > cards[i].highestBal) cards[i].highestBal = cards[i].bal;
-        const prog = cards[i].highestBal > 0 ? ((cards[i].highestBal - cards[i].bal) / cards[i].highestBal) * 100 : 0;
-        const ringOffset = 195 - (prog / 100) * 195;
-        document.getElementById(`back-bal-${i}`).innerText = '$' + cards[i].bal.toLocaleString();
-        document.getElementById(`ring-${i}`).style.strokeDashoffset = ringOffset;
-        document.getElementById(`label-${i}`).innerText = Math.round(prog) + '%';
+        syncCardUI(i);
     }
     localStorage.setItem(KEY, JSON.stringify(cards));
     calculate();
 }
 
+function syncCardUI(i) {
+    const prog = cards[i].highestBal > 0 ? ((cards[i].highestBal - cards[i].bal) / cards[i].highestBal) * 100 : 0;
+    const ringOffset = 195 - (prog / 100) * 195;
+    const backBal = document.getElementById(`back-bal-${i}`);
+    const ring = document.getElementById(`ring-${i}`);
+    const label = document.getElementById(`label-${i}`);
+    if (backBal) backBal.innerText = '$' + cards[i].bal.toLocaleString(undefined, {minimumFractionDigits: 2});
+    if (ring) ring.style.strokeDashoffset = ringOffset;
+    if (label) label.innerText = Math.round(prog) + '%';
+}
+
 function calculate() {
-    let total = cards.reduce((s, c) => s + (parseFloat(c.bal) || 0), 0);
+    let total = 0, totalMin = 0;
+    cards.forEach(c => { 
+        total += (parseFloat(c.bal) || 0); 
+        totalMin += (parseFloat(c.min) || 0);
+    });
+    
     document.getElementById('main-debt').innerText = '$' + total.toLocaleString(undefined, {minimumFractionDigits: 2});
+    
+    // Freedom Projection (Basic Interest-Free Approximation)
+    if (total > 0 && totalMin > 0) {
+        let months = Math.ceil(total / totalMin);
+        let d = new Date(); d.setMonth(d.getMonth() + months);
+        document.getElementById('main-freedom').innerText = "Freedom: " + d.toLocaleDateString('en-US', {month:'short', year:'numeric'});
+    } else {
+        document.getElementById('main-freedom').innerText = total > 0 ? "Add Min Payments" : "Debt Free!";
+    }
+    
     renderChart();
 }
 
-function rotateChart() { currentView = (currentView + 1) % 2; renderChart(); }
-
 function renderChart() {
     const ctx = document.getElementById('mainChart');
-    if (!ctx) return;
+    if (!ctx || cards.length === 0) return;
     if (activeChart) activeChart.destroy();
     
+    document.querySelectorAll('.nav-dot').forEach((d, idx) => d.className = idx === currentView ? 'nav-dot active' : 'nav-dot');
+
     const config = {
-        type: currentView === 0 ? 'doughnut' : 'bar',
-        data: {
-            labels: cards.map(c => c.name),
-            datasets: [{
-                data: cards.map(c => c.bal),
-                backgroundColor: COLORS,
-                borderWidth: 0
-            }]
-        },
-        options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } }
     };
+
+    if (currentView === 0) { // Doughnut
+        config.type = 'doughnut';
+        config.data = { labels: cards.map(c => c.name), datasets: [{ data: cards.map(c => c.bal), backgroundColor: COLORS, borderWidth: 0 }] };
+        config.options.cutout = '70%';
+    } else if (currentView === 1) { // APR Bar
+        config.type = 'bar';
+        config.data = { labels: cards.map(c => c.name), datasets: [{ data: cards.map(c => c.apr), backgroundColor: '#3498db', borderRadius: 5 }] };
+        config.options.scales.y = { display: true, ticks: { color: '#747d8c', font: { size: 9 } } };
+    } else { // Progress Bar
+        config.type = 'bar';
+        config.data = { labels: cards.map(c => c.name), datasets: [{ data: cards.map(c => c.highestBal > 0 ? ((c.highestBal - c.bal) / c.highestBal) * 100 : 0), backgroundColor: '#2ecc71', borderRadius: 5 }] };
+        config.options.scales.y = { display: true, ticks: { color: '#747d8c', font: { size: 9 } } };
+    }
     activeChart = new Chart(ctx, config);
 }
 
+function applyPayment(i) {
+    const input = document.getElementById(`p-${i}`);
+    const amt = parseFloat(input.value) || 0;
+    if (amt > 0) {
+        cards[i].bal = Math.max(0, cards[i].bal - amt);
+        input.value = '';
+        updateData(i, 'bal', cards[i].bal);
+        initUI();
+    }
+}
+
+function markPaid(i) {
+    const now = new Date();
+    const monthKey = (now.getMonth() + 1) + '-' + now.getFullYear();
+    updateData(i, 'lastPaidMonth', monthKey);
+    initUI();
+}
+
 function toggleFlip(el) { el.closest('.card-container').classList.toggle('flipped'); }
-function addCard() { cards.push({name: "New Card", bal: 0, apr: 0, highestBal: 0}); localStorage.setItem(KEY, JSON.stringify(cards)); initUI(); }
-function nuke() { if(confirm("Nuke data?")) { localStorage.clear(); location.reload(); } }
+function addCard() { cards.push({name: "New Card", bal: 0, apr: 0, min: 0, highestBal: 0}); localStorage.setItem(KEY, JSON.stringify(cards)); initUI(); }
+function nuke() { if(confirm("Nuke all data?")) { localStorage.clear(); location.reload(); } }
 function exportCSV() { 
-    let csv = "Name,Balance,APR\n" + cards.map(c => `${c.name},${c.bal},${c.apr}`).join('\n');
+    let csv = "Name,Balance,APR,Min\n" + cards.map(c => `${c.name},${c.bal},${c.apr},${c.min}`).join('\n');
     window.open('data:text/csv;charset=utf-8,' + encodeURI(csv));
 }
 
-migrateAndLoad();
+loadData();
 </script>
 </body>
 </html>
