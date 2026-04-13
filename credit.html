@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Snowball v2.2.5</title>
+    <title>Debt Snowball v2.2.6</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { 
@@ -96,18 +96,16 @@
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight:bold;">Backup</span>
-    <span>v2.2.5</span>
+    <span>v2.2.6 Sync</span>
     <span onclick="nuke()" style="color:var(--danger)">Reset</span>
 </div>
 
 <script>
-// RESTORED ORIGINAL KEY
 const KEY = 'debt_v125'; 
 const COLORS = ['#2ecc71', '#3498db', '#9b59b6', '#f1c40f', '#e67e22', '#1abc9c', '#e74c3c'];
 let activeChart, currentView = 0;
 let cards = JSON.parse(localStorage.getItem(KEY)) || [];
 
-// Swipe Logic
 let touchStartX = 0;
 const chartZone = document.getElementById('chart-zone');
 if (chartZone) {
@@ -130,7 +128,6 @@ function initUI() {
     const now = new Date();
     const curMonthKey = (now.getMonth() + 1) + '-' + now.getFullYear();
 
-    // Sort by APR Highest to Lowest (Avalanche)
     cards.sort((a, b) => (a.bal <= 0) - (b.bal <= 0) || b.apr - a.apr);
     const targetIdx = cards.findIndex(c => c.bal > 0);
 
@@ -146,142 +143,4 @@ function initUI() {
         list.innerHTML += `
             <div class="card-container">
                 <div class="card-inner">
-                    <div class="card-front" onclick="toggleFlip(this)" style="border-left: 6px solid ${color}; opacity: ${c.bal <= 0 ? 0.6 : 1}">
-                        <div class="card-header">
-                            <div>${isTarget ? '<span class="target-tag">TARGET</span>' : ''}</div>
-                            <button class="paid-btn ${isPaidThisMonth ? 'active' : ''}" onclick="event.stopPropagation(); markPaid(${i})">
-                                ${isPaidThisMonth ? 'PAID ✓' : 'MARK PAID'}
-                            </button>
-                        </div>
-                        <input type="text" onchange="updateData(${i}, 'name', this.value)" value="${c.name}" onclick="event.stopPropagation()" style="border:none; font-weight:800; background:none; font-size:17px; width:100%; color:#fff;">
-                        <div class="input-row" onclick="event.stopPropagation()">
-                            <div><label>Balance</label><input type="number" step="0.01" onchange="updateData(${i}, 'bal', this.value)" value="${c.bal}"></div>
-                            <div><label>Min $</label><input type="number" step="0.01" onchange="updateData(${i}, 'min', this.value)" value="${c.min}"></div>
-                            <div><label>Due</label><input type="date" onchange="updateData(${i}, 'due', this.value)" value="${c.due || ''}"></div>
-                        </div>
-                        <div class="pay-row" onclick="event.stopPropagation()">
-                            <input type="number" step="0.01" id="p-${i}" placeholder="Pay $">
-                            <button onclick="applyPayment(${i})" style="flex: 0 0 100px;">Apply</button>
-                        </div>
-                    </div>
-                    <div class="card-back" onclick="toggleFlip(this)" style="border-left: 6px solid ${color}">
-                        <div class="card-header">
-                             ${isTarget ? '<span class="target-tag">TARGET</span>' : ''}
-                        </div>
-                        <div style="text-align:center; flex:1; display:flex; justify-content:center; align-items:center; gap: 20px;">
-                            <div class="progress-ring">
-                                <svg width="70" height="70"><circle class="progress-ring__background" cx="35" cy="35" r="31"/><circle class="progress-ring__circle" stroke="${color}" stroke-dashoffset="${ringOffset}" cx="35" cy="35" r="31"/></svg>
-                                <div class="progress-label">${Math.round(prog)}%</div>
-                            </div>
-                            <div style="flex: 1; text-align:left;">
-                                <label style="margin:0;">Remaining</label>
-                                <div style="font-size:22px; font-weight:900; color:#fff;">$${(parseFloat(c.bal) || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
-                                <div style="margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
-                                    <span style="font-size:10px; font-weight:700; color:#a4b0be;">APR RATE</span>
-                                    <input type="number" step="0.1" onchange="updateData(${i}, 'apr', this.value)" value="${c.apr}" style="width:60px; text-align:right; font-weight:900; border:none; background:none; padding:0; color:#fff; font-size:16px;" onclick="event.stopPropagation()">
-                                </div>
-                            </div>
-                        </div>
-                        <div style="font-size:10px; text-align:center; color:#ced6e0; margin-top:10px;">Tap to Flip Back</div>
-                    </div>
-                </div>
-            </div>`;
-    });
-    calculate();
-}
-
-function updateData(i, f, v) {
-    cards[i][f] = (f === 'name' || f === 'due') ? v : parseFloat(v) || 0;
-    localStorage.setItem(KEY, JSON.stringify(cards));
-    calculate(); 
-}
-
-function calculate() {
-    let total = 0, totalMin = 0, aprSum = 0;
-    cards.forEach(c => { 
-        total += (parseFloat(c.bal) || 0); 
-        totalMin += (parseFloat(c.min) || 0); 
-        aprSum += (parseFloat(c.apr) || 0); 
-    });
-    
-    document.getElementById('main-debt').innerText = '$' + total.toLocaleString(undefined, {minimumFractionDigits: 2});
-    document.getElementById('stat-min').innerText = '$' + Math.round(totalMin);
-    document.getElementById('stat-apr').innerText = cards.length ? Math.round(aprSum / cards.length) + '%' : '0%';
-    
-    const projection = projectAvalanche(cards);
-    if (projection.months > 0) {
-        let d = new Date(); d.setMonth(d.getMonth() + projection.months);
-        document.getElementById('main-freedom').innerText = "FREEDOM: " + d.toLocaleDateString('en-US', {month:'short', year:'numeric'}).toUpperCase();
-    } else {
-        document.getElementById('main-freedom').innerText = total > 0 ? "ADD MIN PAYMENTS" : "DEBT FREE!";
-    }
-    
-    try {
-        renderCurrentChart(projection);
-    } catch (e) { console.error("Chart error:", e); }
-}
-
-function renderCurrentChart(projection) {
-    const ctx = document.getElementById('mainChart');
-    if (!ctx) return;
-    if (activeChart) activeChart.destroy();
-    document.querySelectorAll('.nav-dot').forEach((d, i) => d.className = i === currentView ? 'nav-dot active' : 'nav-dot');
-
-    const config = {
-        type: 'line',
-        data: {},
-        options: { maintainAspectRatio: false, animation: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#747d8c', font: { size: 9 } } } } }
-    };
-
-    if (currentView === 0) {
-        config.data = { labels: projection.timeline.map((_, i) => i), datasets: [{ data: projection.timeline, borderColor: '#2ecc71', backgroundColor: 'rgba(46, 204, 113, 0.1)', fill: true, pointRadius: 0 }] };
-    } else if (currentView === 1) {
-        config.type = 'doughnut';
-        config.data = { labels: cards.map(c => c.name), datasets: [{ data: cards.map(c => c.bal), backgroundColor: COLORS, borderWidth: 0 }] };
-        config.options.cutout = '70%'; config.options.scales = { x: { display: false }, y: { display: false } };
-    } else {
-        config.type = 'bar';
-        config.data = { labels: cards.map(c => c.name), datasets: [{ data: cards.map(c => c.apr), backgroundColor: '#3498db', borderRadius: 5 }] };
-    }
-    activeChart = new Chart(ctx, config);
-}
-
-function projectAvalanche(cards) {
-    let tempCards = cards.filter(c => parseFloat(c.bal) > 0).map(c => ({...c}));
-    if (tempCards.length === 0) return { months: 0, timeline: [] };
-    let totalPay = tempCards.reduce((s, c) => s + (parseFloat(c.min) || 0), 0);
-    let months = 0, timeline = [];
-    while (months < 360) {
-        months++;
-        let currentTotal = 0;
-        let pill = totalPay;
-        tempCards.forEach(c => {
-            let i = (c.bal * ((c.apr/100)/12));
-            c.bal = (c.bal + i) - c.min;
-            pill -= c.min;
-            currentTotal += c.bal;
-        });
-        if (tempCards[0]) { tempCards[0].bal -= pill; currentTotal -= pill; if (tempCards[0].bal <= 0) tempCards.shift(); }
-        timeline.push(Math.max(0, currentTotal));
-        if (currentTotal <= 0) break;
-    }
-    return { months, timeline };
-}
-
-function addCard() { cards.push({name: "New Card", bal: 0, min: 0, apr: 0, due: ""}); localStorage.setItem(KEY, JSON.stringify(cards)); initUI(); }
-function markPaid(i) { const now = new Date(); cards[i].lastPaidMonth = (now.getMonth() + 1) + '-' + now.getFullYear(); updateData(i, 'lastPaidMonth', (now.getMonth() + 1) + '-' + now.getFullYear()); }
-function applyPayment(i) {
-    const input = document.getElementById(`p-${i}`);
-    const amt = parseFloat(input.value) || 0;
-    if (amt > 0) { cards[i].bal = Math.max(0, cards[i].bal - amt); input.value = ''; localStorage.setItem(KEY, JSON.stringify(cards)); initUI(); }
-}
-function nuke() { if(confirm("Clear data?")) { localStorage.clear(); location.reload(); } }
-function exportCSV() { 
-    let csv = "Name,Balance,Min,APR,Due\n" + cards.map(c => `${c.name},${c.bal},${c.min},${c.apr},${c.due}`).join('\n');
-    window.open('data:text/csv;charset=utf-8,' + encodeURI(csv));
-}
-
-initUI();
-</script>
-</body>
-</html>
+                    <div class="card-front" onclick="toggleFlip(this)" style="border-left: 6px solid ${color};
