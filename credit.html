@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Debt Tracker v2.4.3</title>
+    <title>Debt Tracker v2.4.4</title>
     <style>
         :root { --bg: #1e272e; --primary: #2ecc71; --accent: #3498db; --danger: #ff4757; --text: #f4f7f6; --card-bg: #2f3640; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 10px; padding-bottom: 100px; color: var(--text); overflow-x: hidden; }
@@ -12,22 +12,24 @@
         .main-total { font-size: 32px; font-weight: 800; }
         .main-freedom { background: rgba(46, 204, 113, 0.1); color: var(--primary); font-size: 11px; font-weight: 800; padding: 5px 12px; border-radius: 20px; display: inline-block; margin-top: 8px; text-transform: uppercase; }
         
-        .card-container { margin-bottom: 15px; border-radius: 20px; padding: 18px; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; gap: 12px; position: relative; }
+        .card-container { margin-bottom: 15px; border-radius: 20px; padding: 18px; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; gap: 12px; position: relative; transition: opacity 0.3s; }
         .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
         
         .progress-ring { position: relative; width: 54px; height: 54px; }
         .progress-ring svg { transform: rotate(-90deg); }
-        .ring-circle { fill: none; stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 0.6s ease; }
+        .ring-circle { fill: none; stroke-width: 6; stroke-linecap: round; }
         .ring-bg { stroke: rgba(255,255,255,0.05); }
-        .ring-bar { stroke: var(--primary); stroke-dasharray: 151; stroke-dashoffset: 151; }
+        .ring-bar { stroke: var(--primary); stroke-dasharray: 151; transition: stroke-dashoffset 0.6s ease; }
         .prog-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; }
 
+        .paid-btn { background: #353b48; color: #a4b0be; font-size: 9px; padding: 6px 12px; border-radius: 8px; font-weight: 800; border: none; text-transform: uppercase; }
+        .paid-btn.active { background: var(--primary); color: white; }
+        
         .target-tag { background: var(--accent); color: white; font-size: 8px; font-weight: 900; padding: 3px 8px; border-radius: 5px; text-transform: uppercase; margin-bottom: 4px; display: inline-block; }
         label { font-size: 8px; font-weight: 800; color: #a4b0be; text-transform: uppercase; margin-bottom: 4px; display: block; }
         input { width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; font-size: 13px; background: rgba(0,0,0,0.2); color: #fff; box-sizing: border-box; }
         
-        .reset-link { font-size: 9px; color: var(--danger); opacity: 0.6; text-decoration: none; margin-top: 5px; text-align: right; display: block; font-weight: 700; cursor: pointer; }
-        
+        .reset-link { font-size: 9px; color: var(--danger); opacity: 0.4; text-decoration: none; text-align: right; display: block; font-weight: 700; cursor: pointer; }
         .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.95); padding: 18px 0; font-size: 11px; display: flex; justify-content: space-around; z-index: 100; border-top: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
     </style>
 </head>
@@ -46,7 +48,7 @@
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight: 800;">EXPORT CSV</span>
-    <span style="opacity: 0.4;">v2.4.3</span>
+    <span style="opacity: 0.4;">v2.4.4</span>
     <span onclick="nuke()" style="color:var(--danger); font-weight: 800;">WIPE ALL</span>
 </div>
 
@@ -66,6 +68,9 @@ function renderUI() {
     const list = document.getElementById('card-list');
     list.innerHTML = '';
     
+    const now = new Date();
+    const curMonthKey = (now.getMonth() + 1) + '-' + now.getFullYear();
+    
     cards.sort((a, b) => (parseFloat(b.apr) || 0) - (parseFloat(a.apr) || 0));
     const targetIdx = cards.findIndex(c => parseFloat(c.bal) > 0);
 
@@ -75,12 +80,16 @@ function renderUI() {
         const highest = parseFloat(c.highestBal) || bal;
         const progPercent = highest > bal ? Math.round(((highest - bal) / highest) * 100) : 0;
         const offset = 151 - (151 * (progPercent / 100));
+        const isPaid = c.lastPaidMonth === curMonthKey;
 
         list.innerHTML += `
-            <div class="card-container" style="border-left: 5px solid ${isTarget ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}">
+            <div class="card-container" style="opacity: ${isPaid ? 0.5 : 1}; border-left: 5px solid ${isTarget ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}">
                 <div class="card-header">
                     <div style="flex:1">
-                        ${isTarget ? '<span class="target-tag">TARGET</span>' : ''}
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                            ${isTarget ? '<span class="target-tag">TARGET</span>' : '<span></span>'}
+                            <button class="paid-btn ${isPaid ? 'active' : ''}" onclick="markPaid(${i})">${isPaid ? 'PAID ✓' : 'MARK PAID'}</button>
+                        </div>
                         <input type="text" value="${c.name || ''}" placeholder="Debt Name" onchange="update(${i}, 'name', this.value)" style="font-weight:800; border:none; background:none; font-size:16px; width:100%; color:#fff;">
                     </div>
                     <div class="progress-ring">
@@ -91,15 +100,27 @@ function renderUI() {
                         <div class="prog-text">${progPercent}%</div>
                     </div>
                 </div>
-                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
                     <div><label>Balance</label><input type="number" step="0.01" value="${bal}" onchange="update(${i}, 'bal', this.value)"></div>
                     <div><label>APR %</label><input type="number" step="0.1" value="${c.apr || 0}" onchange="update(${i}, 'apr', this.value)"></div>
-                    <div><label>Min Pay</label><input type="number" value="${c.min || 0}" onchange="update(${i}, 'min', this.value)"></div>
                 </div>
-                <span class="reset-link" onclick="resetHighest(${i})">RESET PROGRESS BASELINE</span>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                    <div><label>Min Pay</label><input type="number" value="${c.min || 0}" onchange="update(${i}, 'min', this.value)"></div>
+                    <div><label>Due Date</label><input type="date" value="${c.due || ''}" onchange="update(${i}, 'due', this.value)"></div>
+                </div>
+                <span class="reset-link" onclick="resetHighest(${i})">RESET BASELINE</span>
             </div>`;
     });
     calculate();
+}
+
+function markPaid(i) {
+    const now = new Date();
+    const monthKey = (now.getMonth() + 1) + '-' + now.getFullYear();
+    // Toggle paid status
+    cards[i].lastPaidMonth = (cards[i].lastPaidMonth === monthKey) ? "" : monthKey;
+    localStorage.setItem(KEY, JSON.stringify(cards));
+    renderUI();
 }
 
 function resetHighest(i) {
@@ -109,10 +130,8 @@ function resetHighest(i) {
 }
 
 function update(i, field, val) {
-    cards[i][field] = (field === 'name') ? val : parseFloat(val) || 0;
-    if (field === 'bal' && cards[i].bal > (cards[i].highestBal || 0)) {
-        cards[i].highestBal = cards[i].bal;
-    }
+    cards[i][field] = (field === 'name' || field === 'due') ? val : parseFloat(val) || 0;
+    if (field === 'bal' && cards[i].bal > (cards[i].highestBal || 0)) cards[i].highestBal = cards[i].bal;
     localStorage.setItem(KEY, JSON.stringify(cards));
     if (field === 'apr' || field === 'bal') renderUI();
     else calculate();
@@ -122,10 +141,8 @@ function calculate() {
     let total = 0;
     cards.forEach(c => total += (parseFloat(c.bal) || 0));
     document.getElementById('main-debt').innerText = '$' + total.toLocaleString(undefined, {minimumFractionDigits:2});
-    
     const months = projectTimeline(cards);
     const freedomEl = document.getElementById('main-freedom');
-    
     if (months > 0) {
         let d = new Date(); d.setMonth(d.getMonth() + months);
         freedomEl.innerText = "Freedom: " + d.toLocaleDateString('en-US', {month:'short', year:'numeric'});
@@ -154,7 +171,7 @@ function projectTimeline(cards) {
 }
 
 function addCard() {
-    cards.push({name: "New Debt", bal: 0, apr: 0, min: 0, highestBal: 0});
+    cards.push({name: "New Debt", bal: 0, apr: 0, min: 0, highestBal: 0, due: "", lastPaidMonth: ""});
     renderUI();
 }
 
