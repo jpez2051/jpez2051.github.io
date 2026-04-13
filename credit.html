@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Tracker v2.3.1</title>
+    <title>Debt Tracker v2.3.2</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { 
@@ -25,6 +25,11 @@
         .main-total { font-size: 32px; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
         .main-freedom { background: rgba(46, 204, 113, 0.1); color: var(--primary); font-size: 11px; font-weight: 800; letter-spacing: 1.5px; padding: 5px 12px; border-radius: 20px; display: inline-block; margin-top: 8px; text-transform: uppercase; }
 
+        .stat-grid { display: flex; justify-content: space-around; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; }
+        .stat-item { text-align: center; }
+        .stat-val { font-size: 16px; font-weight: 800; color: #fff; display: block; }
+        .stat-lab { font-size: 8px; font-weight: 800; color: #a4b0be; text-transform: uppercase; }
+
         .chart-carousel { background: rgba(255,255,255,0.03); border-radius: 18px; padding: 15px; margin-bottom: 20px; height: 190px; position: relative; overflow: hidden; touch-action: pan-y; }
         .chart-nav { display: flex; justify-content: center; gap: 6px; margin-top: 8px; }
         .nav-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.2); transition: all 0.3s; }
@@ -43,7 +48,7 @@
         }
         
         .card-back { transform: rotateY(180deg); }
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; height: 25px; }
         .target-tag { background: var(--accent); color: white; font-size: 8px; font-weight: 900; padding: 3px 8px; border-radius: 5px; text-transform: uppercase; }
         
         .paid-btn { background: #353b48; color: #a4b0be; font-size: 9px; padding: 5px 10px; border-radius: 6px; font-weight: 800; border: none; }
@@ -62,7 +67,8 @@
         .progress-ring__background { stroke: rgba(255,255,255,0.1); stroke-width: 8; fill: none; }
         .progress-label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; }
 
-        .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); text-align: center; padding: 15px 0; font-size: 10px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-around; z-index: 100; }
+        .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); text-align: center; padding: 15px 0; font-size: 10px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-around; z-index: 100; align-items: center;}
+        #clock { font-weight: 800; color: var(--accent); min-width: 60px; }
     </style>
 </head>
 <body>
@@ -70,6 +76,10 @@
 <div class="dashboard">
     <div class="main-total" id="main-debt">$0.00</div>
     <div id="main-freedom" class="main-freedom">Calculating...</div>
+    <div class="stat-grid">
+        <div class="stat-item"><span class="stat-val" id="stat-min">$0</span><span class="stat-lab">Min Due</span></div>
+        <div class="stat-item"><span class="stat-val" id="stat-apr">0%</span><span class="stat-lab">Avg APR</span></div>
+    </div>
 </div>
 
 <div class="chart-carousel" id="chart-zone">
@@ -84,16 +94,29 @@
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight:bold;">Backup</span>
-    <span>v2.3.1 Full</span>
+    <span id="clock">12:00 PM</span>
+    <span>v2.3.2</span>
     <span onclick="nuke()" style="color:var(--danger)">Reset</span>
 </div>
 
 <script>
 const KEY = 'debt_v125';
-const LEGACY_KEYS = ['debt_v125', 'debt_v124', 'v1.4.18', 'debt_data'];
 const COLORS = ['#2ecc71', '#3498db', '#9b59b6', '#f1c40f', '#e67e22', '#1abc9c', '#e74c3c'];
 let activeChart, currentView = 0;
-let cards = [];
+let cards = JSON.parse(localStorage.getItem(KEY)) || [];
+
+// Clock Function
+function updateClock() {
+    const now = new Date();
+    let hours = now.getHours();
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    document.getElementById('clock').innerText = `${hours}:${minutes} ${ampm}`;
+}
+setInterval(updateClock, 1000);
+updateClock();
 
 // Swipe Logic for Charts
 let touchStartX = 0;
@@ -107,24 +130,12 @@ chartZone.addEventListener('touchend', e => {
     }
 }, {passive: true});
 
-function loadData() {
-    let recovered = null;
-    for (let k of LEGACY_KEYS) {
-        let d = localStorage.getItem(k);
-        if (d) { recovered = JSON.parse(d); break; }
-    }
-    cards = recovered || [];
-    localStorage.setItem(KEY, JSON.stringify(cards));
-    initUI();
-}
-
 function initUI() {
     const list = document.getElementById('card-list');
     list.innerHTML = '';
     const now = new Date();
     const curMonthKey = (now.getMonth() + 1) + '-' + now.getFullYear();
 
-    // Avalanche Sort: Paid cards at bottom, then highest APR to lowest
     cards.sort((a, b) => (a.bal <= 0) - (b.bal <= 0) || b.apr - a.apr);
     const targetIdx = cards.findIndex(c => c.bal > 0);
 
@@ -147,7 +158,7 @@ function initUI() {
                                 ${isPaidThisMonth ? 'PAID ✓' : 'MARK PAID'}
                             </button>
                         </div>
-                        <input type="text" value="${c.name}" onchange="updateData(${i}, 'name', this.value)" onclick="event.stopPropagation()" style="font-weight:800; background:none; border:none; font-size:18px; padding:0;">
+                        <input type="text" value="${c.name}" onchange="updateData(${i}, 'name', this.value)" onclick="event.stopPropagation()" style="font-weight:800; background:none; border:none; font-size:18px; padding:0; color:#fff;">
                         <div class="input-row" onclick="event.stopPropagation()">
                             <div><label>Balance</label><input type="number" step="0.01" value="${c.bal}" onchange="updateData(${i}, 'bal', this.value)"></div>
                             <div><label>APR %</label><input type="number" step="0.1" value="${c.apr}" onchange="updateData(${i}, 'apr', this.value)"></div>
@@ -166,7 +177,7 @@ function initUI() {
                             <div>
                                 <label>REMAINING</label>
                                 <div style="font-size:22px; font-weight:900;" id="back-bal-${i}">$${(parseFloat(c.bal) || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
-                                <div style="margin-top:10px;"><label>MIN PAYMENT</label><input type="number" value="${c.min || 0}" onchange="updateData(${i}, 'min', this.value)" style="width:80px; padding:5px;"></div>
+                                <div style="margin-top:10px;"><label>MIN PAYMENT</label><input type="number" value="${c.min || 0}" onchange="updateData(${i}, 'min', this.value)" onclick="event.stopPropagation()" style="width:80px; padding:5px;"></div>
                             </div>
                         </div>
                     </div>
@@ -180,66 +191,79 @@ function updateData(i, f, v) {
     cards[i][f] = (f === 'name' || f === 'lastPaidMonth') ? v : parseFloat(v) || 0;
     if (f === 'bal') {
         if (cards[i].bal > cards[i].highestBal) cards[i].highestBal = cards[i].bal;
-        syncCardUI(i);
     }
     localStorage.setItem(KEY, JSON.stringify(cards));
-    calculate();
-}
-
-function syncCardUI(i) {
-    const prog = cards[i].highestBal > 0 ? ((cards[i].highestBal - cards[i].bal) / cards[i].highestBal) * 100 : 0;
-    const ringOffset = 195 - (prog / 100) * 195;
-    const backBal = document.getElementById(`back-bal-${i}`);
-    const ring = document.getElementById(`ring-${i}`);
-    const label = document.getElementById(`label-${i}`);
-    if (backBal) backBal.innerText = '$' + cards[i].bal.toLocaleString(undefined, {minimumFractionDigits: 2});
-    if (ring) ring.style.strokeDashoffset = ringOffset;
-    if (label) label.innerText = Math.round(prog) + '%';
+    initUI(); // Re-render to update target tags and sorting
 }
 
 function calculate() {
-    let total = 0, totalMin = 0;
+    let total = 0, totalMin = 0, aprSum = 0, count = 0;
     cards.forEach(c => { 
-        total += (parseFloat(c.bal) || 0); 
-        totalMin += (parseFloat(c.min) || 0);
+        let b = (parseFloat(c.bal) || 0);
+        total += b; 
+        if (b > 0) {
+            totalMin += (parseFloat(c.min) || 0);
+            aprSum += (parseFloat(c.apr) || 0);
+            count++;
+        }
     });
     
     document.getElementById('main-debt').innerText = '$' + total.toLocaleString(undefined, {minimumFractionDigits: 2});
+    document.getElementById('stat-min').innerText = '$' + Math.round(totalMin);
+    document.getElementById('stat-apr').innerText = count > 0 ? Math.round(aprSum / count) + '%' : '0%';
     
-    // Freedom Projection (Basic Interest-Free Approximation)
-    if (total > 0 && totalMin > 0) {
-        let months = Math.ceil(total / totalMin);
-        let d = new Date(); d.setMonth(d.getMonth() + months);
+    const projection = projectTimeline(cards);
+    if (projection.months > 0) {
+        let d = new Date(); d.setMonth(d.getMonth() + projection.months);
         document.getElementById('main-freedom').innerText = "Freedom: " + d.toLocaleDateString('en-US', {month:'short', year:'numeric'});
     } else {
         document.getElementById('main-freedom').innerText = total > 0 ? "Add Min Payments" : "Debt Free!";
     }
     
-    renderChart();
+    renderChart(projection);
 }
 
-function renderChart() {
+function projectTimeline(cards) {
+    let temp = cards.filter(c => c.bal > 0).map(c => ({...c}));
+    if (temp.length === 0) return { months: 0, timeline: [] };
+    let totalPay = temp.reduce((s, c) => s + (parseFloat(c.min) || 0), 0);
+    let months = 0, timeline = [];
+    while (months < 360) {
+        months++;
+        let currentTotal = 0;
+        let pool = totalPay;
+        temp.forEach(c => {
+            let interest = (c.bal * ((c.apr/100)/12));
+            c.bal = (c.bal + interest) - c.min;
+            pool -= c.min;
+            currentTotal += c.bal;
+        });
+        if (temp[0]) { temp[0].bal -= pool; currentTotal -= pool; if (temp[0].bal <= 0) temp.shift(); }
+        timeline.push(Math.max(0, currentTotal));
+        if (currentTotal <= 0) break;
+    }
+    return { months, timeline };
+}
+
+function renderChart(projection) {
     const ctx = document.getElementById('mainChart');
-    if (!ctx || cards.length === 0) return;
+    if (!ctx) return;
     if (activeChart) activeChart.destroy();
-    
     document.querySelectorAll('.nav-dot').forEach((d, idx) => d.className = idx === currentView ? 'nav-dot active' : 'nav-dot');
 
-    const config = {
-        options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } }
-    };
+    const config = { options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } } };
 
-    if (currentView === 0) { // Doughnut
+    if (currentView === 0) { // Line Chart
+        config.type = 'line';
+        config.data = { labels: projection.timeline.map((_, i) => i), datasets: [{ data: projection.timeline, borderColor: '#2ecc71', backgroundColor: 'rgba(46, 204, 113, 0.1)', fill: true, pointRadius: 0, tension: 0.4 }] };
+        config.options.scales.y = { display: true, ticks: { color: '#747d8c', font: { size: 8 } }, grid: { color: 'rgba(255,255,255,0.05)' } };
+    } else if (currentView === 1) { // Doughnut
         config.type = 'doughnut';
         config.data = { labels: cards.map(c => c.name), datasets: [{ data: cards.map(c => c.bal), backgroundColor: COLORS, borderWidth: 0 }] };
         config.options.cutout = '70%';
-    } else if (currentView === 1) { // APR Bar
+    } else { // APR Bar
         config.type = 'bar';
         config.data = { labels: cards.map(c => c.name), datasets: [{ data: cards.map(c => c.apr), backgroundColor: '#3498db', borderRadius: 5 }] };
-        config.options.scales.y = { display: true, ticks: { color: '#747d8c', font: { size: 9 } } };
-    } else { // Progress Bar
-        config.type = 'bar';
-        config.data = { labels: cards.map(c => c.name), datasets: [{ data: cards.map(c => c.highestBal > 0 ? ((c.highestBal - c.bal) / c.highestBal) * 100 : 0), backgroundColor: '#2ecc71', borderRadius: 5 }] };
         config.options.scales.y = { display: true, ticks: { color: '#747d8c', font: { size: 9 } } };
     }
     activeChart = new Chart(ctx, config);
@@ -252,7 +276,6 @@ function applyPayment(i) {
         cards[i].bal = Math.max(0, cards[i].bal - amt);
         input.value = '';
         updateData(i, 'bal', cards[i].bal);
-        initUI();
     }
 }
 
@@ -260,7 +283,6 @@ function markPaid(i) {
     const now = new Date();
     const monthKey = (now.getMonth() + 1) + '-' + now.getFullYear();
     updateData(i, 'lastPaidMonth', monthKey);
-    initUI();
 }
 
 function toggleFlip(el) { el.closest('.card-container').classList.toggle('flipped'); }
@@ -271,7 +293,7 @@ function exportCSV() {
     window.open('data:text/csv;charset=utf-8,' + encodeURI(csv));
 }
 
-loadData();
+initUI();
 </script>
 </body>
 </html>
