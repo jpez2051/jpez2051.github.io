@@ -4,18 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Debt Tracker v2.4.1</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Debt Tracker v2.4.2</title>
     <style>
         :root { --bg: #1e272e; --primary: #2ecc71; --accent: #3498db; --danger: #ff4757; --text: #f4f7f6; --card-bg: #2f3640; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 10px; padding-bottom: 100px; color: var(--text); overflow-x: hidden; }
         .dashboard { background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(30,39,46,0) 100%); padding: 25px 12px 15px 12px; text-align: center; }
         .main-total { font-size: 32px; font-weight: 800; }
         .main-freedom { background: rgba(46, 204, 113, 0.1); color: var(--primary); font-size: 11px; font-weight: 800; padding: 5px 12px; border-radius: 20px; display: inline-block; margin-top: 8px; text-transform: uppercase; }
-        .card-container { margin-bottom: 15px; border-radius: 20px; padding: 18px; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08); border-left: 5px solid var(--accent); }
-        .target-tag { background: var(--accent); color: white; font-size: 8px; font-weight: 900; padding: 3px 8px; border-radius: 5px; text-transform: uppercase; margin-bottom: 8px; display: inline-block; }
+        
+        .card-container { margin-bottom: 15px; border-radius: 20px; padding: 18px; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; gap: 12px; position: relative; }
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        
+        .progress-ring { position: relative; width: 54px; height: 54px; }
+        .progress-ring svg { transform: rotate(-90deg); }
+        .ring-circle { fill: none; stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 0.6s ease; }
+        .ring-bg { stroke: rgba(255,255,255,0.05); }
+        .ring-bar { stroke: var(--primary); stroke-dasharray: 151; stroke-dashoffset: 151; }
+        .prog-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; }
+
+        .target-tag { background: var(--accent); color: white; font-size: 8px; font-weight: 900; padding: 3px 8px; border-radius: 5px; text-transform: uppercase; margin-bottom: 4px; display: inline-block; }
         label { font-size: 8px; font-weight: 800; color: #a4b0be; text-transform: uppercase; margin-bottom: 4px; display: block; }
         input { width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; font-size: 13px; background: rgba(0,0,0,0.2); color: #fff; box-sizing: border-box; }
+        
         .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.95); padding: 18px 0; font-size: 11px; display: flex; justify-content: space-around; z-index: 100; border-top: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
     </style>
 </head>
@@ -34,7 +44,7 @@
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight: 800;">EXPORT CSV</span>
-    <span style="opacity: 0.4;">v2.4.1</span>
+    <span style="opacity: 0.4;">v2.4.2</span>
     <span onclick="nuke()" style="color:var(--danger); font-weight: 800;">WIPE ALL</span>
 </div>
 
@@ -48,7 +58,6 @@ function loadData() {
         cards = raw ? JSON.parse(raw) : [];
         renderUI();
     } catch (e) {
-        console.error("Load failed", e);
         cards = [];
     }
 }
@@ -57,18 +66,33 @@ function renderUI() {
     const list = document.getElementById('card-list');
     list.innerHTML = '';
     
-    // Avalanche Sort: Highest APR first
     cards.sort((a, b) => (parseFloat(b.apr) || 0) - (parseFloat(a.apr) || 0));
     const targetIdx = cards.findIndex(c => parseFloat(c.bal) > 0);
 
     cards.forEach((c, i) => {
         const isTarget = (i === targetIdx && parseFloat(c.bal) > 0);
+        const bal = parseFloat(c.bal) || 0;
+        const highest = parseFloat(c.highestBal) || bal;
+        const progPercent = highest > 0 ? Math.round(((highest - bal) / highest) * 100) : 0;
+        const offset = 151 - (151 * (progPercent / 100));
+
         list.innerHTML += `
-            <div class="card-container">
-                ${isTarget ? '<span class="target-tag">HIGHEST APR TARGET</span>' : ''}
-                <input type="text" value="${c.name || ''}" placeholder="Debt Name" onchange="update(${i}, 'name', this.value)" style="font-weight:800; border:none; background:none; font-size:16px; margin-bottom:5px;">
+            <div class="card-container" style="border-left: 5px solid ${isTarget ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}">
+                <div class="card-header">
+                    <div style="flex:1">
+                        ${isTarget ? '<span class="target-tag">TARGET</span>' : ''}
+                        <input type="text" value="${c.name || ''}" placeholder="Debt Name" onchange="update(${i}, 'name', this.value)" style="font-weight:800; border:none; background:none; font-size:16px; width:100%; color:#fff;">
+                    </div>
+                    <div class="progress-ring">
+                        <svg width="54" height="54">
+                            <circle class="ring-circle ring-bg" cx="27" cy="27" r="24"></circle>
+                            <circle class="ring-circle ring-bar" cx="27" cy="27" r="24" style="stroke-dashoffset: ${offset}"></circle>
+                        </svg>
+                        <div class="prog-text">${progPercent}%</div>
+                    </div>
+                </div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
-                    <div><label>Balance</label><input type="number" step="0.01" value="${c.bal || 0}" onchange="update(${i}, 'bal', this.value)"></div>
+                    <div><label>Balance</label><input type="number" step="0.01" value="${bal}" onchange="update(${i}, 'bal', this.value)"></div>
                     <div><label>APR %</label><input type="number" step="0.1" value="${c.apr || 0}" onchange="update(${i}, 'apr', this.value)"></div>
                     <div><label>Min Pay</label><input type="number" value="${c.min || 0}" onchange="update(${i}, 'min', this.value)"></div>
                 </div>
@@ -79,8 +103,14 @@ function renderUI() {
 
 function update(i, field, val) {
     cards[i][field] = (field === 'name') ? val : parseFloat(val) || 0;
+    
+    // Update highest balance if current balance is manually increased
+    if (field === 'bal' && cards[i].bal > (cards[i].highestBal || 0)) {
+        cards[i].highestBal = cards[i].bal;
+    }
+    
     localStorage.setItem(KEY, JSON.stringify(cards));
-    if (field === 'apr' || field === 'bal') renderUI(); // Re-sort if balance/rate changes
+    if (field === 'apr' || field === 'bal') renderUI();
     else calculate();
 }
 
@@ -102,40 +132,25 @@ function calculate() {
 
 function projectTimeline(cards) {
     let temp = cards.filter(c => (parseFloat(c.bal) || 0) > 0).map(c => ({
-        bal: parseFloat(c.bal) || 0,
-        apr: parseFloat(c.apr) || 0,
-        min: parseFloat(c.min) || 0
+        bal: parseFloat(c.bal) || 0, apr: parseFloat(c.apr) || 0, min: parseFloat(c.min) || 0
     }));
-    
     let totalMin = temp.reduce((s, c) => s + c.min, 0);
     if (temp.length === 0 || totalMin <= 0) return 0;
-
     let months = 0;
     while (months < 360) {
-        months++;
-        let currentTotal = 0;
-        let pool = totalMin;
-        
+        months++; let pool = totalMin;
         temp.forEach(c => {
-            let interest = (c.bal * ((c.apr / 100) / 12));
-            c.bal = (c.bal + interest) - c.min;
+            c.bal = (c.bal + (c.bal * ((c.apr / 100) / 12))) - c.min;
             pool -= c.min;
-            currentTotal += c.bal;
         });
-
-        if (temp[0]) {
-            temp[0].bal -= pool;
-            currentTotal -= pool;
-            if (temp[0].bal <= 0) temp.shift();
-        }
-
-        if (currentTotal <= 0) break;
+        if (temp[0]) { temp[0].bal -= pool; if (temp[0].bal <= 0) temp.shift(); }
+        if (temp.length === 0) break;
     }
     return months;
 }
 
 function addCard() {
-    cards.push({name: "New Debt", bal: 0, apr: 0, min: 0});
+    cards.push({name: "New Debt", bal: 0, apr: 0, min: 0, highestBal: 0});
     renderUI();
 }
 
