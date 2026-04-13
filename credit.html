@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Debt Tracker v2.4.0</title>
+    <title>Debt Tracker v2.4.1</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #1e272e; --primary: #2ecc71; --accent: #3498db; --danger: #ff4757; --text: #f4f7f6; --card-bg: #2f3640; }
@@ -12,9 +12,11 @@
         .dashboard { background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(30,39,46,0) 100%); padding: 25px 12px 15px 12px; text-align: center; }
         .main-total { font-size: 32px; font-weight: 800; }
         .main-freedom { background: rgba(46, 204, 113, 0.1); color: var(--primary); font-size: 11px; font-weight: 800; padding: 5px 12px; border-radius: 20px; display: inline-block; margin-top: 8px; text-transform: uppercase; }
-        .card-container { margin-bottom: 15px; border-radius: 20px; padding: 18px; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08); }
+        .card-container { margin-bottom: 15px; border-radius: 20px; padding: 18px; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08); border-left: 5px solid var(--accent); }
+        .target-tag { background: var(--accent); color: white; font-size: 8px; font-weight: 900; padding: 3px 8px; border-radius: 5px; text-transform: uppercase; margin-bottom: 8px; display: inline-block; }
+        label { font-size: 8px; font-weight: 800; color: #a4b0be; text-transform: uppercase; margin-bottom: 4px; display: block; }
         input { width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; font-size: 13px; background: rgba(0,0,0,0.2); color: #fff; box-sizing: border-box; }
-        .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.95); padding: 18px 0; font-size: 11px; display: flex; justify-content: space-around; z-index: 100; border-top: 1px solid rgba(255,255,255,0.1); }
+        .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.95); padding: 18px 0; font-size: 11px; display: flex; justify-content: space-around; z-index: 100; border-top: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
     </style>
 </head>
 <body>
@@ -22,21 +24,17 @@
 <div id="app-root">
     <div class="dashboard">
         <div class="main-total" id="main-debt">$0.00</div>
-        <div id="main-freedom" class="main-freedom">Ready</div>
-    </div>
-    
-    <div id="chart-zone" style="height:150px; margin: 20px 0;">
-        <canvas id="mainChart"></canvas>
+        <div id="main-freedom" class="main-freedom">Calculating...</div>
     </div>
 
-    <div id="card-list"></div>
+    <div id="card-list" style="margin-top: 20px;"></div>
     
-    <button onclick="addCard()" style="background:var(--primary); color:white; padding:16px; border-radius:14px; width:100%; margin-top:20px; font-weight: 800; border:none;">+ ADD NEW DEBT</button>
+    <button onclick="addCard()" style="background:var(--primary); color:white; padding:16px; border-radius:14px; width:100%; margin-top:10px; font-weight: 800; border:none;">+ ADD NEW DEBT</button>
 </div>
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight: 800;">EXPORT CSV</span>
-    <span style="opacity: 0.4;">v2.4.0</span>
+    <span style="opacity: 0.4;">v2.4.1</span>
     <span onclick="nuke()" style="color:var(--danger); font-weight: 800;">WIPE ALL</span>
 </div>
 
@@ -47,30 +45,32 @@ let cards = [];
 function loadData() {
     try {
         const raw = localStorage.getItem(KEY);
-        if (raw) {
-            const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed)) {
-                cards = parsed;
-            }
-        }
+        cards = raw ? JSON.parse(raw) : [];
+        renderUI();
     } catch (e) {
-        console.error("Corrupted data found. Starting fresh.");
+        console.error("Load failed", e);
         cards = [];
     }
-    renderUI();
 }
 
 function renderUI() {
     const list = document.getElementById('card-list');
     list.innerHTML = '';
     
+    // Avalanche Sort: Highest APR first
+    cards.sort((a, b) => (parseFloat(b.apr) || 0) - (parseFloat(a.apr) || 0));
+    const targetIdx = cards.findIndex(c => parseFloat(c.bal) > 0);
+
     cards.forEach((c, i) => {
+        const isTarget = (i === targetIdx && parseFloat(c.bal) > 0);
         list.innerHTML += `
             <div class="card-container">
-                <input type="text" value="${c.name || ''}" placeholder="Name" onchange="update(${i}, 'name', this.value)">
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
-                    <input type="number" value="${c.bal || 0}" placeholder="Balance" onchange="update(${i}, 'bal', this.value)">
-                    <input type="number" value="${c.apr || 0}" placeholder="APR %" onchange="update(${i}, 'apr', this.value)">
+                ${isTarget ? '<span class="target-tag">HIGHEST APR TARGET</span>' : ''}
+                <input type="text" value="${c.name || ''}" placeholder="Debt Name" onchange="update(${i}, 'name', this.value)" style="font-weight:800; border:none; background:none; font-size:16px; margin-bottom:5px;">
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
+                    <div><label>Balance</label><input type="number" step="0.01" value="${c.bal || 0}" onchange="update(${i}, 'bal', this.value)"></div>
+                    <div><label>APR %</label><input type="number" step="0.1" value="${c.apr || 0}" onchange="update(${i}, 'apr', this.value)"></div>
+                    <div><label>Min Pay</label><input type="number" value="${c.min || 0}" onchange="update(${i}, 'min', this.value)"></div>
                 </div>
             </div>`;
     });
@@ -78,33 +78,70 @@ function renderUI() {
 }
 
 function update(i, field, val) {
-    cards[i][field] = field === 'name' ? val : parseFloat(val) || 0;
+    cards[i][field] = (field === 'name') ? val : parseFloat(val) || 0;
     localStorage.setItem(KEY, JSON.stringify(cards));
-    calculate();
+    if (field === 'apr' || field === 'bal') renderUI(); // Re-sort if balance/rate changes
+    else calculate();
 }
 
 function calculate() {
-    let total = cards.reduce((sum, c) => sum + (parseFloat(c.bal) || 0), 0);
-    document.getElementById('main-debt').innerText = '$' + total.toLocaleString();
-}
-
-function addCard() {
-    cards.push({name: "", bal: 0, apr: 0});
-    renderUI();
-}
-
-function nuke() {
-    if(confirm("Wipe all data?")) {
-        localStorage.clear();
-        location.reload();
+    let total = 0;
+    cards.forEach(c => total += (parseFloat(c.bal) || 0));
+    document.getElementById('main-debt').innerText = '$' + total.toLocaleString(undefined, {minimumFractionDigits:2});
+    
+    const months = projectTimeline(cards);
+    const freedomEl = document.getElementById('main-freedom');
+    
+    if (months > 0) {
+        let d = new Date(); d.setMonth(d.getMonth() + months);
+        freedomEl.innerText = "Freedom: " + d.toLocaleDateString('en-US', {month:'short', year:'numeric'});
+    } else {
+        freedomEl.innerText = total > 0 ? "Add Min Payments" : "Debt Free!";
     }
 }
 
-function exportCSV() {
-    alert(JSON.stringify(cards));
+function projectTimeline(cards) {
+    let temp = cards.filter(c => (parseFloat(c.bal) || 0) > 0).map(c => ({
+        bal: parseFloat(c.bal) || 0,
+        apr: parseFloat(c.apr) || 0,
+        min: parseFloat(c.min) || 0
+    }));
+    
+    let totalMin = temp.reduce((s, c) => s + c.min, 0);
+    if (temp.length === 0 || totalMin <= 0) return 0;
+
+    let months = 0;
+    while (months < 360) {
+        months++;
+        let currentTotal = 0;
+        let pool = totalMin;
+        
+        temp.forEach(c => {
+            let interest = (c.bal * ((c.apr / 100) / 12));
+            c.bal = (c.bal + interest) - c.min;
+            pool -= c.min;
+            currentTotal += c.bal;
+        });
+
+        if (temp[0]) {
+            temp[0].bal -= pool;
+            currentTotal -= pool;
+            if (temp[0].bal <= 0) temp.shift();
+        }
+
+        if (currentTotal <= 0) break;
+    }
+    return months;
 }
 
-// Start the app
+function addCard() {
+    cards.push({name: "New Debt", bal: 0, apr: 0, min: 0});
+    renderUI();
+}
+
+function nuke() { if(confirm("Wipe data?")) { localStorage.clear(); location.reload(); } }
+function exportCSV() { alert(JSON.stringify(cards)); }
+
 loadData();
 </script>
 </body>
