@@ -3,56 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Debt Snowball v2.2.9</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Debt Tracker v2.3.0</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --bg: #1e272e; --primary: #2ecc71; --accent: #3498db; --danger: #ff4757; --text: #f4f7f6; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 10px; padding-bottom: 120px; color: var(--text); overflow-x: hidden; }
-        .dashboard { background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(30,39,46,0) 100%); padding: 25px 12px; text-align: center; }
-        .main-total { font-size: 32px; font-weight: 800; }
+        :root { 
+            --bg: #1e272e; --primary: #2ecc71; --accent: #3498db; 
+            --danger: #ff4757; --text: #f4f7f6; --card-bg: #2f3640;
+        }
+        
+        body { 
+            font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; 
+            padding: 10px; padding-bottom: 120px; color: var(--text); overflow-x: hidden; 
+        }
+
+        .dashboard { 
+            background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(30,39,46,0) 100%); 
+            padding: 25px 12px; text-align: center; margin-bottom: 5px;
+        }
+        .main-total { font-size: 32px; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        .main-freedom { background: rgba(46, 204, 113, 0.1); color: var(--primary); font-size: 11px; font-weight: 800; letter-spacing: 1.5px; padding: 5px 12px; border-radius: 20px; display: inline-block; margin-top: 8px; }
+
+        .chart-carousel { background: rgba(255,255,255,0.03); border-radius: 18px; padding: 15px; margin-bottom: 20px; height: 180px; position: relative; }
+
         .card-container { margin-bottom: 15px; perspective: 1200px; height: 260px; position: relative; }
-        .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; }
+        .card-inner { 
+            position: relative; width: 100%; height: 100%;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); 
+            transform-style: preserve-3d; 
+        }
         .card-container.flipped .card-inner { transform: rotateY(180deg); }
-        .card-front, .card-back { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; border-radius: 20px; padding: 18px; background: #2f3640; box-sizing: border-box; }
+
+        .card-front, .card-back { 
+            position: absolute; width: 100%; height: 100%; 
+            backface-visibility: hidden; -webkit-backface-visibility: hidden;
+            border-radius: 20px; padding: 18px;
+            border: 1px solid rgba(255,255,255,0.08); background: var(--card-bg); box-sizing: border-box; 
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2); display: flex; flex-direction: column;
+        }
+        
         .card-back { transform: rotateY(180deg); }
-        input { width: 100%; padding: 10px; border-radius: 10px; background: rgba(0,0,0,0.2); color: #fff; border: 1px solid #444; margin: 5px 0; }
-        button { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 700; width: 100%; cursor: pointer; }
-        .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.8); text-align: center; padding: 15px 0; font-size: 10px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-around; }
+        .target-tag { background: var(--accent); color: white; font-size: 8px; font-weight: 900; padding: 3px 8px; border-radius: 5px; text-transform: uppercase; }
+        
+        input { width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; font-size: 14px; background: rgba(0,0,0,0.2); box-sizing: border-box; color: #fff; margin-bottom: 8px; }
+        
+        .progress-ring { position: relative; width: 70px; height: 70px; margin: 0 auto; }
+        .progress-ring svg { transform: rotate(-90deg); }
+        .progress-ring__circle { stroke-dasharray: 195; stroke-dashoffset: 195; transition: stroke-dashoffset 0.5s ease; stroke-width: 8; fill: none; }
+        .progress-ring__background { stroke: rgba(255,255,255,0.1); stroke-width: 8; fill: none; }
+        .progress-label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; }
+
+        .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); text-align: center; padding: 15px 0; font-size: 10px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-around; z-index: 100; }
     </style>
 </head>
 <body>
 
 <div class="dashboard">
     <div class="main-total" id="main-debt">$0.00</div>
-    <div id="main-freedom" style="color: var(--primary); font-size: 11px; font-weight: 800; margin-top: 8px;">SCANNING DATA...</div>
+    <div id="main-freedom" class="main-freedom">AVALANCHE MODE</div>
+</div>
+
+<div class="chart-carousel" id="chart-zone" onclick="rotateChart()">
+    <canvas id="mainChart"></canvas>
 </div>
 
 <div id="card-list"></div>
-<button onclick="addCard()" style="background:var(--primary); margin-top: 20px;">+ ADD NEW DEBT</button>
+<button onclick="addCard()" style="background:var(--primary); color:white; padding:16px; border-radius:14px; width:100%; margin-bottom:30px; font-weight: 800; border:none;">+ ADD NEW DEBT</button>
 
 <div class="footer">
-    <span onclick="exportCSV()" style="color:var(--accent)">Backup</span>
-    <span>v2.2.9</span>
+    <span onclick="exportCSV()" style="color:var(--accent); font-weight:bold;">Backup</span>
+    <span>v2.3.0</span>
     <span onclick="nuke()" style="color:var(--danger)">Reset</span>
 </div>
 
 <script>
-const KEY = 'debt_v125'; 
-const LEGACY_KEYS = ['debt_v125', 'v1.4.18', 'debt_data'];
+const KEY = 'debt_v125';
+const LEGACY_KEYS = ['debt_v125', 'debt_v124', 'v1.4.18', 'debt_data'];
+const COLORS = ['#2ecc71', '#3498db', '#9b59b6', '#f1c40f', '#e67e22', '#1abc9c', '#e74c3c'];
+let activeChart, currentView = 0;
 let cards = [];
 
-// 1. DATA MIGRATION ENGINE
-function migrateData() {
-    let recoveredData = null;
-    for (let oldKey of LEGACY_KEYS) {
-        let raw = localStorage.getItem(oldKey);
-        if (raw) {
-            recoveredData = JSON.parse(raw);
-            console.log("Recovered data from:", oldKey);
-            break;
-        }
+function migrateAndLoad() {
+    let recovered = null;
+    for (let k of LEGACY_KEYS) {
+        let d = localStorage.getItem(k);
+        if (d) { recovered = JSON.parse(d); break; }
     }
-    cards = recoveredData || [];
+    cards = recovered || [];
     localStorage.setItem(KEY, JSON.stringify(cards));
     initUI();
 }
@@ -60,55 +97,93 @@ function migrateData() {
 function initUI() {
     const list = document.getElementById('card-list');
     list.innerHTML = '';
-    cards.sort((a, b) => (parseFloat(b.apr) || 0) - (parseFloat(a.apr) || 0)); // Avalanche Sort
+    cards.sort((a, b) => (parseFloat(b.apr) || 0) - (parseFloat(a.apr) || 0));
 
     cards.forEach((c, i) => {
+        const color = COLORS[i % COLORS.length];
+        if (!c.highestBal || c.bal > c.highestBal) c.highestBal = c.bal;
+        const prog = c.highestBal > 0 ? ((c.highestBal - c.bal) / c.highestBal) * 100 : 0;
+        const ringOffset = 195 - (prog / 100) * 195;
+
         list.innerHTML += `
-            <div class="card-container" id="card-${i}">
+            <div class="card-container">
                 <div class="card-inner">
-                    <div class="card-front" onclick="toggleFlip(this)">
-                        <input type="text" value="${c.name}" onchange="updateData(${i}, 'name', this.value)" onclick="event.stopPropagation()">
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                            <div><label style="font-size:9px">Balance</label><input type="number" value="${c.bal}" onchange="updateData(${i}, 'bal', this.value)" onclick="event.stopPropagation()"></div>
-                            <div><label style="font-size:9px">APR %</label><input type="number" value="${c.apr}" onchange="updateData(${i}, 'apr', this.value)" onclick="event.stopPropagation()"></div>
+                    <div class="card-front" onclick="toggleFlip(this)" style="border-left: 6px solid ${color}">
+                        <input type="text" value="${c.name}" onchange="updateData(${i}, 'name', this.value)" onclick="event.stopPropagation()" style="font-weight:800; background:none; border:none; font-size:18px;">
+                        <div style="display:flex; gap:10px; margin-top:10px;">
+                            <div style="flex:1"><label style="font-size:9px; opacity:0.6;">BALANCE</label><input type="number" step="0.01" value="${c.bal}" onchange="updateData(${i}, 'bal', this.value)" onclick="event.stopPropagation()"></div>
+                            <div style="flex:1"><label style="font-size:9px; opacity:0.6;">APR %</label><input type="number" step="0.1" value="${c.apr}" onchange="updateData(${i}, 'apr', this.value)" onclick="event.stopPropagation()"></div>
                         </div>
                     </div>
-                    <div class="card-back" onclick="toggleFlip(this)">
-                        <div style="text-align:center; padding-top:40px;">
-                            <div style="font-size:24px; font-weight:900;">$${(parseFloat(c.bal) || 0).toLocaleString()}</div>
-                            <div style="font-size:10px; opacity:0.6;">CURRENT BALANCE</div>
+                    <div class="card-back" onclick="toggleFlip(this)" style="border-left: 6px solid ${color}">
+                        <div style="display:flex; align-items:center; height:100%; gap:20px;">
+                            <div class="progress-ring">
+                                <svg width="70" height="70"><circle class="progress-ring__background" cx="35" cy="35" r="31"/><circle class="progress-ring__circle" stroke="${color}" id="ring-${i}" stroke-dashoffset="${ringOffset}" cx="35" cy="35" r="31"/></svg>
+                                <div class="progress-label" id="label-${i}">${Math.round(prog)}%</div>
+                            </div>
+                            <div>
+                                <div style="font-size:22px; font-weight:900;" id="back-bal-${i}">$${(parseFloat(c.bal) || 0).toLocaleString()}</div>
+                                <div style="font-size:10px; opacity:0.5;">REMAINING</div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>`;
     });
-    calculateTotals();
+    calculate();
 }
 
-function updateData(i, field, val) {
-    cards[i][field] = (field === 'name') ? val : parseFloat(val) || 0;
+function updateData(i, f, v) {
+    cards[i][f] = (f === 'name') ? v : parseFloat(v) || 0;
+    if (f === 'bal') {
+        if (cards[i].bal > cards[i].highestBal) cards[i].highestBal = cards[i].bal;
+        const prog = cards[i].highestBal > 0 ? ((cards[i].highestBal - cards[i].bal) / cards[i].highestBal) * 100 : 0;
+        const ringOffset = 195 - (prog / 100) * 195;
+        document.getElementById(`back-bal-${i}`).innerText = '$' + cards[i].bal.toLocaleString();
+        document.getElementById(`ring-${i}`).style.strokeDashoffset = ringOffset;
+        document.getElementById(`label-${i}`).innerText = Math.round(prog) + '%';
+    }
     localStorage.setItem(KEY, JSON.stringify(cards));
-    calculateTotals();
-    // Soft refresh of back-card labels without rebuilding the whole list
-    initUI(); 
+    calculate();
 }
 
-function calculateTotals() {
-    let total = cards.reduce((sum, c) => sum + (parseFloat(c.bal) || 0), 0);
+function calculate() {
+    let total = cards.reduce((s, c) => s + (parseFloat(c.bal) || 0), 0);
     document.getElementById('main-debt').innerText = '$' + total.toLocaleString(undefined, {minimumFractionDigits: 2});
-    document.getElementById('main-freedom').innerText = total > 0 ? "AVALANCHE MODE ACTIVE" : "DEBT FREE!";
+    renderChart();
+}
+
+function rotateChart() { currentView = (currentView + 1) % 2; renderChart(); }
+
+function renderChart() {
+    const ctx = document.getElementById('mainChart');
+    if (!ctx) return;
+    if (activeChart) activeChart.destroy();
+    
+    const config = {
+        type: currentView === 0 ? 'doughnut' : 'bar',
+        data: {
+            labels: cards.map(c => c.name),
+            datasets: [{
+                data: cards.map(c => c.bal),
+                backgroundColor: COLORS,
+                borderWidth: 0
+            }]
+        },
+        options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    };
+    activeChart = new Chart(ctx, config);
 }
 
 function toggleFlip(el) { el.closest('.card-container').classList.toggle('flipped'); }
-function addCard() { cards.push({name: "New Card", bal: 0, apr: 0}); localStorage.setItem(KEY, JSON.stringify(cards)); initUI(); }
-function nuke() { if(confirm("Clear all data?")) { localStorage.clear(); location.reload(); } }
+function addCard() { cards.push({name: "New Card", bal: 0, apr: 0, highestBal: 0}); localStorage.setItem(KEY, JSON.stringify(cards)); initUI(); }
+function nuke() { if(confirm("Nuke data?")) { localStorage.clear(); location.reload(); } }
 function exportCSV() { 
     let csv = "Name,Balance,APR\n" + cards.map(c => `${c.name},${c.bal},${c.apr}`).join('\n');
     window.open('data:text/csv;charset=utf-8,' + encodeURI(csv));
 }
 
-// Start with migration check
-migrateData();
+migrateAndLoad();
 </script>
 </body>
 </html>
