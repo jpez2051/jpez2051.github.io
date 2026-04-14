@@ -3,43 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Personal Alpha Terminal</title>
+    <title>Personal Alpha Terminal v2.1</title>
     <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         :root {
             --bg: #0b0e14; --card: #151921; --accent: #00d2ff;
             --text: #e1e1e1; --up: #00ff88; --down: #ff4d4d; --border: #2a2f3a;
         }
-        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 20px; }
-        .grid { display: grid; grid-template-columns: 400px 1fr; gap: 20px; }
+        body { 
+            background: var(--bg); color: var(--text); 
+            font-family: 'Inter', -apple-system, sans-serif; 
+            margin: 0; padding: 20px; min-height: 100vh;
+            display: flex; flex-direction: column;
+        }
+        .grid { display: grid; grid-template-columns: 400px 1fr; gap: 20px; flex-grow: 1; }
         .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; color: #707a8a; font-size: 0.75rem; padding-bottom: 10px; }
-        td { padding: 15px 0; border-bottom: 1px solid var(--border); }
+        td { padding: 15px 0; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s; }
+        td:hover { background: rgba(255,255,255,0.02); }
+
         .signal-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
         .buy { background: rgba(0, 255, 136, 0.2); color: var(--up); }
         .sell { background: rgba(255, 77, 77, 0.2); color: var(--down); }
         .hold { background: rgba(112, 122, 138, 0.2); color: #707a8a; }
-        #chart { height: 450px; margin-top: 20px; }
-        .advice-box { margin-top: 20px; padding: 15px; border-left: 4px solid var(--accent); background: rgba(0, 210, 255, 0.05); }
+
+        #chart { height: 400px; margin-top: 20px; border-radius: 8px; overflow: hidden; }
+        .advice-box { margin-top: 20px; padding: 15px; border-left: 4px solid var(--accent); background: rgba(0, 210, 255, 0.05); border-radius: 0 8px 8px 0; }
+
+        footer { 
+            margin-top: 40px; padding-top: 20px; 
+            border-top: 1px solid var(--border); 
+            display: flex; justify-content: space-between; 
+            color: #555; font-size: 0.75rem; font-family: monospace; 
+        }
     </style>
 </head>
 <body>
 
 <header>
-    <h2 style="margin:0">ALPHA_TERMINAL <span style="color:var(--accent); font-weight:200;">v2.0</span></h2>
-    <div id="clock"></div>
+    <h2 style="margin:0">ALPHA_TERMINAL <span style="color:var(--accent); font-weight:200;">v2.1</span></h2>
+    <div id="clock" style="font-family: monospace; letter-spacing: 1px;"></div>
 </header>
 
 <div class="grid">
     <div class="card">
-        <h3 style="margin-top:0">Your Portfolio</h3>
+        <h3 style="margin-top:0">Portfolio Holdings</h3>
         <table>
             <thead>
                 <tr>
                     <th>Asset</th>
-                    <th>Value</th>
+                    <th>Equity</th>
                     <th>Signal</th>
                 </tr>
             </thead>
@@ -50,7 +66,10 @@
 
     <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h2 id="active-ticker" style="margin:0">ASRT</h2>
+            <div>
+                <h2 id="active-ticker" style="margin:0; display:inline-block">ASRT</h2>
+                <span id="active-shares" style="color:#707a8a; margin-left:10px; font-size:0.9rem;"></span>
+            </div>
             <div id="active-price" style="font-size:1.8rem; font-weight:bold;">$0.00</div>
         </div>
         
@@ -58,38 +77,44 @@
 
         <div class="advice-box">
             <h4 style="margin:0 0 10px 0;">Decision Support Engine</h4>
-            <p id="logic-text" style="font-size:0.9rem; line-height:1.5;">Select a ticker to analyze entry/exit points based on RSI and SMA indicators.</p>
+            <p id="logic-text" style="font-size:0.9rem; line-height:1.5;">Select a ticker to analyze entry/exit points.</p>
         </div>
     </div>
 </div>
 
+<footer>
+    <div>LOCAL_BUILD: STABLE</div>
+    <div>VERSION_BUILD: 2.1.04-2026</div>
+</footer>
+
 <script>
-    // 1. DATA: Your specific shares and estimated prices
+    // 1. MASTER STATE: Your Actual Shares
     const portfolio = [
         { ticker: 'ASRT', shares: 3.333333, price: 2.45, rsi: 28, sma50: 2.60 },
         { ticker: 'WBD', shares: 6, price: 8.12, rsi: 45, sma50: 8.00 },
         { ticker: 'FXLV', shares: 2, price: 0.88, rsi: 72, sma50: 0.75 }
     ];
 
-    // 2. CHART CONFIG
+    // 2. CHARTING ENGINE
     const chart = LightweightCharts.createChart(document.getElementById('chart'), {
         layout: { background: { color: '#151921' }, textColor: '#707a8a' },
         grid: { vertLines: { color: '#242933' }, horzLines: { color: '#242933' } },
-        crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+        timeScale: { borderColor: '#2a2f3a' },
+        rightPriceScale: { borderColor: '#2a2f3a' },
     });
     const areaSeries = chart.addAreaSeries({
         lineColor: '#00d2ff', topColor: 'rgba(0, 210, 255, 0.4)', bottomColor: 'rgba(0, 210, 255, 0)'
     });
 
-    // 3. SIGNAL LOGIC: "When to buy/sell"
+    // 3. LOGIC: Technical Analysis Guidance
     function getSignal(stock) {
-        if (stock.rsi < 30) return { type: 'buy', text: 'Strong Buy: Asset is oversold (RSI < 30). Potential reversal high.' };
-        if (stock.rsi > 70) return { type: 'sell', text: 'Strong Sell: Asset is overbought (RSI > 70). Risk of pullback.' };
-        if (stock.price > stock.sma50) return { type: 'hold', text: 'Hold: Uptrending above 50-day average. No immediate exit signal.' };
-        return { type: 'hold', text: 'Hold: Consolidating. Wait for RSI to hit extremes or a breakout.' };
+        if (stock.rsi < 30) return { type: 'buy', text: `STRONG BUY: ${stock.ticker} is oversold (RSI: ${stock.rsi}). Historically, this is an optimal entry zone for a bounce.` };
+        if (stock.rsi > 70) return { type: 'sell', text: `STRONG SELL: ${stock.ticker} is overbought (RSI: ${stock.rsi}). Momentum is exhausted; consider trimming profits.` };
+        if (stock.price > stock.sma50) return { type: 'hold', text: `HOLD: ${stock.ticker} is trending above the 50-day average. Stay in the position while the trend remains positive.` };
+        return { type: 'hold', text: `HOLD: ${stock.ticker} is in a neutral consolidation phase. Wait for a clear RSI extreme before adding or selling.` };
     }
 
-    // 4. UI RENDER
+    // 4. CORE FUNCTIONS
     function init() {
         let total = 0;
         const list = document.getElementById('portfolio-list');
@@ -99,38 +124,46 @@
             total += parseFloat(val);
             const signal = getSignal(s);
             return `
-                <tr onclick="updateView('${s.ticker}')" style="cursor:pointer">
-                    <td><strong>${s.ticker}</strong><br><small>${s.shares.toFixed(2)} units</small></td>
+                <tr onclick="updateView('${s.ticker}')">
+                    <td><strong>${s.ticker}</strong><br><small style="color:#707a8a">${s.shares.toFixed(2)} shares</small></td>
                     <td>$${val}</td>
                     <td><span class="signal-badge ${signal.type}">${signal.type}</span></td>
                 </tr>
             `;
         }).join('');
 
-        document.getElementById('total-equity').innerText = `Total Value: $${total.toFixed(2)}`;
-        updateView('ASRT');
+        document.getElementById('total-equity').innerText = `Total Equity: $${total.toFixed(2)}`;
+        updateView('ASRT'); // Default view
     }
 
     function updateView(ticker) {
         const stock = portfolio.find(s => s.ticker === ticker);
         document.getElementById('active-ticker').innerText = ticker;
+        document.getElementById('active-shares').innerText = `(${stock.shares.toFixed(4)} shares held)`;
         document.getElementById('active-price').innerText = `$${stock.price}`;
         
         const signal = getSignal(stock);
         document.getElementById('logic-text').innerText = signal.text;
 
-        // Generate Dummy Data for Chart
+        // Visual Data Generation
         const data = [];
         let p = stock.price;
-        for(let i=0; i<50; i++) {
-            p += (Math.random() - 0.5) * 0.1;
+        for(let i=0; i<100; i++) {
+            p += (Math.random() - 0.5) * (stock.price * 0.02);
             data.push({ time: 1712531200 + (i * 86400), value: p });
         }
         areaSeries.setData(data);
+        chart.timeScale().fitContent();
     }
 
     function updateClock() {
         document.getElementById('clock').innerText = new Date().toLocaleTimeString([], { hour12: true });
     }
 
-    setInterval(updateClock, 100
+    window.addEventListener('resize', () => chart.resize(document.getElementById('chart').offsetWidth, 400));
+    setInterval(updateClock, 1000);
+    init();
+    updateClock();
+</script>
+</body>
+</html>
