@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Debt Tracker v2.4.6</title>
+    <title>Debt Tracker v2.4.8</title>
     <style>
         :root { --bg: #1e272e; --primary: #2ecc71; --accent: #3498db; --danger: #ff4757; --text: #f4f7f6; --card-bg: #2f3640; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 10px; padding-bottom: 100px; color: var(--text); overflow-x: hidden; }
@@ -13,7 +13,6 @@
         .main-total { font-size: 32px; font-weight: 800; }
         .main-freedom { background: rgba(46, 204, 113, 0.1); color: var(--primary); font-size: 11px; font-weight: 800; padding: 5px 12px; border-radius: 20px; display: inline-block; margin-top: 8px; text-transform: uppercase; }
         
-        /* Custom CSS Stack Chart */
         .stack-chart { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: rgba(255,255,255,0.05); margin: 20px 0; width: 100%; }
         .stack-segment { height: 100%; transition: width 0.5s ease; }
 
@@ -21,8 +20,9 @@
         .stat-val { font-size: 16px; font-weight: 800; display: block; }
         .stat-lab { font-size: 8px; font-weight: 800; color: #a4b0be; text-transform: uppercase; }
 
-        .card-container { margin-bottom: 15px; border-radius: 20px; padding: 18px; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; gap: 12px; position: relative; }
-        .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .card-container { margin-bottom: 15px; border-radius: 20px; padding: 18px; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08); position: relative; transition: all 0.3s ease; }
+        .card-target { border: 1px solid var(--accent); border-left: 6px solid var(--accent); box-shadow: 0 0 20px rgba(52, 152, 219, 0.15); }
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
         
         .progress-ring { position: relative; width: 54px; height: 54px; }
         .progress-ring svg { transform: rotate(-90deg); }
@@ -37,7 +37,7 @@
         label { font-size: 8px; font-weight: 800; color: #a4b0be; text-transform: uppercase; margin-bottom: 4px; display: block; }
         input { width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; font-size: 13px; background: rgba(0,0,0,0.2); color: #fff; box-sizing: border-box; }
         
-        .reset-link { font-size: 9px; color: var(--danger); opacity: 0.3; text-decoration: none; text-align: right; display: block; font-weight: 700; cursor: pointer; }
+        .reset-link { font-size: 9px; color: var(--danger); opacity: 0.3; text-decoration: none; text-align: right; display: block; font-weight: 700; cursor: pointer; margin-top: 10px; }
         .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.95); padding: 18px 0; font-size: 11px; display: flex; justify-content: space-around; z-index: 100; border-top: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
     </style>
 </head>
@@ -51,7 +51,7 @@
         <div id="stack-chart" class="stack-chart"></div>
 
         <div class="stat-grid">
-            <div class="stat-item"><span class="stat-val" id="stat-min">$0</span><span class="stat-lab">Min Due</span></div>
+            <div class="stat-item"><span class="stat-val" id="stat-min">$0</span><span class="stat-lab">Total Min Due</span></div>
             <div class="stat-item"><span class="stat-val" id="stat-apr">0%</span><span class="stat-lab">Avg APR</span></div>
         </div>
     </div>
@@ -63,7 +63,7 @@
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight: 800;">EXPORT CSV</span>
-    <span style="opacity: 0.4;">v2.4.6</span>
+    <span style="opacity: 0.4;">v2.4.8</span>
     <span onclick="nuke()" style="color:var(--danger); font-weight: 800;">WIPE ALL</span>
 </div>
 
@@ -85,6 +85,7 @@ function renderUI() {
     list.innerHTML = '';
     const curMonthKey = (new Date().getMonth() + 1) + '-' + new Date().getFullYear();
     
+    // Avalanche Sort (Primary Logic)
     cards.sort((a, b) => (parseFloat(b.apr) || 0) - (parseFloat(a.apr) || 0));
     const targetIdx = cards.findIndex(c => parseFloat(c.bal) > 0);
 
@@ -97,11 +98,11 @@ function renderUI() {
         const isPaid = c.lastPaidMonth === curMonthKey;
 
         list.innerHTML += `
-            <div class="card-container" style="opacity: ${isPaid ? 0.6 : 1}; border-left: 5px solid ${isTarget ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}">
+            <div class="card-container ${isTarget ? 'card-target' : ''}" style="opacity: ${isPaid ? 0.6 : 1}">
                 <div class="card-header">
                     <div style="flex:1">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                            ${isTarget ? '<span style="background:var(--accent); color:white; font-size:8px; font-weight:900; padding:3px 8px; border-radius:5px; text-transform:uppercase;">TARGET</span>' : '<span></span>'}
+                            ${isTarget ? '<span style="background:var(--accent); color:white; font-size:8px; font-weight:900; padding:3px 8px; border-radius:5px; text-transform:uppercase;">AVALANCHE TARGET</span>' : '<span></span>'}
                             <button class="paid-btn ${isPaid ? 'active' : ''}" onclick="markPaid(${i})">${isPaid ? 'PAID ✓' : 'MARK PAID'}</button>
                         </div>
                         <input type="text" value="${c.name || ''}" placeholder="Debt Name" onchange="update(${i}, 'name', this.value)" style="font-weight:800; border:none; background:none; font-size:16px; width:100%; color:#fff;">
@@ -118,11 +119,11 @@ function renderUI() {
                     <div><label>Balance</label><input type="number" step="0.01" value="${bal}" onchange="update(${i}, 'bal', this.value)"></div>
                     <div><label>APR %</label><input type="number" step="0.1" value="${c.apr || 0}" onchange="update(${i}, 'apr', this.value)"></div>
                 </div>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px;">
                     <div><label>Min Pay</label><input type="number" value="${c.min || 0}" onchange="update(${i}, 'min', this.value)"></div>
                     <div><label>Due Date</label><input type="date" value="${c.due || ''}" onchange="update(${i}, 'due', this.value)"></div>
                 </div>
-                <span class="reset-link" onclick="resetHighest(${i})">RESET BASELINE</span>
+                <span class="reset-link" onclick="resetHighest(${i})">RESET PROGRESS BASELINE</span>
             </div>`;
     });
     calculate();
@@ -151,6 +152,7 @@ function resetHighest(i) {
 
 function calculate() {
     let total = 0, totalMin = 0, aprSum = 0, count = 0;
+
     cards.forEach(c => {
         let b = parseFloat(c.bal) || 0;
         total += b;
@@ -174,7 +176,6 @@ function calculate() {
         freedomEl.innerText = total > 0 ? "Add Min Payments" : "Debt Free!";
     }
 
-    // Render Custom Stack Chart
     const stack = document.getElementById('stack-chart');
     stack.innerHTML = '';
     cards.forEach((c, i) => {
@@ -192,6 +193,7 @@ function projectTimeline(cards) {
     }));
     let totalMin = temp.reduce((s, c) => s + c.min, 0);
     if (temp.length === 0 || totalMin <= 0) return 0;
+    
     let months = 0;
     while (months < 360) {
         months++; let pool = totalMin;
