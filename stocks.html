@@ -2,149 +2,145 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Personal Alpha Terminal v2.2</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Alpha Mobile Terminal v2.4</title>
     <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         :root {
             --bg: #0b0e14; --card: #151921; --accent: #00d2ff;
             --text: #e1e1e1; --up: #00ff88; --down: #ff4d4d; --border: #2a2f3a;
         }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { 
             background: var(--bg); color: var(--text); 
-            font-family: 'Inter', -apple-system, sans-serif; 
-            margin: 0; padding: 20px; min-height: 100vh;
-            display: flex; flex-direction: column;
+            font-family: -apple-system, system-ui, sans-serif; 
+            margin: 0; padding: 15px; 
+            display: flex; flex-direction: column; min-height: 100vh;
         }
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
-        .grid { display: grid; grid-template-columns: 400px 1fr; gap: 20px; flex-grow: 1; }
-        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
-        
-        /* Input Form */
-        .input-group { display: flex; gap: 8px; margin-bottom: 20px; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        h2 { font-size: 1.2rem; margin: 0; letter-spacing: 1px; }
+
+        /* Mobile Container Stack */
+        .grid { display: flex; flex-direction: column; gap: 15px; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 18px; }
+
+        /* Input Form - Optimized for Mobile */
+        .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
         input { 
             background: #0b0e14; border: 1px solid var(--border); color: white; 
-            padding: 10px; border-radius: 6px; outline: none; flex: 1;
+            padding: 12px; border-radius: 10px; flex: 1; font-size: 16px; /* 16px prevents iOS auto-zoom */
         }
-        input:focus { border-color: var(--accent); }
-        .btn-add { background: var(--accent); border: none; color: #0b0e14; font-weight: bold; padding: 0 15px; border-radius: 6px; cursor: pointer; }
+        .btn-add { background: var(--accent); border: none; color: #0b0e14; font-weight: bold; padding: 0 20px; border-radius: 10px; font-size: 0.9rem; }
 
         /* Table */
         table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; color: #707a8a; font-size: 0.75rem; padding-bottom: 10px; text-transform: uppercase; }
-        td { padding: 12px 0; border-bottom: 1px solid var(--border); transition: 0.2s; cursor: pointer; }
-        tr:hover td { background: rgba(255,255,255,0.03); }
+        th { text-align: left; color: #707a8a; font-size: 0.7rem; padding-bottom: 8px; text-transform: uppercase; }
+        td { padding: 14px 0; border-bottom: 1px solid var(--border); font-size: 0.95rem; }
 
-        .signal-badge { padding: 3px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; }
-        .buy { background: rgba(0, 255, 136, 0.15); color: var(--up); border: 1px solid var(--up); }
-        .sell { background: rgba(255, 77, 77, 0.15); color: var(--down); border: 1px solid var(--down); }
-        .hold { background: rgba(112, 122, 138, 0.15); color: #707a8a; border: 1px solid #707a8a; }
+        .signal-badge { padding: 4px 8px; border-radius: 6px; font-size: 0.65rem; font-weight: 800; }
+        .buy { background: rgba(0, 255, 136, 0.1); color: var(--up); }
+        .sell { background: rgba(255, 77, 77, 0.1); color: var(--down); }
+        .hold { background: rgba(112, 122, 138, 0.1); color: #707a8a; }
 
-        #chart { height: 400px; margin-top: 15px; border-radius: 8px; }
-        .advice-box { margin-top: 20px; padding: 15px; border-left: 4px solid var(--accent); background: rgba(0, 210, 255, 0.05); }
+        /* Chart Area - Scaled for 14 Pro Max */
+        #chart { height: 280px; margin-top: 10px; width: 100%; }
+        .advice-box { margin-top: 15px; padding: 12px; border-left: 3px solid var(--accent); background: rgba(0, 210, 255, 0.05); border-radius: 4px; }
 
         footer { 
-            margin-top: 40px; padding: 15px 0; border-top: 1px solid var(--border); 
+            margin-top: auto; padding: 25px 0 10px; 
             display: flex; justify-content: space-between; 
-            color: #555; font-size: 0.7rem; font-family: monospace; 
+            color: #444; font-size: 0.65rem; font-family: monospace; 
         }
     </style>
 </head>
 <body>
 
 <header>
-    <h2 style="margin:0">ALPHA_TERMINAL <span style="color:var(--accent); font-weight:200;">[v2.2_LIVE]</span></h2>
-    <div id="clock" style="font-family: monospace;">--:--:--</div>
+    <h2>ALPHA_MOBILE <span style="color:var(--accent); font-weight:200;">[v2.4]</span></h2>
+    <div id="clock" style="font-family: monospace; font-size: 0.8rem;"></div>
 </header>
 
 <div class="grid">
     <div class="card">
-        <h3 style="margin:0 0 15px 0">Add Assets</h3>
+        <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+            <div>
+                <h1 id="active-ticker" style="margin:0; font-size: 2rem;">---</h1>
+                <p id="active-info" style="color:#707a8a; margin: 2px 0 0 0; font-size: 0.8rem;">Ready for input</p>
+            </div>
+            <div id="active-price" style="font-size:1.5rem; font-weight:bold; color:var(--up);">$0.00</div>
+        </div>
+        <div id="chart"></div>
+        <div class="advice-box">
+            <p id="logic-text" style="font-size:0.85rem; line-height:1.4; margin:0; color:#aaa;">Add a ticker below to begin analysis.</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <h4 style="margin:0 0 12px 0; color:var(--accent)">Add Holding</h4>
         <div class="input-group">
-            <input type="text" id="ticker-in" placeholder="Ticker">
-            <input type="number" id="shares-in" placeholder="Shares" step="any">
-            <button class="btn-add" onclick="addStock()">+</button>
+            <input type="text" id="ticker-in" placeholder="Ticker" autocomplete="off">
+            <input type="number" id="shares-in" placeholder="Qty" step="any">
+            <button class="btn-add" onclick="addStock()">ADD</button>
         </div>
 
         <table>
             <thead>
                 <tr>
-                    <th>Ticker</th>
+                    <th>Asset</th>
                     <th>Equity</th>
-                    <th>Signal</th>
+                    <th>Status</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody id="portfolio-list"></tbody>
         </table>
-        <div id="total-equity" style="margin-top:20px; font-size:1.1rem; color:var(--accent); font-weight:bold; border-top: 1px dashed var(--border); padding-top: 15px;"></div>
-    </div>
-
-    <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-            <div>
-                <h1 id="active-ticker" style="margin:0; font-size: 2.5rem;">ASRT</h1>
-                <p id="active-info" style="color:#707a8a; margin: 5px 0 0 0;"></p>
-            </div>
-            <div id="active-price" style="font-size:2rem; font-weight:bold; color:var(--up);">$0.00</div>
-        </div>
-        
-        <div id="chart"></div>
-
-        <div class="advice-box">
-            <strong style="color:var(--accent); display:block; margin-bottom:5px;">STRATEGY ENGINE:</strong>
-            <p id="logic-text" style="font-size:0.9rem; line-height:1.5; margin:0;">Analyzing market position...</p>
-        </div>
+        <div id="total-equity" style="margin-top:15px; font-size:1rem; color:var(--accent); font-weight:bold; text-align: center;"></div>
     </div>
 </div>
 
 <footer>
-    <div>STATUS: SYSTEM_READY</div>
-    <div>STABLE_BUILD: v2.2.0-RELEASE // APRIL_2026</div>
+    <div>MOBILE_OPTIMIZED</div>
+    <div>v2.4.0-PRO_MAX // 2026</div>
 </footer>
 
 <script>
-    // 1. DATA INITIALIZATION (Load from LocalStorage or use Defaults)
-    const defaultData = [
-        { ticker: 'ASRT', shares: 3.333333, price: 2.45, rsi: 28, sma: 2.60 },
-        { ticker: 'WBD', shares: 6, price: 8.12, rsi: 45, sma: 8.00 },
-        { ticker: 'FXLV', shares: 2, price: 0.88, rsi: 72, sma: 0.75 }
-    ];
+    let portfolio = JSON.parse(localStorage.getItem('alpha_portfolio')) || [];
 
-    let portfolio = JSON.parse(localStorage.getItem('alpha_portfolio')) || defaultData;
-
-    // 2. CHART CONFIG
+    // Chart init
     const chart = LightweightCharts.createChart(document.getElementById('chart'), {
-        layout: { background: { color: '#151921' }, textColor: '#707a8a' },
+        layout: { background: { color: '#151921' }, textColor: '#707a8a', fontSize: 10 },
         grid: { vertLines: { color: '#1f242d' }, horzLines: { color: '#1f242d' } },
         timeScale: { borderColor: '#2a2f3a' },
         rightPriceScale: { borderColor: '#2a2f3a' },
+        handleScroll: { mouseWheel: true, pressedMouseMove: true },
+        handleScale: { pinch: true, mouseWheel: true }
     });
     const areaSeries = chart.addAreaSeries({
         lineColor: '#00d2ff', topColor: 'rgba(0, 210, 255, 0.3)', bottomColor: 'rgba(0, 210, 255, 0)', lineWidth: 2
     });
 
-    // 3. CORE LOGIC
     function addStock() {
         const t = document.getElementById('ticker-in').value.toUpperCase();
         const s = parseFloat(document.getElementById('shares-in').value);
-        
         if (t && !isNaN(s)) {
             portfolio.push({
                 ticker: t, shares: s, 
-                price: (Math.random() * 50 + 5).toFixed(2), 
-                rsi: Math.floor(Math.random() * 60 + 20),
-                sma: 30.00
+                price: (Math.random() * 80 + 10).toFixed(2), 
+                rsi: Math.floor(Math.random() * 60 + 20)
             });
             saveAndRefresh();
             document.getElementById('ticker-in').value = '';
             document.getElementById('shares-in').value = '';
+            updateView(portfolio.length - 1);
         }
     }
 
-    function getSignal(stock) {
-        if (stock.rsi < 35) return { type: 'buy', text: `BUY: ${stock.ticker} is in the "Oversold" zone (RSI: ${stock.rsi}). Price is historically due for a bounce.` };
-        if (stock.rsi > 65) return { type: 'sell', text: `SELL: ${stock.ticker} is "Overbought" (RSI: ${stock.rsi}). Momentum is peaking; lock in gains.` };
-        return { type: 'hold', text: `HOLD: ${stock.ticker} is stable. RSI is neutral at ${stock.rsi}. Maintain current position.` };
+    function deleteStock(index, event) {
+        event.stopPropagation();
+        portfolio.splice(index, 1);
+        saveAndRefresh();
+        if (portfolio.length === 0) location.reload();
+        else updateView(0);
     }
 
     function saveAndRefresh() {
@@ -153,37 +149,42 @@
     }
 
     function renderList() {
-        let total = 0;
         const tbody = document.getElementById('portfolio-list');
+        let total = 0;
+        if (portfolio.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#444">Empty Portfolio</td></tr>';
+            return;
+        }
         tbody.innerHTML = portfolio.map((s, index) => {
             const equity = (s.shares * s.price).toFixed(2);
             total += parseFloat(equity);
-            const signal = getSignal(s);
+            const sig = s.rsi < 35 ? 'buy' : (s.rsi > 65 ? 'sell' : 'hold');
             return `
                 <tr onclick="updateView(${index})">
-                    <td><strong>${s.ticker}</strong><br><small style="color:#707a8a">${s.shares.toFixed(2)} units</small></td>
+                    <td><strong>${s.ticker}</strong></td>
                     <td>$${equity}</td>
-                    <td><span class="signal-badge ${signal.type}">${signal.type}</span></td>
+                    <td><span class="signal-badge ${sig}">${sig}</span></td>
+                    <td style="text-align:right" onclick="deleteStock(${index}, event)"><span style="color:#444">×</span></td>
                 </tr>
             `;
         }).join('');
-        document.getElementById('total-equity').innerText = `PORTFOLIO VALUE: $${total.toFixed(2)}`;
+        document.getElementById('total-equity').innerText = `TOTAL: $${total.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
     }
 
     function updateView(index) {
+        if (!portfolio[index]) return;
         const s = portfolio[index];
         document.getElementById('active-ticker').innerText = s.ticker;
         document.getElementById('active-price').innerText = `$${s.price}`;
-        document.getElementById('active-info').innerText = `Position: ${s.shares.toFixed(4)} Shares`;
+        document.getElementById('active-info').innerText = `${s.shares.toFixed(2)} units held`;
         
-        const signal = getSignal(s);
-        document.getElementById('logic-text').innerText = signal.text;
+        const sigText = s.rsi < 35 ? `BUY SIGNAL: RSI at ${s.rsi} is oversold.` : (s.rsi > 65 ? `SELL SIGNAL: RSI at ${s.rsi} is overbought.` : `HOLD: Price stable at RSI ${s.rsi}.`);
+        document.getElementById('logic-text').innerText = sigText;
 
-        // Visual Data Generation
         const data = [];
         let p = parseFloat(s.price);
-        for(let i=0; i<100; i++) {
-            p += (Math.random() - 0.5) * (s.price * 0.03);
+        for(let i=0; i<60; i++) {
+            p += (Math.random() - 0.5) * (s.price * 0.04);
             data.push({ time: 1712531200 + (i * 86400), value: p });
         }
         areaSeries.setData(data);
@@ -194,12 +195,15 @@
         document.getElementById('clock').innerText = new Date().toLocaleTimeString([], { hour12: true });
     }
 
-    // Initialize
     setInterval(updateClock, 1000);
-    window.addEventListener('resize', () => chart.resize(document.getElementById('chart').offsetWidth, 400));
     renderList();
-    updateView(0);
+    if (portfolio.length > 0) updateView(0);
     updateClock();
+
+    // Auto-resize chart for mobile rotation
+    window.addEventListener('resize', () => {
+        chart.applyOptions({ width: document.getElementById('chart').offsetWidth });
+    });
 </script>
 
 </body>
