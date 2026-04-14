@@ -4,22 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Debt Tracker v2.4.5</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Debt Tracker v2.4.6</title>
     <style>
         :root { --bg: #1e272e; --primary: #2ecc71; --accent: #3498db; --danger: #ff4757; --text: #f4f7f6; --card-bg: #2f3640; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 10px; padding-bottom: 100px; color: var(--text); overflow-x: hidden; }
+        
         .dashboard { background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(30,39,46,0) 100%); padding: 25px 12px 15px 12px; text-align: center; }
         .main-total { font-size: 32px; font-weight: 800; }
         .main-freedom { background: rgba(46, 204, 113, 0.1); color: var(--primary); font-size: 11px; font-weight: 800; padding: 5px 12px; border-radius: 20px; display: inline-block; margin-top: 8px; text-transform: uppercase; }
         
+        /* Custom CSS Stack Chart */
+        .stack-chart { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: rgba(255,255,255,0.05); margin: 20px 0; width: 100%; }
+        .stack-segment { height: 100%; transition: width 0.5s ease; }
+
         .stat-grid { display: flex; justify-content: space-around; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; }
         .stat-val { font-size: 16px; font-weight: 800; display: block; }
         .stat-lab { font-size: 8px; font-weight: 800; color: #a4b0be; text-transform: uppercase; }
 
-        .chart-container { height: 180px; margin: 20px 0; position: relative; }
-        
-        .card-container { margin-bottom: 15px; border-radius: 20px; padding: 18px; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; gap: 12px; position: relative; transition: opacity 0.3s; }
+        .card-container { margin-bottom: 15px; border-radius: 20px; padding: 18px; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; gap: 12px; position: relative; }
         .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
         
         .progress-ring { position: relative; width: 54px; height: 54px; }
@@ -32,7 +34,6 @@
         .paid-btn { background: #353b48; color: #a4b0be; font-size: 9px; padding: 6px 12px; border-radius: 8px; font-weight: 800; border: none; text-transform: uppercase; }
         .paid-btn.active { background: var(--primary); color: white; }
         
-        .target-tag { background: var(--accent); color: white; font-size: 8px; font-weight: 900; padding: 3px 8px; border-radius: 5px; text-transform: uppercase; margin-bottom: 4px; display: inline-block; }
         label { font-size: 8px; font-weight: 800; color: #a4b0be; text-transform: uppercase; margin-bottom: 4px; display: block; }
         input { width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; font-size: 13px; background: rgba(0,0,0,0.2); color: #fff; box-sizing: border-box; }
         
@@ -47,31 +48,29 @@
         <div class="main-total" id="main-debt">$0.00</div>
         <div id="main-freedom" class="main-freedom">Calculating...</div>
         
+        <div id="stack-chart" class="stack-chart"></div>
+
         <div class="stat-grid">
             <div class="stat-item"><span class="stat-val" id="stat-min">$0</span><span class="stat-lab">Min Due</span></div>
             <div class="stat-item"><span class="stat-val" id="stat-apr">0%</span><span class="stat-lab">Avg APR</span></div>
         </div>
     </div>
 
-    <div class="chart-container">
-        <canvas id="mainChart"></canvas>
-    </div>
-
-    <div id="card-list"></div>
+    <div id="card-list" style="margin-top:20px;"></div>
     
     <button onclick="addCard()" style="background:var(--primary); color:white; padding:16px; border-radius:14px; width:100%; margin-top:10px; font-weight: 800; border:none;">+ ADD NEW DEBT</button>
 </div>
 
 <div class="footer">
     <span onclick="exportCSV()" style="color:var(--accent); font-weight: 800;">EXPORT CSV</span>
-    <span style="opacity: 0.4;">v2.4.5</span>
+    <span style="opacity: 0.4;">v2.4.6</span>
     <span onclick="nuke()" style="color:var(--danger); font-weight: 800;">WIPE ALL</span>
 </div>
 
 <script>
 const KEY = 'debt_v125';
 const COLORS = ['#2ecc71', '#3498db', '#9b59b6', '#f1c40f', '#e67e22', '#1abc9c', '#e74c3c'];
-let activeChart, cards = [];
+let cards = [];
 
 function loadData() {
     try {
@@ -102,7 +101,7 @@ function renderUI() {
                 <div class="card-header">
                     <div style="flex:1">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                            ${isTarget ? '<span class="target-tag">TARGET</span>' : '<span></span>'}
+                            ${isTarget ? '<span style="background:var(--accent); color:white; font-size:8px; font-weight:900; padding:3px 8px; border-radius:5px; text-transform:uppercase;">TARGET</span>' : '<span></span>'}
                             <button class="paid-btn ${isPaid ? 'active' : ''}" onclick="markPaid(${i})">${isPaid ? 'PAID ✓' : 'MARK PAID'}</button>
                         </div>
                         <input type="text" value="${c.name || ''}" placeholder="Debt Name" onchange="update(${i}, 'name', this.value)" style="font-weight:800; border:none; background:none; font-size:16px; width:100%; color:#fff;">
@@ -139,4 +138,82 @@ function update(i, field, val) {
 
 function markPaid(i) {
     const key = (new Date().getMonth() + 1) + '-' + new Date().getFullYear();
-    cards[i].lastPaidMonth
+    cards[i].lastPaidMonth = (cards[i].lastPaidMonth === key) ? "" : key;
+    localStorage.setItem(KEY, JSON.stringify(cards));
+    renderUI();
+}
+
+function resetHighest(i) {
+    cards[i].highestBal = parseFloat(cards[i].bal) || 0;
+    localStorage.setItem(KEY, JSON.stringify(cards));
+    renderUI();
+}
+
+function calculate() {
+    let total = 0, totalMin = 0, aprSum = 0, count = 0;
+    cards.forEach(c => {
+        let b = parseFloat(c.bal) || 0;
+        total += b;
+        if (b > 0) {
+            totalMin += (parseFloat(c.min) || 0);
+            aprSum += (parseFloat(c.apr) || 0);
+            count++;
+        }
+    });
+    
+    document.getElementById('main-debt').innerText = '$' + total.toLocaleString(undefined, {minimumFractionDigits:2});
+    document.getElementById('stat-min').innerText = '$' + Math.round(totalMin);
+    document.getElementById('stat-apr').innerText = count > 0 ? Math.round(aprSum / count) + '%' : '0%';
+    
+    const freedomEl = document.getElementById('main-freedom');
+    const months = projectTimeline(cards);
+    if (months > 0) {
+        let d = new Date(); d.setMonth(d.getMonth() + months);
+        freedomEl.innerText = "Freedom: " + d.toLocaleDateString('en-US', {month:'short', year:'numeric'});
+    } else {
+        freedomEl.innerText = total > 0 ? "Add Min Payments" : "Debt Free!";
+    }
+
+    // Render Custom Stack Chart
+    const stack = document.getElementById('stack-chart');
+    stack.innerHTML = '';
+    cards.forEach((c, i) => {
+        const bal = parseFloat(c.bal) || 0;
+        if (bal > 0) {
+            const width = (bal / total) * 100;
+            stack.innerHTML += `<div class="stack-segment" style="width: ${width}%; background: ${COLORS[i % COLORS.length]}"></div>`;
+        }
+    });
+}
+
+function projectTimeline(cards) {
+    let temp = cards.filter(c => (parseFloat(c.bal) || 0) > 0).map(c => ({
+        bal: parseFloat(c.bal) || 0, apr: parseFloat(c.apr) || 0, min: parseFloat(c.min) || 0
+    }));
+    let totalMin = temp.reduce((s, c) => s + c.min, 0);
+    if (temp.length === 0 || totalMin <= 0) return 0;
+    let months = 0;
+    while (months < 360) {
+        months++; let pool = totalMin;
+        temp.forEach(c => {
+            c.bal = (c.bal + (c.bal * ((c.apr / 100) / 12))) - c.min;
+            pool -= c.min;
+        });
+        if (temp[0]) { temp[0].bal -= pool; if (temp[0].bal <= 0) temp.shift(); }
+        if (temp.length === 0) break;
+    }
+    return months;
+}
+
+function addCard() {
+    cards.push({name: "New Debt", bal: 0, apr: 0, min: 0, highestBal: 0, due: "", lastPaidMonth: ""});
+    renderUI();
+}
+
+function nuke() { if(confirm("Wipe data?")) { localStorage.clear(); location.reload(); } }
+function exportCSV() { alert(JSON.stringify(cards)); }
+
+loadData();
+</script>
+</body>
+</html>
