@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProStock Terminal v1.1</title>
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --accent: #58a6ff;
+            --text: #c9d1d9;
+            --up: #3fb950;
+            --down: #f85149;
+            --border: #30363d;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            padding: 20px;
+            width: 95%;
+            max-width: 1400px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        h1 { font-size: 1.5rem; margin: 0; }
+        h1 span { color: var(--accent); font-weight: 300; margin-left: 8px; font-family: monospace; }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            grid-template-rows: auto auto;
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            overflow: hidden;
+        }
+
+        /* Portfolio Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th { text-align: left; color: #8b949e; font-size: 0.75rem; text-transform: uppercase; padding-bottom: 10px; }
+        td { padding: 12px 0; border-bottom: 1px solid #21262d; }
+
+        .price-up { color: var(--up); font-weight: bold; }
+        .price-down { color: var(--down); font-weight: bold; }
+
+        .btn-view {
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 0.7rem;
+        }
+
+        .btn-view:hover { background: var(--accent); color: white; }
+
+        /* Chart Area */
+        #chart-container {
+            height: 450px;
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .indicator-grid {
+            grid-column: 1 / span 2;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+
+        .stat { border-left: 2px solid var(--accent); padding-left: 15px; }
+        .stat label { display: block; color: #8b949e; font-size: 0.7rem; text-transform: uppercase; }
+        .stat span { font-size: 1.1rem; font-weight: bold; font-family: monospace; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Terminal<span>[v1.1_STOCKS]</span></h1>
+            <div id="clock" style="font-family: monospace;">--:--:--</div>
+        </header>
+
+        <main class="dashboard-grid">
+            <section class="card">
+                <h3 style="margin-top:0">Portfolio Tracker</h3>
+                <table id="stock-table">
+                    <thead>
+                        <tr>
+                            <th>Ticker</th>
+                            <th>Price</th>
+                            <th>Value</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="portfolio-body">
+                        </tbody>
+                </table>
+            </section>
+
+            <section class="card">
+                <div class="chart-header">
+                    <h2 id="active-ticker" style="margin:0; color:var(--accent)">ASRT</h2>
+                    <div id="price-display" style="font-size: 1.5rem; font-weight: bold;">$0.00</div>
+                </div>
+                <div id="chart-container"></div>
+            </section>
+
+            <div class="indicator-grid">
+                <div class="card stat"><label>RSI (14)</label><span id="rsi-val">52.4</span></div>
+                <div class="card stat"><label>Moving Avg (50)</label><span id="ma-val">Trend: UP</span></div>
+                <div class="card stat"><label>Volume</label><span id="vol-val">1.2M</span></div>
+                <div class="card stat"><label>Sentiment</label><span id="sent-val" style="color:var(--up)">BULLISH</span></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 1. DATA CONFIGURATION
+        const myPortfolio = [
+            { symbol: 'ASRT', price: 2.45, change: 1.2, shares: 3.333333 },
+            { symbol: 'WBD', price: 8.12, change: -0.5, shares: 6 },
+            { symbol: 'FXLV', price: 0.88, change: 2.1, shares: 2 }
+        ];
+
+        // 2. CHART INITIALIZATION
+        const chartElement = document.getElementById('chart-container');
+        const chart = LightweightCharts.createChart(chartElement, {
+            layout: { background: { color: '#161b22' }, textColor: '#d1d4dc' },
+            grid: { vertLines: { color: '#2b2b2b' }, horzLines: { color: '#2b2b2b' } },
+            rightPriceScale: { borderColor: '#30363d' },
+            timeScale: { borderColor: '#30363d' },
+            crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+        });
+
+        const lineSeries = chart.addLineSeries({ 
+            color: '#58a6ff', 
+            lineWidth: 2,
+            areaTopColor: 'rgba(88, 166, 255, 0.3)',
+            areaBottomColor: 'rgba(88, 166, 255, 0)'
+        });
+
+        // Mock data generator for demo purposes
+        function generateData() {
+            const data = [];
+            let price = 100;
+            for (let i = 0; i < 100; i++) {
+                price += (Math.random() - 0.5) * 2;
+                data.push({ time: 1672531200 + (i * 86400), value: price });
+            }
+            return data;
+        }
+        lineSeries.setData(generateData());
+
+        // 3. UI RENDERING LOGIC
+        function renderPortfolio() {
+            const tbody = document.getElementById('portfolio-body');
+            tbody.innerHTML = myPortfolio.map(stock => {
+                const totalValue = (stock.price * stock.shares).toFixed(2);
+                return `
+                    <tr>
+                        <td><strong>${stock.symbol}</strong><br><small style="color:#8b949e">${stock.shares.toFixed(2)} units</small></td>
+                        <td class="${stock.change >= 0 ? 'price-up' : 'price-down'}">$${stock.price}</td>
+                        <td>$${totalValue}</td>
+                        <td style="text-align:right"><button class="btn-view" onclick="updateChart('${stock.symbol}', ${stock.price})">VIEW</button></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateChart(symbol, price) {
+            document.getElementById('active-ticker').innerText = symbol;
+            document.getElementById('price-display').innerText = `$${price}`;
+            // In a real app, you'd fetch fresh time-series data here
+            lineSeries.setData(generateData());
+        }
+
+        // 4. UTILITIES
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+        }
+
+        // Initialize
+        renderPortfolio();
+        setInterval(updateClock, 1000);
+        updateClock();
+        updateChart('ASRT', 2.45);
+
+        // Responsiveness
+        window.addEventListener('resize', () => {
+            chart.resize(chartElement.offsetWidth, 450);
+        });
+    </script>
+</body>
+</html>
