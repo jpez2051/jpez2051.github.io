@@ -3,23 +3,29 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Pushup Pro Tracker</title>
-
-<link rel="manifest" id="manifestPlaceholder">
+<title>Pushup Pro</title>
 
 <style>
+:root {
+    --bg:#0b1220;
+    --card:#1e293b;
+    --muted:#94a3b8;
+    --accent:#22c55e;
+    --danger:#ef4444;
+}
+
 body {
     margin:0;
-    font-family: Arial;
-    background:#0b1220;
+    font-family: system-ui, -apple-system, Arial;
+    background:var(--bg);
     color:white;
     padding:16px;
 }
 
-h1 { text-align:center; }
+h1 { text-align:center; margin-bottom:8px; }
 
 .card {
-    background:#1e293b;
+    background:var(--card);
     padding:12px;
     border-radius:12px;
     margin-bottom:12px;
@@ -35,16 +41,12 @@ input, button {
 }
 
 button {
-    background:#22c55e;
-    font-weight:bold;
+    background:var(--accent);
+    font-weight:600;
+    cursor:pointer;
 }
 
-button:active { transform: scale(0.98); }
-
-.small {
-    font-size:13px;
-    opacity:0.8;
-}
+button:active { transform:scale(0.98); }
 
 .row {
     display:flex;
@@ -59,11 +61,14 @@ button:active { transform: scale(0.98); }
     text-align:center;
 }
 
+.small { font-size:12px; color:var(--muted); }
+
 canvas {
     width:100%;
     background:#0f172a;
     border-radius:10px;
 }
+
 .badge {
     display:inline-block;
     background:#334155;
@@ -71,6 +76,12 @@ canvas {
     margin:4px;
     border-radius:8px;
     font-size:12px;
+}
+
+.footer {
+    text-align:center;
+    font-size:12px;
+    opacity:0.6;
 }
 </style>
 </head>
@@ -82,12 +93,12 @@ canvas {
 <div class="card">
     <div class="small">Add Set</div>
     <input id="pushups" type="number" placeholder="Enter reps..." />
-    <button onclick="addSet()">Add Set</button>
+    <button onclick="app.addSet()">Add Set</button>
 </div>
 
 <div class="card row">
     <div class="stat">
-        Today<br><h2 id="today">0</h2>
+        Today<br><h2 id="todayTotal">0</h2>
     </div>
     <div class="stat">
         Streak<br><h2 id="streak">0</h2>
@@ -95,12 +106,12 @@ canvas {
 </div>
 
 <div class="card">
-    <div class="small">7-Day Plan (your progression)</div>
+    <div class="small">7-Day Plan</div>
     <div id="plan"></div>
 </div>
 
 <div class="card">
-    <div class="small">Progress Chart</div>
+    <div class="small">Progress</div>
     <canvas id="chart" height="120"></canvas>
 </div>
 
@@ -110,131 +121,178 @@ canvas {
 </div>
 
 <div class="card">
-    <button onclick="enableNotifications()">🔔 Enable Reminders</button>
+    <button onclick="app.enableNotifications()">🔔 Enable Reminders</button>
 </div>
 
 <div class="card">
-    <button style="background:#ef4444" onclick="resetToday()">Reset Today</button>
+    <button style="background:var(--danger)" onclick="app.resetToday()">Reset Today</button>
+</div>
+
+<div class="footer">
+    Pushup Pro Tracker • <span id="version"></span>
 </div>
 
 <script>
-let data = JSON.parse(localStorage.getItem("pushupPro")) || {
-    days: {},
-    streak: 0,
-    lastDate: null
-};
+/* =========================
+   APP CORE (Best Practice)
+========================= */
 
-const plan = [
+const APP_VERSION = "v1.2.0";
+
+const PLAN = [
 "Day 1: 8x8 + max",
 "Day 2: 8x9 + max",
 "Day 3: 9x8 + max",
-"Day 4: easy recovery",
+"Day 4: recovery",
 "Day 5: 9x10 + max",
-"Day 6: 10-12 sets",
-"Day 7: test max"
+"Day 6: 10–12 sets",
+"Day 7: max test"
 ];
 
-function todayKey(){
-    return new Date().toISOString().split("T")[0];
-}
+const STORAGE_KEY = "pushup_pro_v1";
 
-function save(){
-    localStorage.setItem("pushupPro", JSON.stringify(data));
-}
+const app = {
+    state: {
+        days: {},
+        streak: 0,
+        lastDate: null
+    },
 
-function addSet(){
-    let v = parseInt(document.getElementById("pushups").value);
-    if(!v) return;
+    init() {
+        this.load();
+        this.render();
+        this.startReminderLoop();
+    },
 
-    let t = todayKey();
-    if(!data.days[t]) data.days[t] = [];
-    data.days[t].push(v);
+    todayKey() {
+        return new Date().toISOString().split("T")[0];
+    },
 
-    document.getElementById("pushups").value = "";
+    save() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+    },
 
-    updateStreak();
-    save();
-    render();
-}
+    load() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) this.state = JSON.parse(saved);
+    },
 
-function todayTotal(){
-    let t = todayKey();
-    return (data.days[t] || []).reduce((a,b)=>a+b,0);
-}
+    addSet() {
+        const input = document.getElementById("pushups");
+        const value = parseInt(input.value);
 
-function updateStreak(){
-    let t = todayKey();
+        if (!value || value <= 0) return;
 
-    if(data.lastDate !== t){
-        data.streak += 1;
-        data.lastDate = t;
-    }
-}
+        const t = this.todayKey();
+        if (!this.state.days[t]) this.state.days[t] = [];
 
-function resetToday(){
-    data.days[todayKey()] = [];
-    save();
-    render();
-}
+        this.state.days[t].push(value);
+        input.value = "";
 
-function badges(total){
-    let b = [];
-    if(total>=50) b.push("🔥 50 Club");
-    if(total>=100) b.push("💪 100 Club");
-    if(total>=250) b.push("🏆 250 Club");
-    if(total>=500) b.push("👑 500 Club");
-    return b;
-}
+        this.updateStreak();
+        this.save();
+        this.render();
+    },
 
-function drawChart(){
-    let ctx = document.getElementById("chart").getContext("2d");
-    let keys = Object.keys(data.days).slice(-7);
+    todayTotal() {
+        return (this.state.days[this.todayKey()] || [])
+            .reduce((a,b)=>a+b,0);
+    },
 
-    ctx.clearRect(0,0,400,200);
+    updateStreak() {
+        const t = this.todayKey();
 
-    let max = 1;
-    let vals = keys.map(k=>{
-        let v = (data.days[k]||[]).reduce((a,b)=>a+b,0);
-        max = Math.max(max,v);
-        return v;
-    });
-
-    vals.forEach((v,i)=>{
-        let h = (v/max)*100;
-        ctx.fillStyle = "#22c55e";
-        ctx.fillRect(i*40, 100-h, 20, h);
-    });
-}
-
-function render(){
-    document.getElementById("today").innerText = todayTotal();
-    document.getElementById("streak").innerText = data.streak;
-
-    let p = document.getElementById("plan");
-    p.innerHTML = plan.map(x=>`<div class="badge">${x}</div>`).join("");
-
-    let b = document.getElementById("badges");
-    b.innerHTML = badges(todayTotal()).map(x=>`<div class="badge">${x}</div>`).join("");
-
-    drawChart();
-}
-
-function enableNotifications(){
-    Notification.requestPermission().then(p=>{
-        if(p==="granted"){
-            new Notification("Pushup Trainer Enabled 💪");
+        if (this.state.lastDate !== t) {
+            this.state.streak += 1;
+            this.state.lastDate = t;
         }
-    });
+    },
+
+    resetToday() {
+        this.state.days[this.todayKey()] = [];
+        this.save();
+        this.render();
+    },
+
+    badges(total) {
+        const list = [];
+        if (total >= 50) list.push("🔥 50");
+        if (total >= 100) list.push("💪 100");
+        if (total >= 250) list.push("🏆 250");
+        if (total >= 500) list.push("👑 500");
+        return list;
+    },
+
+    drawChart() {
+        const ctx = document.getElementById("chart").getContext("2d");
+        const keys = Object.keys(this.state.days).slice(-7);
+
+        ctx.clearRect(0,0,400,200);
+
+        const vals = keys.map(k =>
+            (this.state.days[k] || []).reduce((a,b)=>a+b,0)
+        );
+
+        const max = Math.max(...vals, 1);
+
+        vals.forEach((v,i)=>{
+            const h = (v/max)*100;
+            ctx.fillStyle = "#22c55e";
+            ctx.fillRect(i*40, 100-h, 20, h);
+        });
+    },
+
+    enableNotifications() {
+        Notification.requestPermission().then(p=>{
+            if (p === "granted") {
+                new Notification("Pushup Pro enabled 💪");
+            }
+        });
+    },
+
+    startReminderLoop() {
+        setInterval(()=>{
+            if (Notification.permission === "granted") {
+                new Notification("Time for your next pushup set 💪");
+            }
+        }, 1000 * 60 * 120);
+    },
+
+    render() {
+        document.getElementById("todayTotal").innerText = this.todayTotal();
+        document.getElementById("streak").innerText = this.state.streak;
+
+        document.getElementById("version").innerText = APP_VERSION;
+
+        document.getElementById("plan").innerHTML =
+            PLAN.map(x=>`<div class="badge">${x}</div>`).join("");
+
+        const total = this.todayTotal();
+        document.getElementById("badges").innerHTML =
+            this.badges(total).map(b=>`<div class="badge">${b}</div>`).join("");
+
+        this.drawChart();
+    }
+};
+
+/* =========================
+   UPDATE DETECTION (simple)
+========================= */
+
+function checkVersion() {
+    const last = localStorage.getItem("pushup_pro_version");
+    if (last && last !== APP_VERSION) {
+        alert("New version loaded 💪 Refresh recommended!");
+    }
+    localStorage.setItem("pushup_pro_version", APP_VERSION);
 }
 
-// simple reminder (only works while open)
-setInterval(()=>{
-    if(Notification.permission==="granted"){
-        new Notification("Time for your next pushup set 💪");
-    }
-}, 1000*60*60*2); // every 2 hours
+/* =========================
+   START APP
+========================= */
 
-render();
+checkVersion();
+app.init();
 </script>
 
 </body>
