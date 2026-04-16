@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pushup Pro Tracker</title>
+
+<link rel="manifest" id="manifestPlaceholder">
+
+<style>
+body {
+    margin:0;
+    font-family: Arial;
+    background:#0b1220;
+    color:white;
+    padding:16px;
+}
+
+h1 { text-align:center; }
+
+.card {
+    background:#1e293b;
+    padding:12px;
+    border-radius:12px;
+    margin-bottom:12px;
+}
+
+input, button {
+    width:100%;
+    padding:10px;
+    margin-top:6px;
+    border-radius:8px;
+    border:none;
+    font-size:16px;
+}
+
+button {
+    background:#22c55e;
+    font-weight:bold;
+}
+
+button:active { transform: scale(0.98); }
+
+.small {
+    font-size:13px;
+    opacity:0.8;
+}
+
+.row {
+    display:flex;
+    gap:10px;
+}
+
+.stat {
+    flex:1;
+    background:#334155;
+    padding:10px;
+    border-radius:10px;
+    text-align:center;
+}
+
+canvas {
+    width:100%;
+    background:#0f172a;
+    border-radius:10px;
+}
+.badge {
+    display:inline-block;
+    background:#334155;
+    padding:6px 10px;
+    margin:4px;
+    border-radius:8px;
+    font-size:12px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>💪 Pushup Pro</h1>
+
+<div class="card">
+    <div class="small">Add Set</div>
+    <input id="pushups" type="number" placeholder="Enter reps..." />
+    <button onclick="addSet()">Add Set</button>
+</div>
+
+<div class="card row">
+    <div class="stat">
+        Today<br><h2 id="today">0</h2>
+    </div>
+    <div class="stat">
+        Streak<br><h2 id="streak">0</h2>
+    </div>
+</div>
+
+<div class="card">
+    <div class="small">7-Day Plan (your progression)</div>
+    <div id="plan"></div>
+</div>
+
+<div class="card">
+    <div class="small">Progress Chart</div>
+    <canvas id="chart" height="120"></canvas>
+</div>
+
+<div class="card">
+    <div class="small">Badges</div>
+    <div id="badges"></div>
+</div>
+
+<div class="card">
+    <button onclick="enableNotifications()">🔔 Enable Reminders</button>
+</div>
+
+<div class="card">
+    <button style="background:#ef4444" onclick="resetToday()">Reset Today</button>
+</div>
+
+<script>
+let data = JSON.parse(localStorage.getItem("pushupPro")) || {
+    days: {},
+    streak: 0,
+    lastDate: null
+};
+
+const plan = [
+"Day 1: 8x8 + max",
+"Day 2: 8x9 + max",
+"Day 3: 9x8 + max",
+"Day 4: easy recovery",
+"Day 5: 9x10 + max",
+"Day 6: 10-12 sets",
+"Day 7: test max"
+];
+
+function todayKey(){
+    return new Date().toISOString().split("T")[0];
+}
+
+function save(){
+    localStorage.setItem("pushupPro", JSON.stringify(data));
+}
+
+function addSet(){
+    let v = parseInt(document.getElementById("pushups").value);
+    if(!v) return;
+
+    let t = todayKey();
+    if(!data.days[t]) data.days[t] = [];
+    data.days[t].push(v);
+
+    document.getElementById("pushups").value = "";
+
+    updateStreak();
+    save();
+    render();
+}
+
+function todayTotal(){
+    let t = todayKey();
+    return (data.days[t] || []).reduce((a,b)=>a+b,0);
+}
+
+function updateStreak(){
+    let t = todayKey();
+
+    if(data.lastDate !== t){
+        data.streak += 1;
+        data.lastDate = t;
+    }
+}
+
+function resetToday(){
+    data.days[todayKey()] = [];
+    save();
+    render();
+}
+
+function badges(total){
+    let b = [];
+    if(total>=50) b.push("🔥 50 Club");
+    if(total>=100) b.push("💪 100 Club");
+    if(total>=250) b.push("🏆 250 Club");
+    if(total>=500) b.push("👑 500 Club");
+    return b;
+}
+
+function drawChart(){
+    let ctx = document.getElementById("chart").getContext("2d");
+    let keys = Object.keys(data.days).slice(-7);
+
+    ctx.clearRect(0,0,400,200);
+
+    let max = 1;
+    let vals = keys.map(k=>{
+        let v = (data.days[k]||[]).reduce((a,b)=>a+b,0);
+        max = Math.max(max,v);
+        return v;
+    });
+
+    vals.forEach((v,i)=>{
+        let h = (v/max)*100;
+        ctx.fillStyle = "#22c55e";
+        ctx.fillRect(i*40, 100-h, 20, h);
+    });
+}
+
+function render(){
+    document.getElementById("today").innerText = todayTotal();
+    document.getElementById("streak").innerText = data.streak;
+
+    let p = document.getElementById("plan");
+    p.innerHTML = plan.map(x=>`<div class="badge">${x}</div>`).join("");
+
+    let b = document.getElementById("badges");
+    b.innerHTML = badges(todayTotal()).map(x=>`<div class="badge">${x}</div>`).join("");
+
+    drawChart();
+}
+
+function enableNotifications(){
+    Notification.requestPermission().then(p=>{
+        if(p==="granted"){
+            new Notification("Pushup Trainer Enabled 💪");
+        }
+    });
+}
+
+// simple reminder (only works while open)
+setInterval(()=>{
+    if(Notification.permission==="granted"){
+        new Notification("Time for your next pushup set 💪");
+    }
+}, 1000*60*60*2); // every 2 hours
+
+render();
+</script>
+
+</body>
+</html>
