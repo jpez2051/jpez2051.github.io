@@ -1,19 +1,376 @@
-updateStreak() {
-    const today = new Date();
-    const tKey = this.todayKey();
-    
-    if (!this.state.lastDate) {
-        this.state.streak = 1;
-    } else {
-        const lastDate = new Date(this.state.lastDate);
-        const diffInDays = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Pushup Pro</title>
 
-        if (diffInDays === 1) {
-            this.state.streak += 1; // Successive day
-        } else if (diffInDays > 1) {
-            this.state.streak = 1; // Streak broken
+    <style>
+        :root {
+            --bg: #0b1220;
+            --card: #1e293b;
+            --muted: #94a3b8;
+            --accent: #22c55e;
+            --danger: #ef4444;
+            --primary-glow: rgba(34, 197, 94, 0.2);
         }
-        // if diff is 0, do nothing (already added today)
+
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: white;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container { width: 100%; max-width: 450px; }
+
+        h1 { text-align: center; margin-bottom: 20px; font-weight: 800; letter-spacing: -1px; }
+
+        .card {
+            background: var(--card);
+            padding: 16px;
+            border-radius: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Input Styling */
+        .input-group { display: flex; gap: 8px; margin-top: 8px; }
+        input {
+            flex: 1;
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: white;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 16px;
+            outline: none;
+        }
+        input:focus { border-color: var(--accent); }
+
+        button {
+            padding: 12px 20px;
+            border-radius: 10px;
+            border: none;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--accent);
+            color: #052e16;
+        }
+
+        button:active { transform: scale(0.96); }
+
+        /* Stats Grid */
+        .row { display: flex; gap: 12px; }
+        .stat {
+            flex: 1;
+            background: #334155;
+            padding: 14px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .stat h2 { margin: 4px 0 0 0; font-size: 28px; color: var(--accent); }
+
+        .small { font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--muted); letter-spacing: 1px; }
+
+        /* Chart & Plan */
+        canvas {
+            width: 100%;
+            height: 120px;
+            background: #0f172a;
+            border-radius: 12px;
+            margin-top: 10px;
+        }
+
+        #plan, #badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .badge {
+            background: #334155;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            border: 1px solid #475569;
+        }
+
+        .badge.active {
+            background: var(--accent);
+            color: #052e16;
+            border-color: var(--accent);
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 11px;
+            margin-top: 20px;
+            color: var(--muted);
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+    <h1>💪 Pushup Pro</h1>
+
+    <div class="card">
+        <div class="small">Add New Set</div>
+        <div class="input-group">
+            <input id="pushups" type="number" pattern="\d*"} inputmode="numeric" placeholder="Reps..." />
+            <button onclick="app.addSet()">Add</button>
+        </div>
+    </div>
+
+    <div class="card row">
+        <div class="stat">
+            <div class="small">Today</div>
+            <h2 id="todayTotal">0</h2>
+        </div>
+        <div class="stat">
+            <div class="small">Streak</div>
+            <h2 id="streak">0</h2>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="small">Weekly Training Plan</div>
+        <div id="plan"></div>
+    </div>
+
+    <div class="card">
+        <div class="small">Last 7 Days</div>
+        <canvas id="chart"></canvas>
+    </div>
+
+    <div class="card">
+        <div class="small">Unlocked Badges</div>
+        <div id="badges"></div>
+    </div>
+
+    <div class="row">
+        <button style="flex:2; background:#334155; color:white;" onclick="app.enableNotifications()">🔔 Reminders</button>
+        <button style="flex:1; background:var(--danger); color:white;" onclick="app.resetToday()">Reset</button>
+    </div>
+
+    <div class="footer">
+        Pushup Pro Tracker • <span id="version"></span><br>
+        Built for Daily Progress
+    </div>
+</div>
+
+<script>
+const APP_VERSION = "v1.3.0";
+const STORAGE_KEY = "pushup_pro_data";
+const PLAN = ["8x8", "8x9", "9x8", "Rest", "9x10", "12 Sets", "Max Test"];
+
+const app = {
+    state: {
+        days: {},      // { "YYYY-MM-DD": [reps, reps] }
+        streak: 0,
+        lastDate: null // "YYYY-MM-DD"
+    },
+
+    init() {
+        this.load();
+        this.checkStreakReset();
+        this.render();
+        this.startReminderLoop();
+        document.getElementById("version").innerText = APP_VERSION;
+    },
+
+    todayKey() {
+        return new Date().toISOString().split("T")[0];
+    },
+
+    save() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+    },
+
+    load() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            try {
+                this.state = JSON.parse(saved);
+            } catch (e) {
+                console.error("Load failed", e);
+            }
+        }
+    },
+
+    addSet() {
+        const input = document.getElementById("pushups");
+        const val = parseInt(input.value);
+
+        if (!val || val <= 0) return;
+        
+        // Haptic feedback (if mobile)
+        if (window.navigator.vibrate) window.navigator.vibrate(40);
+
+        const t = this.todayKey();
+        if (!this.state.days[t]) this.state.days[t] = [];
+        
+        this.state.days[t].push(val);
+        
+        // Update streak only if this is the first set of a new day
+        if (this.state.lastDate !== t) {
+            this.updateStreakLogic();
+        }
+
+        input.value = "";
+        this.save();
+        this.render();
+    },
+
+    updateStreakLogic() {
+        const today = new Date(this.todayKey());
+        
+        if (this.state.lastDate) {
+            const last = new Date(this.state.lastDate);
+            const diff = Math.floor((today - last) / (86400000));
+
+            if (diff === 1) {
+                this.state.streak++;
+            } else if (diff > 1) {
+                this.state.streak = 1;
+            }
+        } else {
+            this.state.streak = 1;
+        }
+        this.state.lastDate = this.todayKey();
+    },
+
+    checkStreakReset() {
+        if (!this.state.lastDate) return;
+        const today = new Date(this.todayKey());
+        const last = new Date(this.state.lastDate);
+        const diff = Math.floor((today - last) / (86400000));
+        
+        // If more than 1 day has passed since last activity, streak dies
+        if (diff > 1) {
+            this.state.streak = 0;
+            this.save();
+        }
+    },
+
+    todayTotal() {
+        return (this.state.days[this.todayKey()] || []).reduce((a, b) => a + b, 0);
+    },
+
+    resetToday() {
+        if(confirm("Clear today's progress?")) {
+            this.state.days[this.todayKey()] = [];
+            this.save();
+            this.render();
+        }
+    },
+
+    drawChart() {
+        const canvas = document.getElementById("chart");
+        const ctx = canvas.getContext("2d");
+        
+        // Set internal resolution
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+
+        const daysToView = 7;
+        const data = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const k = d.toISOString().split("T")[0];
+            const total = (this.state.days[k] || []).reduce((a, b) => a + b, 0);
+            data.push(total);
+        }
+
+        const max = Math.max(...data, 50);
+        const barGap = 12;
+        const barWidth = (canvas.width - (barGap * (daysToView + 1))) / daysToView;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        data.forEach((v, i) => {
+            const h = (v / max) * (canvas.height - 20);
+            const x = barGap + i * (barWidth + barGap);
+            const y = canvas.height - h;
+
+            // Draw shadow/glow
+            ctx.fillStyle = "rgba(34, 197, 94, 0.1)";
+            ctx.fillRect(x, 0, barWidth, canvas.height);
+
+            // Draw Bar
+            ctx.fillStyle = v > 0 ? "#22c55e" : "#334155";
+            ctx.roundRect ? ctx.roundRect(x, y, barWidth, h, 4).fill() : ctx.fillRect(x, y, barWidth, h);
+        });
+    },
+
+    enableNotifications() {
+        Notification.requestPermission().then(p => {
+            if (p === "granted") new Notification("Pushup Pro: Reminders Active! 💪");
+        });
+    },
+
+    startReminderLoop() {
+        setInterval(() => {
+            const hour = new Date().getHours();
+            // Only notify between 9 AM and 9 PM
+            if (Notification.permission === "granted" && hour >= 9 && hour <= 21) {
+                new Notification("Time for a set? Keep that streak alive! 🔥");
+            }
+        }, 1000 * 60 * 120); // Every 2 hours
+    },
+
+    render() {
+        document.getElementById("todayTotal").innerText = this.todayTotal();
+        document.getElementById("streak").innerText = this.state.streak;
+
+        const total = this.todayTotal();
+        
+        // Render Badges
+        const badges = [
+            {n: 50, e: "🔥"}, {n: 100, e: "💪"}, {n: 250, e: "🏆"}, {n: 500, e: "👑"}
+        ];
+        document.getElementById("badges").innerHTML = badges
+            .filter(b => total >= b.n)
+            .map(b => `<div class="badge">${b.e} ${b.n}</div>`).join("");
+
+        // Render Plan
+        const dayOfWeek = (new Date().getDay() + 6) % 7; // Adjust so Mon=0
+        document.getElementById("plan").innerHTML = PLAN.map((text, i) => 
+            `<div class="badge ${i === dayOfWeek ? 'active' : ''}">${text}</div>`
+        ).join("");
+
+        this.drawChart();
     }
-    this.state.lastDate = tKey;
+};
+
+// Polyfill for roundRect on older browsers
+if (!Path2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+        if (w < 2 * r) r = w / 2;
+        if (h < 2 * r) r = h / 2;
+        this.beginPath();
+        this.moveTo(x + r, y);
+        this.arcTo(x + w, y, x + w, y + h, r);
+        this.arcTo(x + w, y + h, x, y + h, r);
+        this.arcTo(x, y + h, x, y, r);
+        this.arcTo(x, y, x + w, y, r);
+        this.closePath();
+        return this;
+    };
 }
+
+app.init();
+</script>
+
+</body>
+</html>
