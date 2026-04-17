@@ -56,14 +56,12 @@
             font-size: 16px;
             font-weight: 700;
             cursor: pointer;
-            transition: 0.2s;
             background: var(--accent);
             color: #052e16;
         }
 
         button.secondary { background: #334155; color: white; }
         button.undo { background: transparent; color: var(--muted); border: 1px solid #334155; padding: 8px; font-size: 12px; margin-top: 8px; width: 100%; }
-        button:active { transform: scale(0.96); }
 
         .row { display: flex; gap: 12px; }
         .stat {
@@ -80,15 +78,15 @@
         .set-dot { width: 14px; height: 14px; border-radius: 50%; background: #334155; }
         .set-dot.done { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
 
-        .history-list { font-size: 13px; color: var(--muted); margin-top: 10px; min-height: 1.2em; }
+        .history-list { font-size: 13px; color: var(--muted); margin-top: 10px; }
 
         .small { font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--muted); letter-spacing: 1px; }
 
         canvas { width: 100%; height: 100px; background: #0f172a; border-radius: 12px; margin-top: 10px; }
 
         #plan { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; }
-        .badge { background: #334155; padding: 10px; border-radius: 8px; font-size: 12px; cursor: pointer; text-align: center; border: 1px solid transparent; }
-        .badge.active { background: rgba(59, 130, 246, 0.1); border-color: var(--primary); color: white; }
+        .badge { background: #334155; padding: 10px; border-radius: 8px; font-size: 12px; cursor: pointer; text-align: center; }
+        .badge.active { background: rgba(59, 130, 246, 0.1); border: 1px solid var(--primary); color: white; }
 
         .footer { text-align: center; font-size: 11px; margin-top: 20px; color: var(--muted); opacity: 0.5; }
     </style>
@@ -127,10 +125,7 @@
     </div>
 
     <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div class="small">Program Plan</div>
-            <button class="secondary" style="padding:4px 10px; font-size:12px;" onclick="app.nextDay()">Next Day →</button>
-        </div>
+        <div class="small">Program Plan</div>
         <div id="plan"></div>
     </div>
 
@@ -139,36 +134,16 @@
         <canvas id="chart"></canvas>
     </div>
 
-    <div class="footer">Pushup Pro • <span id="version"></span></div>
+    <div class="footer">Pushup Pro • Reverted Version • <span id="version"></span></div>
 </div>
 
 <script>
-const APP_VERSION = "v1.7.1";
-const STORAGE_KEY = "pushup_pro_data_final";
+const APP_VERSION = "v1.7.2-stable";
+// This matches your original storage key to try and recover data
+const STORAGE_KEY = "pushup_pro_session_v1"; 
+
 const PLAN = [
     { name: "Day 1: 8x8", targetSets: 8 },
     { name: "Day 2: 8x9", targetSets: 8 },
     { name: "Day 3: 9x8", targetSets: 9 },
-    { name: "Day 4: Rest", targetSets: 0 },
-    { name: "Day 5: 9x10", targetSets: 9 },
-    { name: "Day 6: 12 Sets", targetSets: 12 },
-    { name: "Day 7: Max Test", targetSets: 1 }
-];
-
-const app = {
-    state: { 
-        days: {}, 
-        streak: 0, 
-        lastDate: null, 
-        currentPlanIndex: 0,
-        sessionSets: [] 
-    },
-
-    init() {
-        this.load();
-        this.checkStreakReset();
-        this.render();
-        document.getElementById("version").innerText = APP_VERSION;
-    },
-
-    todayKey() { return new Date().toISOString().split("
+    { name: "Day 4: Rest", targetSets:
