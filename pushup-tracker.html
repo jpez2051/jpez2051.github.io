@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Pushup Pro: Workday Edition</title>
+    <title>Pushup Pro</title>
 
     <style>
         :root {
@@ -45,7 +45,7 @@
             color: white;
             padding: 14px;
             border-radius: 10px;
-            font-size: 18px; /* Larger for easier mobile entry */
+            font-size: 18px;
             outline: none;
         }
 
@@ -75,22 +75,20 @@
         }
         .stat h2 { margin: 4px 0 0 0; font-size: 28px; color: var(--accent); }
 
-        /* Session Tracker */
         .session-tracker { border: 1px solid var(--primary); text-align: center; }
         .sets-grid { display: flex; justify-content: center; gap: 8px; margin: 12px 0; flex-wrap: wrap; }
         .set-dot { width: 14px; height: 14px; border-radius: 50%; background: #334155; }
         .set-dot.done { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
 
-        /* History List */
-        .history-list { font-size: 14px; color: var(--muted); margin-top: 10px; font-style: italic; }
+        .history-list { font-size: 13px; color: var(--muted); margin-top: 10px; min-height: 1.2em; }
 
         .small { font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--muted); letter-spacing: 1px; }
 
         canvas { width: 100%; height: 100px; background: #0f172a; border-radius: 12px; margin-top: 10px; }
 
         #plan { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; }
-        .badge { background: #334155; padding: 10px; border-radius: 8px; font-size: 12px; cursor: pointer; text-align: center; }
-        .badge.active { background: rgba(59, 130, 246, 0.1); border: 1px solid var(--primary); color: white; }
+        .badge { background: #334155; padding: 10px; border-radius: 8px; font-size: 12px; cursor: pointer; text-align: center; border: 1px solid transparent; }
+        .badge.active { background: rgba(59, 130, 246, 0.1); border-color: var(--primary); color: white; }
 
         .footer { text-align: center; font-size: 11px; margin-top: 20px; color: var(--muted); opacity: 0.5; }
     </style>
@@ -130,23 +128,23 @@
 
     <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div class="small">Plan</div>
-            <button class="secondary" style="padding:4px 8px; font-size:11px;" onclick="app.nextDay()">Next Day →</button>
+            <div class="small">Program Plan</div>
+            <button class="secondary" style="padding:4px 10px; font-size:12px;" onclick="app.nextDay()">Next Day →</button>
         </div>
         <div id="plan"></div>
     </div>
 
     <div class="card">
-        <div class="small">Volume (7D)</div>
+        <div class="small">Weekly Volume</div>
         <canvas id="chart"></canvas>
     </div>
 
-    <div class="footer">Pushup Pro • Workday Edition • <span id="version"></span></div>
+    <div class="footer">Pushup Pro • <span id="version"></span></div>
 </div>
 
 <script>
-const APP_VERSION = "v1.6.0";
-const STORAGE_KEY = "pushup_pro_workday_v1";
+const APP_VERSION = "v1.7.1";
+const STORAGE_KEY = "pushup_pro_data_final";
 const PLAN = [
     { name: "Day 1: 8x8", targetSets: 8 },
     { name: "Day 2: 8x9", targetSets: 8 },
@@ -158,7 +156,13 @@ const PLAN = [
 ];
 
 const app = {
-    state: { days: {}, streak: 0, lastDate: null, currentPlanIndex: 0 },
+    state: { 
+        days: {}, 
+        streak: 0, 
+        lastDate: null, 
+        currentPlanIndex: 0,
+        sessionSets: [] 
+    },
 
     init() {
         this.load();
@@ -167,118 +171,4 @@ const app = {
         document.getElementById("version").innerText = APP_VERSION;
     },
 
-    todayKey() { return new Date().toISOString().split("T")[0]; },
-
-    save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state)); },
-
-    load() {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) this.state = {...this.state, ...JSON.parse(saved)};
-    },
-
-    addSet() {
-        const input = document.getElementById("pushups");
-        const val = parseInt(input.value);
-        if (!val || val <= 0) return;
-        
-        const t = this.todayKey();
-        if (!this.state.days[t]) this.state.days[t] = [];
-        this.state.days[t].push(val);
-        
-        if (this.state.lastDate !== t) this.updateStreakLogic();
-
-        input.value = "";
-        this.save();
-        this.render();
-    },
-
-    undoLast() {
-        const t = this.todayKey();
-        if (this.state.days[t] && this.state.days[t].length > 0) {
-            this.state.days[t].pop();
-            this.save();
-            this.render();
-        }
-    },
-
-    updateStreakLogic() {
-        const today = new Date(this.todayKey());
-        if (this.state.lastDate) {
-            const last = new Date(this.state.lastDate);
-            const diff = Math.floor((today - last) / 86400000);
-            if (diff === 1) this.state.streak++;
-            else if (diff > 1) this.state.streak = 1;
-        } else { this.state.streak = 1; }
-        this.state.lastDate = this.todayKey();
-    },
-
-    checkStreakReset() {
-        if (!this.state.lastDate) return;
-        const diff = Math.floor((new Date(this.todayKey()) - new Date(this.state.lastDate)) / 86400000);
-        if (diff > 1) { this.state.streak = 0; this.save(); }
-    },
-
-    render() {
-        const tKey = this.todayKey();
-        const setsToday = this.state.days[tKey] || [];
-        const currentPlan = PLAN[this.state.currentPlanIndex];
-        
-        document.getElementById("todayTotal").innerText = setsToday.reduce((a,b)=>a+b,0);
-        document.getElementById("streak").innerText = this.state.streak;
-
-        // Session Tracker
-        const sessionCard = document.getElementById("sessionCard");
-        if (currentPlan.targetSets > 0) {
-            sessionCard.style.display = "block";
-            const remaining = Math.max(0, currentPlan.targetSets - setsToday.length);
-            document.getElementById("sessionTitle").innerText = currentPlan.name;
-            document.getElementById("setsCountdown").innerText = remaining > 0 ? `${remaining} Sets Remaining` : "Daily Goal Met! 🔥";
-            
-            // History string
-            document.getElementById("history").innerText = setsToday.length > 0 ? `Sets so far: ${setsToday.join(", ")}` : "No sets yet today";
-
-            let dotsHtml = "";
-            for(let i=0; i<currentPlan.targetSets; i++) {
-                dotsHtml += `<div class="set-dot ${i < setsToday.length ? 'done' : ''}"></div>`;
-            }
-            document.getElementById("setsDots").innerHTML = dotsHtml;
-        } else {
-            sessionCard.style.display = "none";
-        }
-
-        document.getElementById("plan").innerHTML = PLAN.map((p, i) => 
-            `<div class="badge ${i === this.state.currentPlanIndex ? 'active' : ''}" onclick="app.setDay(${i})">${p.name}</div>`
-        ).join("");
-
-        this.drawChart();
-    },
-
-    setDay(idx) { this.state.currentPlanIndex = idx; this.save(); this.render(); },
-    nextDay() { this.state.currentPlanIndex = (this.state.currentPlanIndex + 1) % PLAN.length; this.save(); this.render(); },
-
-    drawChart() {
-        const canvas = document.getElementById("chart");
-        const ctx = canvas.getContext("2d");
-        canvas.width = canvas.offsetWidth;
-        canvas.height = canvas.offsetHeight;
-        const data = [];
-        for (let i = 6; i >= 0; i--) {
-            const d = new Date(); d.setDate(d.getDate() - i);
-            const k = d.toISOString().split("T")[0];
-            data.push((this.state.days[k] || []).reduce((a, b) => a + b, 0));
-        }
-        const max = Math.max(...data, 50);
-        data.forEach((v, i) => {
-            const h = (v / max) * (canvas.height - 20);
-            const x = 10 + i * ((canvas.width - 20) / 7);
-            ctx.fillStyle = v > 0 ? "#22c55e" : "#334155";
-            ctx.fillRect(x, canvas.height - h, 20, h);
-        });
-    }
-};
-
-app.init();
-</script>
-
-</body>
-</html>
+    todayKey() { return new Date().toISOString().split("
