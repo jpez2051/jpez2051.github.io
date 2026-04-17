@@ -15,7 +15,8 @@
         button { padding: 12px 20px; border-radius: 10px; border: none; font-size: 16px; font-weight: 700; cursor: pointer; background: var(--accent); color: #052e16; }
         button.secondary { background: #334155; color: white; }
         .row { display: flex; gap: 12px; }
-        .stat { flex: 1; background: #334155; padding: 14px; border-radius: 12px; text-align: center; cursor: pointer; }
+        .stat { flex: 1; background: #334155; padding: 14px; border-radius: 12px; text-align: center; cursor: pointer; border: 1px dashed transparent; }
+        .stat:active { border-color: var(--accent); }
         .stat h2 { margin: 4px 0 0 0; font-size: 28px; color: var(--accent); }
         .session-tracker { border: 1px solid var(--primary); text-align: center; }
         .sets-grid { display: flex; justify-content: center; gap: 8px; margin: 12px 0; flex-wrap: wrap; }
@@ -40,7 +41,7 @@
         <h2 id="setsCountdown" style="margin:8px 0;">0 Sets Left</h2>
         <div class="sets-grid" id="setsDots"></div>
         <div id="history" class="history-list"></div>
-        <button style="background:none; color:var(--danger); font-size:11px; margin-top:10px; border:none; text-decoration:underline;" onclick="app.resetSession()">Clear Dots Only</button>
+        <button style="background:none; color:var(--muted); font-size:10px; margin-top:10px; border:none; text-decoration:underline;" onclick="app.syncDots()">Refill Dots Only</button>
     </div>
 
     <div class="card">
@@ -53,8 +54,8 @@
     </div>
 
     <div class="card row">
-        <div class="stat">
-            <div class="small">Today</div>
+        <div class="stat" onclick="app.editToday()">
+            <div class="small">Today (Tap to Edit)</div>
             <h2 id="todayTotal">0</h2>
         </div>
         <div class="stat" onclick="app.editStreak()">
@@ -76,7 +77,7 @@
         <canvas id="chart"></canvas>
     </div>
 
-    <div class="footer">Pushup Pro • v2.1 (Sticky Session)</div>
+    <div class="footer">Pushup Pro • v2.2 (Precision)</div>
 </div>
 
 <script>
@@ -98,10 +99,12 @@ const app = {
 
     save() { localStorage.setItem("pushup_pro_master", JSON.stringify(this.state)); },
 
+    todayKey() { return new Date().toISOString().split("T")[0]; },
+
     addSet() {
         const val = parseInt(document.getElementById("pushups").value);
         if (!val || val <= 0) return;
-        const t = new Date().toISOString().split("T")[0];
+        const t = this.todayKey();
         
         if (!this.state.days[t]) this.state.days[t] = [];
         this.state.days[t].push(val);
@@ -118,8 +121,32 @@ const app = {
     undo() {
         if (this.state.session.length > 0) {
             this.state.session.pop();
-            const t = new Date().toISOString().split("T")[0];
+            const t = this.todayKey();
             if (this.state.days[t]) this.state.days[t].pop();
+            this.save(); this.render();
+        }
+    },
+
+    editToday() {
+        const t = this.todayKey();
+        const current = (this.state.days[t] || []).reduce((a,b)=>a+b,0);
+        const val = prompt("Enter your correct total reps for today:", current);
+        if (val !== null) {
+            // We store the adjustment as a single set to keep logic simple
+            this.state.days[t] = [parseInt(val) || 0];
+            this.save(); this.render();
+        }
+    },
+
+    editStreak() {
+        const val = prompt("Enter streak:", this.state.streak);
+        if (val !== null) { this.state.streak = parseInt(val) || 0; this.save(); this.render(); }
+    },
+
+    syncDots() {
+        const count = prompt("How many dots should be filled for this session?", this.state.session.length);
+        if (count !== null) {
+            this.state.session = Array(parseInt(count) || 0).fill(0); // Fills dots without adding reps
             this.save(); this.render();
         }
     },
@@ -132,27 +159,10 @@ const app = {
         }
     },
 
-    // CHANGED: Clicking the badge no longer resets the session array
-    setDay(i) { 
-        this.state.planIdx = i; 
-        this.save(); 
-        this.render(); 
-    },
-
-    resetSession() {
-        if(confirm("Are you sure you want to clear the dots? (Historical totals will stay)")) {
-            this.state.session = [];
-            this.save(); this.render();
-        }
-    },
-
-    editStreak() {
-        const val = prompt("Enter streak:", this.state.streak);
-        if (val !== null) { this.state.streak = parseInt(val) || 0; this.save(); this.render(); }
-    },
+    setDay(i) { this.state.planIdx = i; this.save(); this.render(); },
 
     render() {
-        const t = new Date().toISOString().split("T")[0];
+        const t = this.todayKey();
         const todayReps = (this.state.days[t] || []).reduce((a,b)=>a+b,0);
         const p = PLAN[this.state.planIdx];
 
@@ -163,7 +173,10 @@ const app = {
         document.getElementById("sessionCard").style.display = p.target > 0 ? "block" : "none";
         document.getElementById("sessionTitle").innerText = p.name;
         document.getElementById("setsCountdown").innerText = p.target - done > 0 ? `${p.target - done} Sets Left` : "Goal Reached!";
-        document.getElementById("history").innerText = done > 0 ? `Session: ${this.state.session.join(", ")}` : "No sets yet";
+        
+        // Show session history but filter out the "0" values from dot-syncing
+        const filteredSession = this.state.session.filter(v => v > 0);
+        document.getElementById("history").innerText = filteredSession.length > 0 ? `Session: ${filteredSession.join(", ")}` : "No sets logged yet";
         
         let dots = "";
         for(let i=0; i<p.target; i++) dots += `<div class="set-dot ${i < done ? 'done' : ''}"></div>`;
