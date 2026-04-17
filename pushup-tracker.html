@@ -40,6 +40,7 @@
         <h2 id="setsCountdown" style="margin:8px 0;">0 Sets Left</h2>
         <div class="sets-grid" id="setsDots"></div>
         <div id="history" class="history-list"></div>
+        <button style="background:none; color:var(--danger); font-size:11px; margin-top:10px; border:none; text-decoration:underline;" onclick="app.resetSession()">Clear Dots Only</button>
     </div>
 
     <div class="card">
@@ -57,7 +58,7 @@
             <h2 id="todayTotal">0</h2>
         </div>
         <div class="stat" onclick="app.editStreak()">
-            <div class="small">Streak (Tap to Edit)</div>
+            <div class="small">Streak</div>
             <h2 id="streak">0</h2>
         </div>
     </div>
@@ -75,7 +76,7 @@
         <canvas id="chart"></canvas>
     </div>
 
-    <div class="footer">Pushup Pro • Stable v2.0 • Data is saved locally</div>
+    <div class="footer">Pushup Pro • v2.1 (Sticky Session)</div>
 </div>
 
 <script>
@@ -124,15 +125,29 @@ const app = {
     },
 
     nextDay() {
-        this.state.session = [];
-        this.state.planIdx = (this.state.planIdx + 1) % PLAN.length;
-        this.save(); this.render();
+        if(confirm("Move to next day and reset dots?")) {
+            this.state.session = [];
+            this.state.planIdx = (this.state.planIdx + 1) % PLAN.length;
+            this.save(); this.render();
+        }
     },
 
-    setDay(i) { this.state.planIdx = i; this.state.session = []; this.save(); this.render(); },
+    // CHANGED: Clicking the badge no longer resets the session array
+    setDay(i) { 
+        this.state.planIdx = i; 
+        this.save(); 
+        this.render(); 
+    },
+
+    resetSession() {
+        if(confirm("Are you sure you want to clear the dots? (Historical totals will stay)")) {
+            this.state.session = [];
+            this.save(); this.render();
+        }
+    },
 
     editStreak() {
-        const val = prompt("Enter your correct streak number:", this.state.streak);
+        const val = prompt("Enter streak:", this.state.streak);
         if (val !== null) { this.state.streak = parseInt(val) || 0; this.save(); this.render(); }
     },
 
@@ -144,7 +159,6 @@ const app = {
         document.getElementById("todayTotal").innerText = todayReps;
         document.getElementById("streak").innerText = this.state.streak;
         
-        // Session Tracker
         const done = this.state.session.length;
         document.getElementById("sessionCard").style.display = p.target > 0 ? "block" : "none";
         document.getElementById("sessionTitle").innerText = p.name;
@@ -155,7 +169,6 @@ const app = {
         for(let i=0; i<p.target; i++) dots += `<div class="set-dot ${i < done ? 'done' : ''}"></div>`;
         document.getElementById("setsDots").innerHTML = dots;
 
-        // Plan Grid
         document.getElementById("plan").innerHTML = PLAN.map((day, i) => 
             `<div class="badge ${i === this.state.planIdx ? 'active' : ''}" onclick="app.setDay(${i})">${day.name}</div>`
         ).join("");
