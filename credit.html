@@ -2,15 +2,24 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Debt Tracker v2.5.1</title>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Debt Tracker v2.5.4</title>
     <style>
         :root { --bg: #1e272e; --primary: #2ecc71; --accent: #3498db; --danger: #ff4757; --text: #f4f7f6; --card-bg: #2f3640; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 10px; padding-bottom: 100px; color: var(--text); overflow-x: hidden; }
+        
+        /* Allowing overscroll-behavior for pull-to-refresh functionality */
+        html, body { 
+            background: var(--bg); 
+            overscroll-behavior-y: contain; 
+            -webkit-overflow-scrolling: touch;
+        }
+
+        body { font-family: -apple-system, sans-serif; margin: 0; padding: 10px; padding-bottom: 100px; color: var(--text); overflow-x: hidden; }
         
         .dashboard { background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(30,39,46,0) 100%); padding: 25px 12px 15px 12px; text-align: center; }
-        .main-total-container { display: flex; align-items: baseline; justify-content: center; gap: 8px; }
+        .main-total-container { display: flex; align-items: baseline; justify-content: center; gap: 8px; flex-wrap: wrap; }
         .main-total { font-size: 32px; font-weight: 800; }
         .delta-badge { font-size: 14px; font-weight: 800; padding: 2px 8px; border-radius: 6px; }
         .delta-down { color: var(--primary); }
@@ -60,21 +69,24 @@
 </div>
 
 <div class="footer">
+    <span onclick="location.reload()" style="color:var(--primary); font-weight: 800; cursor:pointer;">REFRESH</span>
     <span onclick="exportCSV()" style="color:var(--accent); font-weight: 800; cursor:pointer;">EXPORT CSV</span>
-    <span style="opacity: 0.4;">v2.5.1</span>
     <span onclick="nuke()" style="color:var(--danger); font-weight: 800; cursor:pointer;">WIPE ALL</span>
 </div>
 
 <script>
 const KEY = 'debt_v125';
-const PREV_KEY = 'debt_prev_total';
 const COLORS = ['#2ecc71', '#3498db', '#9b59b6', '#f1c40f', '#e67e22', '#1abc9c', '#e74c3c'];
 let cards = [];
+let sessionStartTotal = null;
 
 function loadData() {
     try {
         const raw = localStorage.getItem(KEY);
         cards = raw ? JSON.parse(raw) : [];
+        if (sessionStartTotal === null) {
+            sessionStartTotal = cards.reduce((s, c) => s + (parseFloat(c.bal) || 0), 0);
+        }
         renderUI();
     } catch (e) { cards = []; }
 }
@@ -169,20 +181,15 @@ function calculate() {
     
     document.getElementById('main-debt').innerText = '$' + currentTotal.toLocaleString(undefined, {minimumFractionDigits:2});
     
-    // Delta Logic
-    const prevTotal = parseFloat(localStorage.getItem(PREV_KEY)) || currentTotal;
-    const delta = currentTotal - prevTotal;
     const deltaEl = document.getElementById('delta-badge');
+    const delta = currentTotal - sessionStartTotal;
     
     if (Math.abs(delta) > 0.01) {
-        deltaEl.innerText = (delta > 0 ? '+' : '-') + '$' + Math.abs(delta).toFixed(2);
+        deltaEl.innerText = (delta > 0 ? '+' : '-') + '$' + Math.abs(delta).toLocaleString(undefined, {minimumFractionDigits:2});
         deltaEl.className = 'delta-badge ' + (delta > 0 ? 'delta-up' : 'delta-down');
     } else {
         deltaEl.innerText = '';
     }
-    
-    // Save current as previous for the NEXT session
-    localStorage.setItem(PREV_KEY, currentTotal);
 
     document.getElementById('stat-min').innerText = '$' + Math.round(totalMin);
     document.getElementById('stat-apr').innerText = count > 0 ? Math.round(aprSum / count) + '%' : '0%';
