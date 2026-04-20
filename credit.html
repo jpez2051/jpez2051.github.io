@@ -5,26 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Tracker v2.5.4</title>
+    <title>Debt Tracker v2.5.5</title>
     <style>
         :root { --bg: #1e272e; --primary: #2ecc71; --accent: #3498db; --danger: #ff4757; --text: #f4f7f6; --card-bg: #2f3640; }
-        
-        /* Allowing overscroll-behavior for pull-to-refresh functionality */
-        html, body { 
-            background: var(--bg); 
-            overscroll-behavior-y: contain; 
-            -webkit-overflow-scrolling: touch;
-        }
-
+        html, body { background: var(--bg); overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; }
         body { font-family: -apple-system, sans-serif; margin: 0; padding: 10px; padding-bottom: 100px; color: var(--text); overflow-x: hidden; }
-        
         .dashboard { background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(30,39,46,0) 100%); padding: 25px 12px 15px 12px; text-align: center; }
         .main-total-container { display: flex; align-items: baseline; justify-content: center; gap: 8px; flex-wrap: wrap; }
         .main-total { font-size: 32px; font-weight: 800; }
-        .delta-badge { font-size: 14px; font-weight: 800; padding: 2px 8px; border-radius: 6px; }
+        .delta-badge { font-size: 14px; font-weight: 800; padding: 2px 8px; border-radius: 6px; background: rgba(0,0,0,0.2); }
         .delta-down { color: var(--primary); }
         .delta-up { color: var(--danger); }
-        
         .main-freedom { background: rgba(46, 204, 113, 0.1); color: var(--primary); font-size: 11px; font-weight: 800; padding: 5px 12px; border-radius: 20px; display: inline-block; margin-top: 8px; text-transform: uppercase; }
         .stack-chart { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: rgba(255,255,255,0.05); margin: 20px 0; width: 100%; }
         .stack-segment { height: 100%; transition: width 0.5s ease; }
@@ -69,26 +60,37 @@
 </div>
 
 <div class="footer">
-    <span onclick="location.reload()" style="color:var(--primary); font-weight: 800; cursor:pointer;">REFRESH</span>
+    <span onclick="resetGlobalBaseline()" style="color:var(--primary); font-weight: 800; cursor:pointer;">RESET BASELINE</span>
     <span onclick="exportCSV()" style="color:var(--accent); font-weight: 800; cursor:pointer;">EXPORT CSV</span>
     <span onclick="nuke()" style="color:var(--danger); font-weight: 800; cursor:pointer;">WIPE ALL</span>
 </div>
 
 <script>
 const KEY = 'debt_v125';
+const BASE_KEY = 'debt_global_baseline'; // The Permanent Baseline Key
 const COLORS = ['#2ecc71', '#3498db', '#9b59b6', '#f1c40f', '#e67e22', '#1abc9c', '#e74c3c'];
 let cards = [];
-let sessionStartTotal = null;
 
 function loadData() {
     try {
         const raw = localStorage.getItem(KEY);
         cards = raw ? JSON.parse(raw) : [];
-        if (sessionStartTotal === null) {
-            sessionStartTotal = cards.reduce((s, c) => s + (parseFloat(c.bal) || 0), 0);
+        
+        // If no baseline exists in permanent storage, set one now
+        if (localStorage.getItem(BASE_KEY) === null) {
+            let total = cards.reduce((s, c) => s + (parseFloat(c.bal) || 0), 0);
+            localStorage.setItem(BASE_KEY, total);
         }
+        
         renderUI();
     } catch (e) { cards = []; }
+}
+
+function resetGlobalBaseline() {
+    let currentTotal = cards.reduce((s, c) => s + (parseFloat(c.bal) || 0), 0);
+    localStorage.setItem(BASE_KEY, currentTotal);
+    alert("New baseline locked in at $" + currentTotal.toLocaleString());
+    calculate();
 }
 
 function renderUI() {
@@ -181,14 +183,17 @@ function calculate() {
     
     document.getElementById('main-debt').innerText = '$' + currentTotal.toLocaleString(undefined, {minimumFractionDigits:2});
     
+    // DELTA LOGIC - Uses Permanent Storage
     const deltaEl = document.getElementById('delta-badge');
-    const delta = currentTotal - sessionStartTotal;
+    const globalBase = parseFloat(localStorage.getItem(BASE_KEY)) || currentTotal;
+    const delta = currentTotal - globalBase;
     
     if (Math.abs(delta) > 0.01) {
         deltaEl.innerText = (delta > 0 ? '+' : '-') + '$' + Math.abs(delta).toLocaleString(undefined, {minimumFractionDigits:2});
         deltaEl.className = 'delta-badge ' + (delta > 0 ? 'delta-up' : 'delta-down');
     } else {
-        deltaEl.innerText = '';
+        deltaEl.innerText = '$0.00';
+        deltaEl.className = 'delta-badge';
     }
 
     document.getElementById('stat-min').innerText = '$' + Math.round(totalMin);
