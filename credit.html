@@ -5,39 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Tracker v2.5.5</title>
+    <title>Debt Tracker v2.5.7</title>
     <style>
         :root { --bg: #1e272e; --primary: #2ecc71; --accent: #3498db; --danger: #ff4757; --text: #f4f7f6; --card-bg: #2f3640; }
         html, body { background: var(--bg); overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; }
-        body { font-family: -apple-system, sans-serif; margin: 0; padding: 10px; padding-bottom: 100px; color: var(--text); overflow-x: hidden; }
+        body { font-family: -apple-system, sans-serif; margin: 0; padding: 10px; padding-bottom: 120px; color: var(--text); overflow-x: hidden; }
+        
         .dashboard { background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(30,39,46,0) 100%); padding: 25px 12px 15px 12px; text-align: center; }
         .main-total-container { display: flex; align-items: baseline; justify-content: center; gap: 8px; flex-wrap: wrap; }
         .main-total { font-size: 32px; font-weight: 800; }
         .delta-badge { font-size: 14px; font-weight: 800; padding: 2px 8px; border-radius: 6px; background: rgba(0,0,0,0.2); }
         .delta-down { color: var(--primary); }
         .delta-up { color: var(--danger); }
+        
         .main-freedom { background: rgba(46, 204, 113, 0.1); color: var(--primary); font-size: 11px; font-weight: 800; padding: 5px 12px; border-radius: 20px; display: inline-block; margin-top: 8px; text-transform: uppercase; }
-        .stack-chart { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: rgba(255,255,255,0.05); margin: 20px 0; width: 100%; }
+        .stack-chart { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: rgba(255,255,255,0.05); margin: 15px 0; width: 100%; }
         .stack-segment { height: 100%; transition: width 0.5s ease; }
-        .stat-grid { display: flex; justify-content: space-around; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; }
-        .stat-val { font-size: 16px; font-weight: 800; display: block; }
-        .stat-lab { font-size: 8px; font-weight: 800; color: #a4b0be; text-transform: uppercase; }
-        .card-container { margin-bottom: 15px; border-radius: 20px; padding: 18px 18px 18px 12px; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08); position: relative; transition: all 0.3s ease; display: flex; flex-direction: column; gap: 12px;}
+        
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; }
+        .stat-val { font-size: 15px; font-weight: 800; display: block; }
+        .stat-lab { font-size: 7px; font-weight: 800; color: #a4b0be; text-transform: uppercase; letter-spacing: 0.5px;}
+        
+        .card-container { margin-bottom: 15px; border-radius: 20px; padding: 18px 18px 18px 12px; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08); position: relative; display: flex; flex-direction: column; gap: 12px;}
         .card-target { border: 1px solid var(--danger) !important; box-shadow: 0 0 20px rgba(255, 71, 87, 0.15); }
         .target-tag { background: var(--danger); color: white; font-size: 8px; font-weight: 900; padding: 3px 8px; border-radius: 5px; text-transform: uppercase;}
         .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        
         .progress-ring { position: relative; width: 54px; height: 54px; }
         .progress-ring svg { transform: rotate(-90deg); }
         .ring-circle { fill: none; stroke-width: 6; stroke-linecap: round; }
         .ring-bg { stroke: rgba(255,255,255,0.05); }
         .ring-bar { stroke-dasharray: 151; transition: stroke-dashoffset 0.6s ease; }
         .prog-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; }
-        .paid-btn { background: #353b48; color: #a4b0be; font-size: 9px; padding: 6px 12px; border-radius: 8px; font-weight: 800; border: none; text-transform: uppercase; cursor: pointer;}
+        
+        .paid-btn { background: #353b48; color: #a4b0be; font-size: 9px; padding: 6px 12px; border-radius: 8px; font-weight: 800; border: none; text-transform: uppercase; cursor: pointer; }
         .paid-btn.active { background: var(--primary); color: white; }
+        
         label { font-size: 8px; font-weight: 800; color: #a4b0be; text-transform: uppercase; margin-bottom: 4px; display: block; }
         input { width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; font-size: 13px; background: rgba(0,0,0,0.2); color: #fff; box-sizing: border-box; }
         .reset-link { font-size: 9px; color: var(--danger); opacity: 0.3; text-decoration: none; text-align: right; display: block; font-weight: 700; cursor: pointer; margin-top: 5px; }
+        
         .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.95); padding: 18px 0; font-size: 11px; display: flex; justify-content: space-around; z-index: 100; border-top: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
+        .version-tag { text-align: center; font-size: 8px; color: #57606f; margin-top: 30px; letter-spacing: 2px; text-transform: uppercase; }
     </style>
 </head>
 <body>
@@ -51,12 +60,15 @@
         <div id="main-freedom" class="main-freedom">Calculating...</div>
         <div id="stack-chart" class="stack-chart"></div>
         <div class="stat-grid">
-            <div class="stat-item"><span class="stat-val" id="stat-min">$0</span><span class="stat-lab">Total Min Due</span></div>
+            <div class="stat-item"><span class="stat-val" id="stat-min">$0</span><span class="stat-lab">Total Min</span></div>
+            <div class="stat-item"><span class="stat-val" id="stat-interest" style="color:var(--danger)">$0</span><span class="stat-lab">Int. Leakage/mo</span></div>
             <div class="stat-item"><span class="stat-val" id="stat-apr">0%</span><span class="stat-lab">Avg APR</span></div>
         </div>
     </div>
     <div id="card-list" style="margin-top:20px;"></div>
     <button onclick="addCard()" style="background:var(--primary); color:white; padding:16px; border-radius:14px; width:100%; margin-top:10px; font-weight: 800; border:none; cursor:pointer;">+ ADD NEW DEBT</button>
+    
+    <div class="version-tag">Build v2.5.7 • Certified stable</div>
 </div>
 
 <div class="footer">
@@ -67,7 +79,7 @@
 
 <script>
 const KEY = 'debt_v125';
-const BASE_KEY = 'debt_global_baseline'; // The Permanent Baseline Key
+const BASE_KEY = 'debt_global_baseline';
 const COLORS = ['#2ecc71', '#3498db', '#9b59b6', '#f1c40f', '#e67e22', '#1abc9c', '#e74c3c'];
 let cards = [];
 
@@ -75,13 +87,10 @@ function loadData() {
     try {
         const raw = localStorage.getItem(KEY);
         cards = raw ? JSON.parse(raw) : [];
-        
-        // If no baseline exists in permanent storage, set one now
         if (localStorage.getItem(BASE_KEY) === null) {
             let total = cards.reduce((s, c) => s + (parseFloat(c.bal) || 0), 0);
             localStorage.setItem(BASE_KEY, total);
         }
-        
         renderUI();
     } catch (e) { cards = []; }
 }
@@ -89,7 +98,7 @@ function loadData() {
 function resetGlobalBaseline() {
     let currentTotal = cards.reduce((s, c) => s + (parseFloat(c.bal) || 0), 0);
     localStorage.setItem(BASE_KEY, currentTotal);
-    alert("New baseline locked in at $" + currentTotal.toLocaleString());
+    alert("Baseline reset to current total: $" + currentTotal.toLocaleString());
     calculate();
 }
 
@@ -143,7 +152,7 @@ function renderUI() {
                     <div><label>Min Pay</label><input type="number" value="${c.min || 0}" onchange="update(${i}, 'min', this.value)"></div>
                     <div><label>Due Date</label><input type="date" value="${c.due || ''}" onchange="update(${i}, 'due', this.value)"></div>
                 </div>
-                <span class="reset-link" onclick="resetHighest(${i})">RESET BASELINE</span>
+                <span class="reset-link" onclick="resetHighest(${i})">RESET CARD START</span>
             </div>`;
     });
     calculate();
@@ -170,20 +179,21 @@ function resetHighest(i) {
 }
 
 function calculate() {
-    let currentTotal = 0, totalMin = 0, aprSum = 0, count = 0;
+    let currentTotal = 0, totalMin = 0, aprSum = 0, count = 0, monthlyInterest = 0;
     cards.forEach(c => {
         let b = parseFloat(c.bal) || 0;
+        let r = parseFloat(c.apr) || 0;
         currentTotal += b;
         if (b > 0) {
             totalMin += (parseFloat(c.min) || 0);
-            aprSum += (parseFloat(c.apr) || 0);
+            aprSum += r;
+            monthlyInterest += (b * (r / 100) / 12);
             count++;
         }
     });
     
     document.getElementById('main-debt').innerText = '$' + currentTotal.toLocaleString(undefined, {minimumFractionDigits:2});
     
-    // DELTA LOGIC - Uses Permanent Storage
     const deltaEl = document.getElementById('delta-badge');
     const globalBase = parseFloat(localStorage.getItem(BASE_KEY)) || currentTotal;
     const delta = currentTotal - globalBase;
@@ -198,6 +208,7 @@ function calculate() {
 
     document.getElementById('stat-min').innerText = '$' + Math.round(totalMin);
     document.getElementById('stat-apr').innerText = count > 0 ? Math.round(aprSum / count) + '%' : '0%';
+    document.getElementById('stat-interest').innerText = '$' + Math.round(monthlyInterest);
     
     const freedomEl = document.getElementById('main-freedom');
     const months = projectTimeline(cards);
@@ -243,7 +254,7 @@ function addCard() {
     renderUI();
 }
 
-function nuke() { if(confirm("Wipe data?")) { localStorage.clear(); location.reload(); } }
+function nuke() { if(confirm("Wipe all data? This cannot be undone.")) { localStorage.clear(); location.reload(); } }
 function exportCSV() { alert(JSON.stringify(cards)); }
 
 loadData();
