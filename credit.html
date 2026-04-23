@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Tracker v2.5.7</title>
+    <title>Debt Tracker v2.5.8</title>
     <style>
         :root { --bg: #1e272e; --primary: #2ecc71; --accent: #3498db; --danger: #ff4757; --text: #f4f7f6; --card-bg: #2f3640; }
         html, body { background: var(--bg); overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; }
@@ -27,8 +27,8 @@
         .stat-lab { font-size: 7px; font-weight: 800; color: #a4b0be; text-transform: uppercase; letter-spacing: 0.5px;}
         
         .card-container { margin-bottom: 15px; border-radius: 20px; padding: 18px 18px 18px 12px; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08); position: relative; display: flex; flex-direction: column; gap: 12px;}
-        .card-target { border: 1px solid var(--danger) !important; box-shadow: 0 0 20px rgba(255, 71, 87, 0.15); }
-        .target-tag { background: var(--danger); color: white; font-size: 8px; font-weight: 900; padding: 3px 8px; border-radius: 5px; text-transform: uppercase;}
+        .card-target { border: 1px solid var(--accent) !important; box-shadow: 0 0 20px rgba(52, 152, 219, 0.15); }
+        .target-tag { background: var(--accent); color: white; font-size: 8px; font-weight: 900; padding: 3px 8px; border-radius: 5px; text-transform: uppercase;}
         .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
         
         .progress-ring { position: relative; width: 54px; height: 54px; }
@@ -68,7 +68,7 @@
     <div id="card-list" style="margin-top:20px;"></div>
     <button onclick="addCard()" style="background:var(--primary); color:white; padding:16px; border-radius:14px; width:100%; margin-top:10px; font-weight: 800; border:none; cursor:pointer;">+ ADD NEW DEBT</button>
     
-    <div class="version-tag">Build v2.5.7 • Certified stable</div>
+    <div class="version-tag">Build v2.5.8 • Snowball Protocol</div>
 </div>
 
 <div class="footer">
@@ -98,7 +98,7 @@ function loadData() {
 function resetGlobalBaseline() {
     let currentTotal = cards.reduce((s, c) => s + (parseFloat(c.bal) || 0), 0);
     localStorage.setItem(BASE_KEY, currentTotal);
-    alert("Baseline reset to current total: $" + currentTotal.toLocaleString());
+    alert("Snowball baseline set: $" + currentTotal.toLocaleString());
     calculate();
 }
 
@@ -107,12 +107,14 @@ function renderUI() {
     list.innerHTML = '';
     const curMonthKey = (new Date().getMonth() + 1) + '-' + new Date().getFullYear();
     
+    // SNOWBALL SORTING: Smallest Balance First
     cards.sort((a, b) => {
         const balA = parseFloat(a.bal) || 0;
         const balB = parseFloat(b.bal) || 0;
         if (balA > 0 && balB <= 0) return -1;
         if (balA <= 0 && balB > 0) return 1;
-        return (parseFloat(b.apr) || 0) - (parseFloat(a.apr) || 0);
+        if (balA === 0 && balB === 0) return 0;
+        return balA - balB; // Smallest to largest
     });
 
     const targetIdx = cards.findIndex(c => parseFloat(c.bal) > 0);
@@ -131,7 +133,7 @@ function renderUI() {
                 <div class="card-header">
                     <div style="flex:1">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                            ${isTarget ? '<span class="target-tag">AVALANCHE TARGET</span>' : (bal === 0 ? '<span style="font-size:8px; font-weight:900; color:var(--primary);">COMPLETED ✓</span>' : '<span></span>')}
+                            ${isTarget ? '<span class="target-tag">SNOWBALL TARGET</span>' : (bal === 0 ? '<span style="font-size:8px; font-weight:900; color:var(--primary);">COMPLETED ✓</span>' : '<span></span>')}
                             ${bal > 0 ? `<button class="paid-btn ${isPaid ? 'active' : ''}" onclick="markPaid(${i})">${isPaid ? 'PAID ✓' : 'MARK PAID'}</button>` : ''}
                         </div>
                         <input type="text" value="${c.name || ''}" placeholder="Debt Name" onchange="update(${i}, 'name', this.value)" style="font-weight:800; border:none; background:none; font-size:16px; width:100%; color:#fff; padding:0;">
