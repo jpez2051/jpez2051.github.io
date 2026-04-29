@@ -10,6 +10,7 @@
             --card-bg: #1a1a1a;
             --accent-green: #00ff41;
             --warning-red: #ff4b2b;
+            --muted-gray: #444;
             --text-main: #e0e0e0;
         }
 
@@ -22,14 +23,21 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            overflow-x: hidden;
         }
 
+        /* Fixed the Refresh Status Header */
         #refresh-status {
             height: 0;
             overflow: hidden;
             color: var(--accent-green);
             font-size: 0.8rem;
-            transition: height 0.2s;
+            font-family: monospace;
+            transition: height 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
         }
 
         .audit-container {
@@ -54,17 +62,29 @@
             padding: 12px;
             border-radius: 8px;
             font-size: 1rem;
+            -webkit-appearance: none;
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 10px;
         }
 
         button {
-            background: var(--accent-green);
-            color: black;
-            font-weight: bold;
             padding: 15px;
             border: none;
             border-radius: 8px;
+            font-weight: bold;
             cursor: pointer;
+            font-size: 1rem;
+            transition: opacity 0.2s;
         }
+
+        button:active { opacity: 0.7; }
+
+        .run-btn { background: var(--accent-green); color: black; }
+        .reset-btn { background: var(--muted-gray); color: white; }
 
         .results-grid {
             display: grid;
@@ -89,14 +109,14 @@
             height: 10px;
             border-radius: 5px;
             margin: 10px 0;
+            overflow: hidden;
         }
 
         #meter-fill {
             height: 100%;
             background: var(--accent-green);
             width: 0%;
-            border-radius: 5px;
-            transition: width 0.5s;
+            transition: width 0.5s ease-out;
         }
 
         .app-footer {
@@ -121,7 +141,7 @@
 </head>
 <body>
 
-    <div id="refresh-status">Updating...</div>
+    <div id="refresh-status">>>> UPDATING DATA <<<</div>
 
     <div class="audit-container">
         <h2>Financial Audit Dashboard</h2>
@@ -131,7 +151,10 @@
             <input type="number" id="needs" placeholder="Needs (Rent/Bills) ($)">
             <input type="number" id="wants" placeholder="The 'Bullshit' (Wants) ($)">
             <input type="number" id="debt" placeholder="Total Min Debt Payments ($)">
-            <button onclick="calculateAudit()">Run Audit</button>
+            <div class="btn-group">
+                <button class="run-btn" onclick="calculateAudit()">Run Audit</button>
+                <button class="reset-btn" onclick="resetAudit()">Reset</button>
+            </div>
         </section>
 
         <div class="results-grid">
@@ -156,18 +179,15 @@
 
     <footer class="app-footer">
         <div>© 2026 Audit Dashboard</div>
-        <span class="version-tag">v1.1.1-fixed (Pull-to-Refresh Active)</span>
+        <span class="version-tag">v1.1.3 (Pull-to-Refresh Fixed)</span>
     </footer>
 
     <script>
         function calculateAudit() {
-            // Ensure values are numbers and default to 0 if empty
             const income = parseFloat(document.getElementById('income').value) || 0;
             const needs = parseFloat(document.getElementById('needs').value) || 0;
             const wants = parseFloat(document.getElementById('wants').value) || 0;
             const debt = parseFloat(document.getElementById('debt').value) || 0;
-
-            console.log("Values captured:", {income, needs, wants, debt}); // Debugging
 
             const totalOut = needs + wants + debt;
             const surplus = income - totalOut;
@@ -179,7 +199,7 @@
             if (surplus < 0) score = 0;
             if (debt > (income * 0.4)) score -= 2;
 
-            // UI Updates
+            // UI Refresh
             document.getElementById('surplus-val').innerText = `$${surplus.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
             document.getElementById('health-score').innerText = Math.max(0, score);
             document.getElementById('meter-text').innerText = `${wantsRatio.toFixed(1)}%`;
@@ -201,25 +221,13 @@
             }
         }
 
-        // Pull-to-Refresh Logic
-        let touchStart = 0;
-        window.addEventListener('touchstart', (e) => {
-            touchStart = e.targetTouches[0].screenY;
-        }, { passive: true });
-
-        window.addEventListener('touchmove', (e) => {
-            const touchEnd = e.targetTouches[0].screenY;
-            const status = document.getElementById('refresh-status');
-            
-            if (window.scrollY === 0 && touchEnd > touchStart + 80) {
-                status.style.height = "30px";
-                if (touchEnd > touchStart + 150) {
-                    calculateAudit();
-                    setTimeout(() => { status.style.height = "0px"; }, 800);
-                    if (navigator.vibrate) navigator.vibrate(15);
-                }
-            }
-        }, { passive: true });
-    </script>
-</body>
-</html>
+        function resetAudit() {
+            document.querySelectorAll('input').forEach(input => input.value = '');
+            document.getElementById('health-score').innerText = '--';
+            document.getElementById('health-score').style.color = 'var(--accent-green)';
+            document.getElementById('surplus-val').innerText = '$0.00';
+            document.getElementById('meter-text').innerText = '0%';
+            document.getElementById('meter-fill').style.width = '0%';
+            document.getElementById('score-msg').innerText = 'Enter data to audit yourself.';
+            document.getElementById('score-msg').style.color = 'var(--text-main)';
+            if (navigator.vibrate) navigator.v
