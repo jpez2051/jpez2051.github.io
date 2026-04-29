@@ -24,7 +24,6 @@
             align-items: center;
         }
 
-        /* Refresh Indicator */
         #refresh-status {
             height: 0;
             overflow: hidden;
@@ -36,7 +35,7 @@
         .audit-container {
             width: 100%;
             max-width: 500px;
-            padding-bottom: 80px; /* Space for footer */
+            padding-bottom: 80px;
         }
 
         h2 { border-bottom: 2px solid var(--accent-green); padding-bottom: 10px; }
@@ -157,26 +156,70 @@
 
     <footer class="app-footer">
         <div>© 2026 Audit Dashboard</div>
-        <span class="version-tag">v1.1.0-alpha (Pull-to-Refresh Active)</span>
+        <span class="version-tag">v1.1.1-fixed (Pull-to-Refresh Active)</span>
     </footer>
 
     <script>
-        // 1. Audit Logic
         function calculateAudit() {
+            // Ensure values are numbers and default to 0 if empty
             const income = parseFloat(document.getElementById('income').value) || 0;
             const needs = parseFloat(document.getElementById('needs').value) || 0;
             const wants = parseFloat(document.getElementById('wants').value) || 0;
             const debt = parseFloat(document.getElementById('debt').value) || 0;
 
+            console.log("Values captured:", {income, needs, wants, debt}); // Debugging
+
             const totalOut = needs + wants + debt;
             const surplus = income - totalOut;
             const wantsRatio = income > 0 ? (wants / income) * 100 : 0;
 
-            // Health Score (0-10)
             let score = 10;
             if (wantsRatio > 15) score -= 3;
             if (wantsRatio > 30) score -= 4;
             if (surplus < 0) score = 0;
             if (debt > (income * 0.4)) score -= 2;
 
-            //
+            // UI Updates
+            document.getElementById('surplus-val').innerText = `$${surplus.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            document.getElementById('health-score').innerText = Math.max(0, score);
+            document.getElementById('meter-text').innerText = `${wantsRatio.toFixed(1)}%`;
+            document.getElementById('meter-fill').style.width = `${Math.min(wantsRatio, 100)}%`;
+            
+            const scoreMsg = document.getElementById('score-msg');
+            const scoreDisplay = document.getElementById('health-score');
+
+            if (score <= 3) {
+                scoreMsg.innerText = "FINANCIAL EMERGENCY!";
+                scoreMsg.style.color = "var(--warning-red)";
+                scoreDisplay.style.color = "var(--warning-red)";
+                document.getElementById('meter-fill').style.backgroundColor = "var(--warning-red)";
+            } else {
+                scoreMsg.innerText = "Keep attacking that debt.";
+                scoreMsg.style.color = "var(--text-main)";
+                scoreDisplay.style.color = "var(--accent-green)";
+                document.getElementById('meter-fill').style.backgroundColor = "var(--accent-green)";
+            }
+        }
+
+        // Pull-to-Refresh Logic
+        let touchStart = 0;
+        window.addEventListener('touchstart', (e) => {
+            touchStart = e.targetTouches[0].screenY;
+        }, { passive: true });
+
+        window.addEventListener('touchmove', (e) => {
+            const touchEnd = e.targetTouches[0].screenY;
+            const status = document.getElementById('refresh-status');
+            
+            if (window.scrollY === 0 && touchEnd > touchStart + 80) {
+                status.style.height = "30px";
+                if (touchEnd > touchStart + 150) {
+                    calculateAudit();
+                    setTimeout(() => { status.style.height = "0px"; }, 800);
+                    if (navigator.vibrate) navigator.vibrate(15);
+                }
+            }
+        }, { passive: true });
+    </script>
+</body>
+</html>
