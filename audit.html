@@ -102,7 +102,6 @@
         .run-btn { background: var(--accent-green); color: black; }
         .reset-btn { background: var(--muted-gray); color: white; }
 
-        /* Results Display */
         .results-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -120,13 +119,11 @@
 
         .score-card { grid-column: span 2; position: relative; }
         .card-header-flex { display: flex; justify-content: center; align-items: center; gap: 8px; }
-        
         #health-score { font-size: 3rem; margin: 10px 0; color: var(--accent-green); }
 
         .meter-container { background: #333; height: 10px; border-radius: 5px; margin: 10px 0; overflow: hidden; }
         #meter-fill { height: 100%; background: var(--accent-green); width: 0%; transition: width 0.5s ease-out; }
 
-        /* MODAL STYLES */
         .modal {
             display: none;
             position: fixed;
@@ -152,15 +149,7 @@
             text-align: left;
         }
 
-        .modal-header {
-            color: var(--info-blue);
-            font-size: 1.2rem;
-            font-weight: bold;
-            margin-bottom: 15px;
-            display: flex;
-            justify-content: space-between;
-        }
-
+        .modal-header { color: var(--info-blue); font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; }
         .close-modal { color: #888; cursor: pointer; font-size: 1.5rem; line-height: 1; }
 
         .app-footer {
@@ -175,13 +164,11 @@
         }
 
         .version-tag { color: var(--accent-green); font-family: monospace; font-size: 0.75rem; display: block; margin-top: 5px; }
-
-        /* Score Tier Styling */
         .tier { margin-bottom: 10px; padding-left: 10px; border-left: 3px solid #444; }
         .tier b { display: block; margin-bottom: 2px; }
     </style>
 </head>
-<body>
+<body onload="loadSavedData()">
 
     <div id="refresh-status">>>> UPDATING DATA <<<</div>
 
@@ -236,42 +223,39 @@
         </div>
     </div>
 
-    <!-- MODAL POPUP -->
     <div id="infoModal" class="modal" onclick="closeModal()">
         <div class="modal-content" onclick="event.stopPropagation()">
             <div class="modal-header">
                 <span id="modalTitle">Info</span>
                 <span class="close-modal" onclick="closeModal()">&times;</span>
             </div>
-            <div id="modalBody" style="line-height: 1.6; color: #ccc; font-size: 0.95rem;">
-                Explanation goes here.
-            </div>
+            <div id="modalBody" style="line-height: 1.6; color: #ccc; font-size: 0.95rem;"></div>
         </div>
     </div>
 
     <footer class="app-footer">
         <div>© 2026 Audit Dashboard</div>
-        <span class="version-tag">v1.1.5 (Score Guide Added)</span>
+        <span class="version-tag">v1.1.6 (Data Persistence Active)</span>
     </footer>
 
     <script>
         const infoData = {
             income: "<b>Monthly Take-Home:</b> The actual amount that hits your bank account after taxes and insurance. Include side hustles, but only if they are consistent.",
             needs: "<b>Needs:</b> Survival costs only. Rent/Mortgage, utilities, car insurance, and basic groceries. If you can live without it for a month, it's not a need.",
-            wants: "<b>The Bullshit:</b> Dining out, hobbies, streaming services, coffee, and anything from Amazon that isn't a life necessity. This is the 'Caleb Hammer' danger zone.",
-            debt: "<b>Minimum Debt:</b> Sum of the <i>minimum</i> payments for all credit cards and loans. Do not include the extra you're paying for your Snowball method here.",
+            wants: "<b>The Bullshit:</b> Dining out, hobbies, streaming services, coffee, and anything from Amazon that isn't a life necessity.",
+            debt: "<b>Minimum Debt:</b> Sum of the <i>minimum</i> payments for all credit cards and loans. Do not include extra snowball payments here.",
             hammerScore: `
                 <div class="tier" style="border-color: var(--accent-green)">
                     <b style="color: var(--accent-green)">8 - 10: Financial Warrior</b>
-                    Minimal bullshit spending. You are hyper-focused on your goals.
+                    Minimal bullshit spending.
                 </div>
                 <div class="tier" style="border-color: var(--gold)">
                     <b style="color: var(--gold)">5 - 7: The Slippery Slope</b>
-                    Too much convenience spending. You're delaying your freedom date.
+                    Too much convenience spending.
                 </div>
                 <div class="tier" style="border-color: var(--warning-red)">
                     <b style="color: var(--warning-red)">0 - 4: FINANCIAL EMERGENCY</b>
-                    Spending more than you make or ignoring high-interest debt. Cut all wants immediately.
+                    Spending more than you make. Cut all wants immediately.
                 </div>
             `
         };
@@ -287,14 +271,33 @@
             document.getElementById('infoModal').style.display = 'none';
         }
 
+        // --- SAVING & LOADING LOGIC ---
+        function loadSavedData() {
+            const fields = ['income', 'needs', 'wants', 'debt'];
+            fields.forEach(field => {
+                const savedValue = localStorage.getItem('audit_' + field);
+                if (savedValue) document.getElementById(field).value = savedValue;
+            });
+            // Auto-run audit if data exists
+            if (localStorage.getItem('audit_income')) calculateAudit();
+        }
+
+        function saveData() {
+            const fields = ['income', 'needs', 'wants', 'debt'];
+            fields.forEach(field => {
+                localStorage.setItem('audit_' + field, document.getElementById(field).value);
+            });
+        }
+
         function calculateAudit() {
             const income = parseFloat(document.getElementById('income').value) || 0;
             const needs = parseFloat(document.getElementById('needs').value) || 0;
             const wants = parseFloat(document.getElementById('wants').value) || 0;
             const debt = parseFloat(document.getElementById('debt').value) || 0;
 
-            const totalOut = needs + wants + debt;
-            const surplus = income - totalOut;
+            saveData(); // Save every time we run the audit
+
+            const surplus = income - (needs + wants + debt);
             const wantsRatio = income > 0 ? (wants / income) * 100 : 0;
 
             let score = 10;
@@ -308,28 +311,25 @@
             document.getElementById('meter-text').innerText = `${wantsRatio.toFixed(1)}%`;
             document.getElementById('meter-fill').style.width = `${Math.min(wantsRatio, 100)}%`;
             
-            const scoreMsg = document.getElementById('score-msg');
-            const scoreDisplay = document.getElementById('health-score');
+            const msg = document.getElementById('score-msg');
+            const display = document.getElementById('health-score');
+            const fill = document.getElementById('meter-fill');
 
             if (score <= 4) {
-                scoreMsg.innerText = "FINANCIAL EMERGENCY!";
-                scoreMsg.style.color = "var(--warning-red)";
-                scoreDisplay.style.color = "var(--warning-red)";
-                document.getElementById('meter-fill').style.backgroundColor = "var(--warning-red)";
+                msg.innerText = "FINANCIAL EMERGENCY!";
+                msg.style.color = display.style.color = fill.style.backgroundColor = "var(--warning-red)";
             } else if (score <= 7) {
-                scoreMsg.innerText = "Stop the bleeding. Cut the wants.";
-                scoreMsg.style.color = "var(--gold)";
-                scoreDisplay.style.color = "var(--gold)";
-                document.getElementById('meter-fill').style.backgroundColor = "var(--gold)";
+                msg.innerText = "Stop the bleeding. Cut the wants.";
+                msg.style.color = display.style.color = fill.style.backgroundColor = "var(--gold)";
             } else {
-                scoreMsg.innerText = "Keep attacking that debt.";
-                scoreMsg.style.color = "var(--text-main)";
-                scoreDisplay.style.color = "var(--accent-green)";
-                document.getElementById('meter-fill').style.backgroundColor = "var(--accent-green)";
+                msg.innerText = "Keep attacking that debt.";
+                msg.style.color = "var(--text-main)";
+                display.style.color = fill.style.backgroundColor = "var(--accent-green)";
             }
         }
 
         function resetAudit() {
+            localStorage.clear(); // Wipe the saved data
             document.querySelectorAll('input').forEach(input => input.value = '');
             document.getElementById('health-score').innerText = '--';
             document.getElementById('health-score').style.color = 'var(--accent-green)';
@@ -345,21 +345,13 @@
         window.addEventListener('touchstart', (e) => { startY = e.touches[0].pageY; }, { passive: true });
         window.addEventListener('touchmove', (e) => {
             const diff = e.touches[0].pageY - startY;
-            if (window.scrollY === 0 && diff > 0 && diff < 120) {
-                document.getElementById('refresh-status').style.height = diff + 'px';
-            }
+            if (window.scrollY === 0 && diff > 0 && diff < 120) document.getElementById('refresh-status').style.height = diff + 'px';
         }, { passive: true });
         window.addEventListener('touchend', (e) => {
-            const diff = e.changedTouches[0].pageY - startY;
-            if (window.scrollY === 0 && diff > 100) {
+            if (window.scrollY === 0 && (e.changedTouches[0].pageY - startY) > 100) {
                 document.getElementById('refresh-status').style.height = '40px';
-                setTimeout(() => {
-                    calculateAudit();
-                    document.getElementById('refresh-status').style.height = '0px';
-                }, 600);
-            } else {
-                document.getElementById('refresh-status').style.height = '0px';
-            }
+                setTimeout(() => { calculateAudit(); document.getElementById('refresh-status').style.height = '0px'; }, 600);
+            } else document.getElementById('refresh-status').style.height = '0px';
         }, { passive: true });
     </script>
 </body>
