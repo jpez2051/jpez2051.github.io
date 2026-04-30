@@ -12,6 +12,7 @@
             --warning-red: #ff4b2b;
             --muted-gray: #444;
             --text-main: #e0e0e0;
+            --info-blue: #00c2ff;
         }
 
         body {
@@ -26,7 +27,6 @@
             overflow-x: hidden;
         }
 
-        /* Fixed the Refresh Status Header */
         #refresh-status {
             height: 0;
             overflow: hidden;
@@ -48,14 +48,15 @@
 
         h2 { border-bottom: 2px solid var(--accent-green); padding-bottom: 10px; }
 
-        .inputs {
+        .input-wrapper {
             display: flex;
-            flex-direction: column;
+            align-items: center;
             gap: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
         }
 
         input {
+            flex-grow: 1;
             background: var(--card-bg);
             border: 1px solid #333;
             color: white;
@@ -65,10 +66,27 @@
             -webkit-appearance: none;
         }
 
+        .info-btn {
+            background: #222;
+            color: var(--info-blue);
+            border: 1px solid var(--info-blue);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
         .btn-group {
             display: grid;
             grid-template-columns: 2fr 1fr;
             gap: 10px;
+            margin-top: 10px;
         }
 
         button {
@@ -78,18 +96,17 @@
             font-weight: bold;
             cursor: pointer;
             font-size: 1rem;
-            transition: opacity 0.2s;
         }
-
-        button:active { opacity: 0.7; }
 
         .run-btn { background: var(--accent-green); color: black; }
         .reset-btn { background: var(--muted-gray); color: white; }
 
+        /* Results Display */
         .results-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
+            margin-top: 20px;
         }
 
         .card {
@@ -101,23 +118,47 @@
         }
 
         .score-card { grid-column: span 2; }
-        
         #health-score { font-size: 3rem; margin: 10px 0; color: var(--accent-green); }
 
-        .meter-container {
-            background: #333;
-            height: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-            overflow: hidden;
+        .meter-container { background: #333; height: 10px; border-radius: 5px; margin: 10px 0; overflow: hidden; }
+        #meter-fill { height: 100%; background: var(--accent-green); width: 0%; transition: width 0.5s ease-out; }
+
+        /* MODAL STYLES */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
-        #meter-fill {
-            height: 100%;
-            background: var(--accent-green);
-            width: 0%;
-            transition: width 0.5s ease-out;
+        .modal-content {
+            background: var(--card-bg);
+            border: 1px solid var(--info-blue);
+            padding: 25px;
+            border-radius: 15px;
+            max-width: 400px;
+            width: 100%;
+            text-align: left;
         }
+
+        .modal-header {
+            color: var(--info-blue);
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .close-modal { color: #888; cursor: pointer; font-size: 1.5rem; line-height: 1; }
 
         .app-footer {
             position: fixed;
@@ -130,13 +171,7 @@
             border-top: 1px solid #333;
         }
 
-        .version-tag {
-            color: var(--accent-green);
-            font-family: monospace;
-            font-size: 0.75rem;
-            display: block;
-            margin-top: 5px;
-        }
+        .version-tag { color: var(--accent-green); font-family: monospace; font-size: 0.75rem; display: block; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -147,10 +182,26 @@
         <h2>Financial Audit Dashboard</h2>
         
         <section class="inputs">
-            <input type="number" id="income" placeholder="Monthly Take-Home ($)">
-            <input type="number" id="needs" placeholder="Needs (Rent/Bills) ($)">
-            <input type="number" id="wants" placeholder="The 'Bullshit' (Wants) ($)">
-            <input type="number" id="debt" placeholder="Total Min Debt Payments ($)">
+            <div class="input-wrapper">
+                <input type="number" id="income" placeholder="Monthly Take-Home ($)">
+                <div class="info-btn" onclick="showInfo('income')">i</div>
+            </div>
+
+            <div class="input-wrapper">
+                <input type="number" id="needs" placeholder="Needs (Rent/Bills) ($)">
+                <div class="info-btn" onclick="showInfo('needs')">i</div>
+            </div>
+
+            <div class="input-wrapper">
+                <input type="number" id="wants" placeholder="The 'Bullshit' (Wants) ($)">
+                <div class="info-btn" onclick="showInfo('wants')">i</div>
+            </div>
+
+            <div class="input-wrapper">
+                <input type="number" id="debt" placeholder="Total Min Debt Payments ($)">
+                <div class="info-btn" onclick="showInfo('debt')">i</div>
+            </div>
+
             <div class="btn-group">
                 <button class="run-btn" onclick="calculateAudit()">Run Audit</button>
                 <button class="reset-btn" onclick="resetAudit()">Reset</button>
@@ -163,12 +214,10 @@
                 <h1 id="health-score">--</h1>
                 <p id="score-msg">Enter data to audit yourself.</p>
             </div>
-            
             <div class="card">
                 <h3>Monthly Surplus</h3>
                 <p id="surplus-val">$0.00</p>
             </div>
-
             <div class="card">
                 <h3>Bullshit %</h3>
                 <div class="meter-container"><div id="meter-fill"></div></div>
@@ -177,12 +226,43 @@
         </div>
     </div>
 
+    <!-- MODAL POPUP -->
+    <div id="infoModal" class="modal" onclick="closeModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <span id="modalTitle">Info</span>
+                <span class="close-modal" onclick="closeModal()">&times;</span>
+            </div>
+            <div id="modalBody" style="line-height: 1.6; color: #ccc;">
+                Explanation goes here.
+            </div>
+        </div>
+    </div>
+
     <footer class="app-footer">
         <div>© 2026 Audit Dashboard</div>
-        <span class="version-tag">v1.1.3 (Pull-to-Refresh Fixed)</span>
+        <span class="version-tag">v1.1.4 (Help Modals Added)</span>
     </footer>
 
     <script>
+        const infoData = {
+            income: "<b>Monthly Take-Home:</b> The actual amount that hits your bank account after taxes and insurance. Include side hustles, but only if they are consistent.",
+            needs: "<b>Needs:</b> Survival costs only. Rent/Mortgage, utilities, car insurance, and basic groceries. If you can live without it for a month, it's not a need.",
+            wants: "<b>The Bullshit:</b> Dining out, hobbies, streaming services, coffee, and anything from Amazon that isn't a life necessity. This is the 'Caleb Hammer' danger zone.",
+            debt: "<b>Minimum Debt:</b> Sum of the <i>minimum</i> payments for all credit cards and loans. Do not include the extra you're paying for your Snowball method here."
+        };
+
+        function showInfo(type) {
+            document.getElementById('modalTitle').innerText = type.toUpperCase();
+            document.getElementById('modalBody').innerHTML = infoData[type];
+            document.getElementById('infoModal').style.display = 'flex';
+            if (navigator.vibrate) navigator.vibrate(5);
+        }
+
+        function closeModal() {
+            document.getElementById('infoModal').style.display = 'none';
+        }
+
         function calculateAudit() {
             const income = parseFloat(document.getElementById('income').value) || 0;
             const needs = parseFloat(document.getElementById('needs').value) || 0;
@@ -199,24 +279,21 @@
             if (surplus < 0) score = 0;
             if (debt > (income * 0.4)) score -= 2;
 
-            // UI Refresh
             document.getElementById('surplus-val').innerText = `$${surplus.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
             document.getElementById('health-score').innerText = Math.max(0, score);
             document.getElementById('meter-text').innerText = `${wantsRatio.toFixed(1)}%`;
             document.getElementById('meter-fill').style.width = `${Math.min(wantsRatio, 100)}%`;
             
             const scoreMsg = document.getElementById('score-msg');
-            const scoreDisplay = document.getElementById('health-score');
-
             if (score <= 3) {
                 scoreMsg.innerText = "FINANCIAL EMERGENCY!";
                 scoreMsg.style.color = "var(--warning-red)";
-                scoreDisplay.style.color = "var(--warning-red)";
+                document.getElementById('health-score').style.color = "var(--warning-red)";
                 document.getElementById('meter-fill').style.backgroundColor = "var(--warning-red)";
             } else {
                 scoreMsg.innerText = "Keep attacking that debt.";
                 scoreMsg.style.color = "var(--text-main)";
-                scoreDisplay.style.color = "var(--accent-green)";
+                document.getElementById('health-score').style.color = "var(--accent-green)";
                 document.getElementById('meter-fill').style.backgroundColor = "var(--accent-green)";
             }
         }
@@ -230,4 +307,29 @@
             document.getElementById('meter-fill').style.width = '0%';
             document.getElementById('score-msg').innerText = 'Enter data to audit yourself.';
             document.getElementById('score-msg').style.color = 'var(--text-main)';
-            if (navigator.vibrate) navigator.v
+        }
+
+        // Pull-to-Refresh Logic
+        let startY = 0;
+        window.addEventListener('touchstart', (e) => { startY = e.touches[0].pageY; }, { passive: true });
+        window.addEventListener('touchmove', (e) => {
+            const diff = e.touches[0].pageY - startY;
+            if (window.scrollY === 0 && diff > 0 && diff < 120) {
+                document.getElementById('refresh-status').style.height = diff + 'px';
+            }
+        }, { passive: true });
+        window.addEventListener('touchend', (e) => {
+            const diff = e.changedTouches[0].pageY - startY;
+            if (window.scrollY === 0 && diff > 100) {
+                document.getElementById('refresh-status').style.height = '40px';
+                setTimeout(() => {
+                    calculateAudit();
+                    document.getElementById('refresh-status').style.height = '0px';
+                }, 600);
+            } else {
+                document.getElementById('refresh-status').style.height = '0px';
+            }
+        }, { passive: true });
+    </script>
+</body>
+</html>
