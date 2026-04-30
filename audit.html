@@ -13,6 +13,7 @@
             --muted-gray: #444;
             --text-main: #e0e0e0;
             --info-blue: #00c2ff;
+            --gold: #ffd700;
         }
 
         body {
@@ -117,7 +118,9 @@
             border: 1px solid #222;
         }
 
-        .score-card { grid-column: span 2; }
+        .score-card { grid-column: span 2; position: relative; }
+        .card-header-flex { display: flex; justify-content: center; align-items: center; gap: 8px; }
+        
         #health-score { font-size: 3rem; margin: 10px 0; color: var(--accent-green); }
 
         .meter-container { background: #333; height: 10px; border-radius: 5px; margin: 10px 0; overflow: hidden; }
@@ -172,6 +175,10 @@
         }
 
         .version-tag { color: var(--accent-green); font-family: monospace; font-size: 0.75rem; display: block; margin-top: 5px; }
+
+        /* Score Tier Styling */
+        .tier { margin-bottom: 10px; padding-left: 10px; border-left: 3px solid #444; }
+        .tier b { display: block; margin-bottom: 2px; }
     </style>
 </head>
 <body>
@@ -210,7 +217,10 @@
 
         <div class="results-grid">
             <div class="card score-card">
-                <h3>Hammer Score</h3>
+                <div class="card-header-flex">
+                    <h3>Hammer Score</h3>
+                    <div class="info-btn" onclick="showInfo('hammerScore')">i</div>
+                </div>
                 <h1 id="health-score">--</h1>
                 <p id="score-msg">Enter data to audit yourself.</p>
             </div>
@@ -233,7 +243,7 @@
                 <span id="modalTitle">Info</span>
                 <span class="close-modal" onclick="closeModal()">&times;</span>
             </div>
-            <div id="modalBody" style="line-height: 1.6; color: #ccc;">
+            <div id="modalBody" style="line-height: 1.6; color: #ccc; font-size: 0.95rem;">
                 Explanation goes here.
             </div>
         </div>
@@ -241,7 +251,7 @@
 
     <footer class="app-footer">
         <div>© 2026 Audit Dashboard</div>
-        <span class="version-tag">v1.1.4 (Help Modals Added)</span>
+        <span class="version-tag">v1.1.5 (Score Guide Added)</span>
     </footer>
 
     <script>
@@ -249,11 +259,25 @@
             income: "<b>Monthly Take-Home:</b> The actual amount that hits your bank account after taxes and insurance. Include side hustles, but only if they are consistent.",
             needs: "<b>Needs:</b> Survival costs only. Rent/Mortgage, utilities, car insurance, and basic groceries. If you can live without it for a month, it's not a need.",
             wants: "<b>The Bullshit:</b> Dining out, hobbies, streaming services, coffee, and anything from Amazon that isn't a life necessity. This is the 'Caleb Hammer' danger zone.",
-            debt: "<b>Minimum Debt:</b> Sum of the <i>minimum</i> payments for all credit cards and loans. Do not include the extra you're paying for your Snowball method here."
+            debt: "<b>Minimum Debt:</b> Sum of the <i>minimum</i> payments for all credit cards and loans. Do not include the extra you're paying for your Snowball method here.",
+            hammerScore: `
+                <div class="tier" style="border-color: var(--accent-green)">
+                    <b style="color: var(--accent-green)">8 - 10: Financial Warrior</b>
+                    Minimal bullshit spending. You are hyper-focused on your goals.
+                </div>
+                <div class="tier" style="border-color: var(--gold)">
+                    <b style="color: var(--gold)">5 - 7: The Slippery Slope</b>
+                    Too much convenience spending. You're delaying your freedom date.
+                </div>
+                <div class="tier" style="border-color: var(--warning-red)">
+                    <b style="color: var(--warning-red)">0 - 4: FINANCIAL EMERGENCY</b>
+                    Spending more than you make or ignoring high-interest debt. Cut all wants immediately.
+                </div>
+            `
         };
 
         function showInfo(type) {
-            document.getElementById('modalTitle').innerText = type.toUpperCase();
+            document.getElementById('modalTitle').innerText = type === 'hammerScore' ? "SCORE GUIDE" : type.toUpperCase();
             document.getElementById('modalBody').innerHTML = infoData[type];
             document.getElementById('infoModal').style.display = 'flex';
             if (navigator.vibrate) navigator.vibrate(5);
@@ -285,15 +309,22 @@
             document.getElementById('meter-fill').style.width = `${Math.min(wantsRatio, 100)}%`;
             
             const scoreMsg = document.getElementById('score-msg');
-            if (score <= 3) {
+            const scoreDisplay = document.getElementById('health-score');
+
+            if (score <= 4) {
                 scoreMsg.innerText = "FINANCIAL EMERGENCY!";
                 scoreMsg.style.color = "var(--warning-red)";
-                document.getElementById('health-score').style.color = "var(--warning-red)";
+                scoreDisplay.style.color = "var(--warning-red)";
                 document.getElementById('meter-fill').style.backgroundColor = "var(--warning-red)";
+            } else if (score <= 7) {
+                scoreMsg.innerText = "Stop the bleeding. Cut the wants.";
+                scoreMsg.style.color = "var(--gold)";
+                scoreDisplay.style.color = "var(--gold)";
+                document.getElementById('meter-fill').style.backgroundColor = "var(--gold)";
             } else {
                 scoreMsg.innerText = "Keep attacking that debt.";
                 scoreMsg.style.color = "var(--text-main)";
-                document.getElementById('health-score').style.color = "var(--accent-green)";
+                scoreDisplay.style.color = "var(--accent-green)";
                 document.getElementById('meter-fill').style.backgroundColor = "var(--accent-green)";
             }
         }
@@ -309,7 +340,7 @@
             document.getElementById('score-msg').style.color = 'var(--text-main)';
         }
 
-        // Pull-to-Refresh Logic
+        // Pull-to-Refresh
         let startY = 0;
         window.addEventListener('touchstart', (e) => { startY = e.touches[0].pageY; }, { passive: true });
         window.addEventListener('touchmove', (e) => {
