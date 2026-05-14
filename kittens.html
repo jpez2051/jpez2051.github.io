@@ -166,6 +166,7 @@
   <div class="emoji">🍼</div>
   <h1>Kitten Feeding Tracker</h1>
   <p>Starting weight: <strong>265g</strong> · Goal: +10g/day</p>
+  <p style="margin-top:4px;font-size:11px;color:rgba(255,255,255,0.45);letter-spacing:.5px">v1.0.2</p>
   <button id="reset-btn">🗑 Reset</button>
 </header>
 
@@ -315,11 +316,14 @@
         const idx = parseInt(e.target.dataset.idx);
         days[activeDay].feedings[idx] = e.target.value;
         save();
-        renderFeedings();
+        // Update just the check icon and count without re-rendering the whole list
+        const done = e.target.value.trim() !== "";
+        const row = e.target.closest(".feeding-row");
+        row.className = "feeding-row" + (done ? " done" : "");
+        row.querySelector(".feeding-check").textContent = done ? "✅" : "⭕";
+        const count = days[activeDay].feedings.filter(f => f.trim() !== "").length;
+        document.getElementById("feed-count").textContent = `${count}/5 logged`;
         renderHistory();
-        // Re-focus same input
-        const inputs = document.querySelectorAll(".feeding-input");
-        if (inputs[idx]) inputs[idx].focus();
       });
     });
   }
@@ -401,6 +405,7 @@
   document.getElementById("notes-input").addEventListener("input", e => {
     days[activeDay].notes = e.target.value;
     save();
+    // Don't re-render — textarea manages its own value
   });
 
   document.getElementById("add-day-btn").addEventListener("click", () => {
