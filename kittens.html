@@ -1,325 +1,435 @@
-import { useState, useEffect } from "react";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kitten Feeding Tracker</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #fef3e8 0%, #fde8d8 50%, #fce4d6 100%);
+    font-family: Georgia, serif;
+  }
+  header {
+    background: linear-gradient(135deg, #d4704a, #c15a35);
+    padding: 28px 24px 20px;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(193,90,53,.3);
+    position: relative;
+  }
+  header .emoji { font-size: 32px; margin-bottom: 4px; }
+  header h1 { color: #fff; font-size: 26px; letter-spacing: .5px; }
+  header p { color: #ffddd0; font-size: 13px; margin-top: 6px; }
+  #reset-btn {
+    position: absolute; top: 16px; right: 16px;
+    background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
+    border-radius: 8px; color: #fff; padding: 6px 12px; font-size: 12px;
+    cursor: pointer; font-family: Georgia, serif;
+  }
+  #reset-btn:hover { background: rgba(255,255,255,.25); }
 
-const FEEDING_TIMES = ["6:00 AM", "10:00 AM", "2:00 PM", "6:00 PM", "10:00 PM"];
-const GOAL_PER_DAY = 10;
-const START_WEIGHT = 265;
-const START_DATE = "2026-05-12";
-const STORAGE_KEY = "kitten-tracker-data";
-
-function formatDate(str) {
-  const [y, m, d] = str.split("-");
-  return `${parseInt(m)}/${parseInt(d)}`;
-}
-
-function defaultDays() {
-  return { [START_DATE]: { feedings: Array(5).fill(""), weight: "", notes: "" } };
-}
-
-function loadFromStorage() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch (e) {}
-  return null;
-}
-
-const pawPrint = "🐾";
-
-export default function KittenTracker() {
-  const [days, setDays] = useState(() => loadFromStorage()?.days ?? defaultDays());
-  const [activeDay, setActiveDay] = useState(() => {
-    const saved = loadFromStorage();
-    return saved?.activeDay ?? START_DATE;
-  });
-  const [newDayDate, setNewDayDate] = useState("");
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
-
-  // Persist to localStorage on every change
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ days, activeDay }));
-    } catch (e) {}
-  }, [days, activeDay]);
-
-  const dayKeys = Object.keys(days).sort();
-
-  function updateFeeding(idx, val) {
-    setDays(prev => ({
-      ...prev,
-      [activeDay]: {
-        ...prev[activeDay],
-        feedings: prev[activeDay].feedings.map((f, i) => (i === idx ? val : f)),
-      },
-    }));
+  /* Tabs */
+  #tabs {
+    display: flex; overflow-x: auto; background: #c15a35;
+    padding: 0 12px; gap: 4px; align-items: flex-end;
+  }
+  .tab-btn {
+    padding: 10px 16px; border: none; border-radius: 8px 8px 0 0;
+    background: transparent; color: #ffddd0; font-family: Georgia, serif;
+    font-size: 13px; cursor: pointer; white-space: nowrap; transition: all .15s;
+  }
+  .tab-btn.active { background: #fef3e8; color: #c15a35; font-weight: bold; }
+  #add-day-wrap {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 8px; flex-shrink: 0;
+  }
+  #new-day-input {
+    border: 1px solid #ffddd0; border-radius: 6px; padding: 4px 8px;
+    background: transparent; color: #fff; font-family: Georgia, serif; font-size: 12px;
+  }
+  #add-day-btn {
+    background: #ffddd0; color: #c15a35; border: none; border-radius: 6px;
+    padding: 4px 10px; font-weight: bold; cursor: pointer; font-size: 13px;
   }
 
-  function updateWeight(val) {
-    setDays(prev => ({
-      ...prev,
-      [activeDay]: { ...prev[activeDay], weight: val },
-    }));
+  /* Main content */
+  #main { padding: 20px 16px; max-width: 480px; margin: 0 auto; }
+
+  .card {
+    background: #fff; border-radius: 16px; padding: 18px 20px;
+    margin-bottom: 16px; box-shadow: 0 2px 16px rgba(193,90,53,.1);
+    border: 1px solid #fde8d8;
+  }
+  .card-title {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+  }
+  .card-title h2 { font-size: 16px; color: #7a3520; font-weight: bold; }
+
+  /* Weight */
+  #weight-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+  #weight-row label { display: block; font-size: 11px; color: #a0522d; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .5px; }
+  #weight-input {
+    width: 100%; border: 2px solid #fde8d8; border-radius: 10px;
+    padding: 10px 12px; font-size: 18px; font-family: Georgia, serif;
+    color: #7a3520; background: #fffaf8; outline: none;
+  }
+  #goal-box {
+    background: #fef3e8; border-radius: 10px; padding: 10px 16px;
+    text-align: center; min-width: 110px; flex-shrink: 0;
+  }
+  #goal-box .label { font-size: 11px; color: #a0522d; text-transform: uppercase; letter-spacing: .5px; }
+  #goal-box .value { font-size: 22px; font-weight: bold; color: #c15a35; }
+  #weight-status {
+    margin-top: 12px; padding: 10px 14px; border-radius: 10px;
+    font-size: 14px; font-weight: bold; display: flex; align-items: center; gap: 8px;
+  }
+  #weight-status.good { background: #e8f5e9; color: #2e7d32; }
+  #weight-status.warn { background: #fff3e0; color: #e65100; }
+  #weight-status.hidden { display: none; }
+
+  /* Feedings */
+  #feedings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  #feedings-header .left { display: flex; align-items: center; gap: 8px; }
+  #feedings-header h2 { font-size: 16px; color: #7a3520; }
+  #feed-count {
+    background: #fef3e8; border-radius: 20px; padding: 4px 12px;
+    font-size: 12px; color: #c15a35; font-weight: bold;
+  }
+  #feedings-list { display: flex; flex-direction: column; gap: 10px; }
+  .feeding-row {
+    display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+    border-radius: 12px; background: #fffaf8; border: 2px solid #fde8d8; transition: all .2s;
+  }
+  .feeding-row.done { background: #fef3e8; border-color: #f4b896; }
+  .feeding-time { width: 70px; flex-shrink: 0; font-size: 12px; font-weight: bold; color: #c15a35; }
+  .feeding-input {
+    flex: 1; border: none; background: transparent; font-size: 13px;
+    font-family: Georgia, serif; color: #7a3520; outline: none; width: 100%;
+  }
+  .feeding-check { font-size: 18px; }
+
+  /* Notes */
+  #notes-input {
+    width: 100%; border: 2px solid #fde8d8; border-radius: 10px;
+    padding: 10px 12px; font-size: 13px; font-family: Georgia, serif;
+    color: #7a3520; background: #fffaf8; outline: none; resize: vertical;
   }
 
-  function updateNotes(val) {
-    setDays(prev => ({
-      ...prev,
-      [activeDay]: { ...prev[activeDay], notes: val },
-    }));
+  /* History */
+  #history-list { display: flex; flex-direction: column; gap: 6px; }
+  .history-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 12px; border-radius: 10px; cursor: pointer;
+    background: #fffaf8; border: 1px solid #fde8d8;
+  }
+  .history-row.active { background: #fef3e8; border-color: #f4b896; }
+  .history-row .day-label { font-size: 13px; color: #7a3520; }
+  .history-row .day-date { font-size: 11px; color: #a0522d; }
+  .history-row .goal-lbl { font-size: 13px; color: #c15a35; }
+  .history-row .actual { font-size: 13px; font-weight: bold; }
+  .actual.ok { color: #2e7d32; }
+  .actual.low { color: #e65100; }
+  .actual.none { color: #ccc; }
+
+  footer {
+    text-align: center; padding: 20px 0 8px;
+    color: #c5927a; font-size: 12px;
   }
 
-  function addDay() {
-    if (!newDayDate || days[newDayDate]) return;
-    setDays(prev => ({
-      ...prev,
-      [newDayDate]: { feedings: Array(5).fill(""), weight: "", notes: "" },
-    }));
-    setActiveDay(newDayDate);
-    setNewDayDate("");
+  /* Modal */
+  #modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.45);
+    display: flex; align-items: center; justify-content: center; z-index: 100;
   }
-
-  function handleReset() {
-    const fresh = defaultDays();
-    setDays(fresh);
-    setActiveDay(START_DATE);
-    setShowResetConfirm(false);
-    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  #modal-overlay.hidden { display: none; }
+  #modal {
+    background: #fff; border-radius: 18px; padding: 28px 28px 22px;
+    max-width: 320px; width: 90%; text-align: center;
+    box-shadow: 0 8px 40px rgba(0,0,0,.2);
   }
-
-  function expectedWeight(dayIdx) {
-    return START_WEIGHT + GOAL_PER_DAY * dayIdx;
+  #modal .m-icon { font-size: 36px; margin-bottom: 10px; }
+  #modal h3 { color: #7a3520; font-size: 18px; margin-bottom: 8px; }
+  #modal p { color: #a0522d; font-size: 14px; margin-bottom: 20px; }
+  #modal .btn-row { display: flex; gap: 10px; }
+  #modal button {
+    flex: 1; padding: 10px 0; border-radius: 10px;
+    font-family: Georgia, serif; font-size: 14px; cursor: pointer;
   }
+  #cancel-btn { border: 2px solid #fde8d8; background: #fff; color: #7a3520; }
+  #confirm-btn { border: none; background: #c15a35; color: #fff; font-weight: bold; }
+</style>
+</head>
+<body>
 
-  function dayWeight(key) {
-    return parseFloat(days[key]?.weight) || null;
-  }
+<header>
+  <div class="emoji">🍼</div>
+  <h1>Kitten Feeding Tracker</h1>
+  <p>Starting weight: <strong>265g</strong> · Goal: +10g/day</p>
+  <button id="reset-btn">🗑 Reset</button>
+</header>
 
-  const activeDayData = days[activeDay] ?? { feedings: Array(5).fill(""), weight: "", notes: "" };
-  const activeDayIdx = dayKeys.indexOf(activeDay);
-  const expected = expectedWeight(activeDayIdx);
-  const actual = dayWeight(activeDay);
-  const weightDiff = actual !== null ? actual - expected : null;
-  const feedingsLogged = activeDayData.feedings.filter(f => f.trim() !== "").length;
+<div id="tabs">
+  <!-- tabs injected by JS -->
+  <div id="add-day-wrap">
+    <input type="date" id="new-day-input" />
+    <button id="add-day-btn">+ Day</button>
+  </div>
+</div>
 
-  return (
-    <div style={{
-      minHeight: "100vh",
-      background: "linear-gradient(135deg, #fef3e8 0%, #fde8d8 50%, #fce4d6 100%)",
-      fontFamily: "'Georgia', serif",
-    }}>
-      {/* Header */}
-      <div style={{
-        background: "linear-gradient(135deg, #d4704a 0%, #c15a35 100%)",
-        padding: "28px 24px 20px",
-        textAlign: "center",
-        boxShadow: "0 4px 20px rgba(193,90,53,0.3)",
-        position: "relative",
-      }}>
-        <div style={{ fontSize: 32, marginBottom: 4 }}>🍼</div>
-        <h1 style={{ margin: 0, color: "#fff", fontSize: 26, fontWeight: "bold", letterSpacing: "0.5px" }}>
-          Kitten Feeding Tracker
-        </h1>
-        <p style={{ margin: "6px 0 0", color: "#ffddd0", fontSize: 13 }}>
-          Starting weight: <strong>265g</strong> · Goal: +10g/day
-        </p>
-        {/* Reset button */}
-        <button onClick={() => setShowResetConfirm(true)} style={{
-          position: "absolute", top: 16, right: 16,
-          background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)",
-          borderRadius: 8, color: "#fff", padding: "6px 12px", fontSize: 12,
-          cursor: "pointer", fontFamily: "Georgia, serif",
-        }}>🗑 Reset</button>
+<div id="main">
+  <!-- Weight -->
+  <div class="card">
+    <div class="card-title"><span>⚖️</span><h2>Daily Weight</h2></div>
+    <div id="weight-row">
+      <div style="flex:1;min-width:120px">
+        <label for="weight-input">Actual weight (g)</label>
+        <input type="number" id="weight-input" placeholder="e.g. 275" />
       </div>
-
-      {/* Reset confirm modal */}
-      {showResetConfirm && (
-        <div style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
-          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100,
-        }}>
-          <div style={{
-            background: "#fff", borderRadius: 18, padding: "28px 28px 22px",
-            maxWidth: 320, width: "90%", textAlign: "center",
-            boxShadow: "0 8px 40px rgba(0,0,0,0.2)",
-          }}>
-            <div style={{ fontSize: 36, marginBottom: 10 }}>⚠️</div>
-            <h3 style={{ margin: "0 0 8px", color: "#7a3520", fontSize: 18 }}>Reset all data?</h3>
-            <p style={{ color: "#a0522d", fontSize: 14, margin: "0 0 20px" }}>
-              This will permanently delete all feeding logs, weights, and notes.
-            </p>
-            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-              <button onClick={() => setShowResetConfirm(false)} style={{
-                flex: 1, padding: "10px 0", borderRadius: 10, border: "2px solid #fde8d8",
-                background: "#fff", color: "#7a3520", fontFamily: "Georgia, serif",
-                fontSize: 14, cursor: "pointer",
-              }}>Cancel</button>
-              <button onClick={handleReset} style={{
-                flex: 1, padding: "10px 0", borderRadius: 10, border: "none",
-                background: "#c15a35", color: "#fff", fontFamily: "Georgia, serif",
-                fontSize: 14, fontWeight: "bold", cursor: "pointer",
-              }}>Yes, Reset</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Day tabs */}
-      <div style={{ display: "flex", overflowX: "auto", background: "#c15a35", padding: "0 12px", gap: 4 }}>
-        {dayKeys.map((key, i) => (
-          <button key={key} onClick={() => setActiveDay(key)} style={{
-            padding: "10px 16px", border: "none", borderRadius: "8px 8px 0 0",
-            background: activeDay === key ? "#fef3e8" : "transparent",
-            color: activeDay === key ? "#c15a35" : "#ffddd0",
-            fontWeight: activeDay === key ? "bold" : "normal",
-            fontFamily: "Georgia, serif", fontSize: 13, cursor: "pointer",
-            whiteSpace: "nowrap", transition: "all 0.15s",
-          }}>
-            Day {i + 1} <span style={{ opacity: 0.7 }}>({formatDate(key)})</span>
-          </button>
-        ))}
-        <div style={{ display: "flex", alignItems: "center", padding: "6px 8px", gap: 6, flexShrink: 0 }}>
-          <input type="date" value={newDayDate} onChange={e => setNewDayDate(e.target.value)} style={{
-            border: "1px solid #ffddd0", borderRadius: 6, padding: "4px 8px",
-            background: "transparent", color: "#fff", fontFamily: "Georgia, serif", fontSize: 12,
-          }} />
-          <button onClick={addDay} style={{
-            background: "#ffddd0", color: "#c15a35", border: "none", borderRadius: 6,
-            padding: "4px 10px", fontWeight: "bold", cursor: "pointer", fontSize: 13,
-          }}>+ Day</button>
-        </div>
-      </div>
-
-      <div style={{ padding: "20px 16px", maxWidth: 480, margin: "0 auto" }}>
-
-        {/* Weight card */}
-        <div style={{ background: "#fff", borderRadius: 16, padding: "18px 20px", marginBottom: 16, boxShadow: "0 2px 16px rgba(193,90,53,0.1)", border: "1px solid #fde8d8" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-            <span style={{ fontSize: 20 }}>⚖️</span>
-            <h2 style={{ margin: 0, fontSize: 16, color: "#7a3520" }}>Daily Weight</h2>
-          </div>
-          <div style={{ display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap" }}>
-            <div style={{ flex: 1, minWidth: 120 }}>
-              <label style={{ display: "block", fontSize: 11, color: "#a0522d", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                Actual weight (g)
-              </label>
-              <input type="number" value={activeDayData.weight} onChange={e => updateWeight(e.target.value)}
-                placeholder="e.g. 275" style={{
-                  width: "100%", border: "2px solid #fde8d8", borderRadius: 10,
-                  padding: "10px 12px", fontSize: 18, fontFamily: "Georgia, serif",
-                  color: "#7a3520", background: "#fffaf8", outline: "none", boxSizing: "border-box",
-                }} />
-            </div>
-            <div style={{ background: "#fef3e8", borderRadius: 10, padding: "10px 16px", textAlign: "center", minWidth: 110 }}>
-              <div style={{ fontSize: 11, color: "#a0522d", textTransform: "uppercase", letterSpacing: "0.5px" }}>Goal today</div>
-              <div style={{ fontSize: 22, fontWeight: "bold", color: "#c15a35" }}>{expected}g</div>
-            </div>
-          </div>
-          {actual !== null && (
-            <div style={{
-              marginTop: 12, padding: "10px 14px", borderRadius: 10,
-              background: weightDiff >= 0 ? "#e8f5e9" : "#fff3e0",
-              color: weightDiff >= 0 ? "#2e7d32" : "#e65100",
-              fontSize: 14, fontWeight: "bold", display: "flex", alignItems: "center", gap: 8,
-            }}>
-              <span>{weightDiff >= 0 ? "✅" : "⚠️"}</span>
-              <span>{weightDiff >= 0
-                ? `On track! ${weightDiff > 0 ? `+${weightDiff}g above goal` : "Right at goal"}`
-                : `${Math.abs(weightDiff)}g below goal — consider tightening feeding intervals`}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Feedings card */}
-        <div style={{ background: "#fff", borderRadius: 16, padding: "18px 20px", marginBottom: 16, boxShadow: "0 2px 16px rgba(193,90,53,0.1)", border: "1px solid #fde8d8" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 20 }}>🍼</span>
-              <h2 style={{ margin: 0, fontSize: 16, color: "#7a3520" }}>Feedings</h2>
-            </div>
-            <div style={{ background: "#fef3e8", borderRadius: 20, padding: "4px 12px", fontSize: 12, color: "#c15a35", fontWeight: "bold" }}>
-              {feedingsLogged}/5 logged
-            </div>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {FEEDING_TIMES.map((time, i) => {
-              const val = activeDayData.feedings[i];
-              const done = val.trim() !== "";
-              return (
-                <div key={i} style={{
-                  display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
-                  borderRadius: 12, background: done ? "#fef3e8" : "#fffaf8",
-                  border: `2px solid ${done ? "#f4b896" : "#fde8d8"}`, transition: "all 0.2s",
-                }}>
-                  <div style={{ width: 70, flexShrink: 0 }}>
-                    <div style={{ fontSize: 12, fontWeight: "bold", color: "#c15a35" }}>{time}</div>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <input type="text" value={val} onChange={e => updateFeeding(i, e.target.value)}
-                      placeholder="Notes (e.g. 5ml gruel, took well)" style={{
-                        width: "100%", border: "none", background: "transparent",
-                        fontSize: 13, fontFamily: "Georgia, serif", color: "#7a3520",
-                        outline: "none", boxSizing: "border-box",
-                      }} />
-                  </div>
-                  <div style={{ fontSize: 18 }}>{done ? "✅" : "⭕"}</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Notes card */}
-        <div style={{ background: "#fff", borderRadius: 16, padding: "18px 20px", marginBottom: 16, boxShadow: "0 2px 16px rgba(193,90,53,0.1)", border: "1px solid #fde8d8" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <span style={{ fontSize: 20 }}>📝</span>
-            <h2 style={{ margin: 0, fontSize: 16, color: "#7a3520" }}>Daily Notes</h2>
-          </div>
-          <textarea value={activeDayData.notes} onChange={e => updateNotes(e.target.value)}
-            placeholder="Stool consistency, behavior, any concerns..." rows={3} style={{
-              width: "100%", border: "2px solid #fde8d8", borderRadius: 10,
-              padding: "10px 12px", fontSize: 13, fontFamily: "Georgia, serif",
-              color: "#7a3520", background: "#fffaf8", outline: "none",
-              resize: "vertical", boxSizing: "border-box",
-            }} />
-        </div>
-
-        {/* Weight history */}
-        {dayKeys.length > 1 && (
-          <div style={{ background: "#fff", borderRadius: 16, padding: "18px 20px", boxShadow: "0 2px 16px rgba(193,90,53,0.1)", border: "1px solid #fde8d8" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-              <span style={{ fontSize: 20 }}>📈</span>
-              <h2 style={{ margin: 0, fontSize: 16, color: "#7a3520" }}>Weight History</h2>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {dayKeys.map((key, i) => {
-                const w = dayWeight(key);
-                const goal = expectedWeight(i);
-                const diff = w !== null ? w - goal : null;
-                return (
-                  <div key={key} onClick={() => setActiveDay(key)} style={{
-                    display: "flex", justifyContent: "space-between", alignItems: "center",
-                    padding: "8px 12px", borderRadius: 10, cursor: "pointer",
-                    background: key === activeDay ? "#fef3e8" : "#fffaf8",
-                    border: `1px solid ${key === activeDay ? "#f4b896" : "#fde8d8"}`,
-                  }}>
-                    <span style={{ fontSize: 13, color: "#7a3520" }}>
-                      Day {i + 1} <span style={{ color: "#a0522d", fontSize: 11 }}>({formatDate(key)})</span>
-                    </span>
-                    <span style={{ fontSize: 13, color: "#c15a35" }}>Goal: {goal}g</span>
-                    <span style={{ fontSize: 13, fontWeight: "bold", color: w === null ? "#ccc" : diff >= 0 ? "#2e7d32" : "#e65100" }}>
-                      {w !== null ? `${w}g` : "—"}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        <div style={{ textAlign: "center", padding: "20px 0 8px", color: "#c5927a", fontSize: 12 }}>
-          {pawPrint} Data auto-saves to your browser · Use Reset to clear all {pawPrint}
-        </div>
+      <div id="goal-box">
+        <div class="label">Goal today</div>
+        <div class="value" id="goal-value">—</div>
       </div>
     </div>
-  );
-}
+    <div id="weight-status" class="hidden"></div>
+  </div>
+
+  <!-- Feedings -->
+  <div class="card">
+    <div id="feedings-header">
+      <div class="left"><span>🍼</span><h2>Feedings</h2></div>
+      <div id="feed-count">0/5 logged</div>
+    </div>
+    <div id="feedings-list"></div>
+  </div>
+
+  <!-- Notes -->
+  <div class="card">
+    <div class="card-title"><span>📝</span><h2>Daily Notes</h2></div>
+    <textarea id="notes-input" rows="3" placeholder="Stool consistency, behavior, any concerns..."></textarea>
+  </div>
+
+  <!-- History -->
+  <div class="card" id="history-card" style="display:none">
+    <div class="card-title"><span>📈</span><h2>Weight History</h2></div>
+    <div id="history-list"></div>
+  </div>
+
+  <footer>🐾 Data auto-saves to your browser · Use Reset to clear all 🐾</footer>
+</div>
+
+<!-- Reset modal -->
+<div id="modal-overlay" class="hidden">
+  <div id="modal">
+    <div class="m-icon">⚠️</div>
+    <h3>Reset all data?</h3>
+    <p>This will permanently delete all feeding logs, weights, and notes.</p>
+    <div class="btn-row">
+      <button id="cancel-btn">Cancel</button>
+      <button id="confirm-btn">Yes, Reset</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = "kitten-tracker-data";
+  const FEEDING_TIMES = ["6:00 AM", "10:00 AM", "2:00 PM", "6:00 PM", "10:00 PM"];
+  const GOAL_PER_DAY = 10;
+  const START_WEIGHT = 265;
+  const START_DATE = "2026-05-12";
+
+  function defaultDays() {
+    return { [START_DATE]: { feedings: Array(5).fill(""), weight: "", notes: "" } };
+  }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch(e) {}
+    return null;
+  }
+
+  function save() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ days, activeDay }));
+    } catch(e) {}
+  }
+
+  const stored = load();
+  let days = stored?.days ?? defaultDays();
+  let activeDay = stored?.activeDay ?? START_DATE;
+
+  function fmtDate(str) {
+    const [, m, d] = str.split("-");
+    return `${parseInt(m)}/${parseInt(d)}`;
+  }
+
+  function dayKeys() {
+    return Object.keys(days).sort();
+  }
+
+  function expectedWeight(idx) {
+    return START_WEIGHT + GOAL_PER_DAY * idx;
+  }
+
+  // ── Render tabs ──────────────────────────────────────────
+  function renderTabs() {
+    const tabs = document.getElementById("tabs");
+    // Remove old tab buttons
+    tabs.querySelectorAll(".tab-btn").forEach(b => b.remove());
+    const wrap = document.getElementById("add-day-wrap");
+    dayKeys().forEach((key, i) => {
+      const btn = document.createElement("button");
+      btn.className = "tab-btn" + (key === activeDay ? " active" : "");
+      btn.innerHTML = `Day ${i+1} <span style="opacity:.7">(${fmtDate(key)})</span>`;
+      btn.onclick = () => { activeDay = key; save(); render(); };
+      tabs.insertBefore(btn, wrap);
+    });
+  }
+
+  // ── Render feedings ──────────────────────────────────────
+  function renderFeedings() {
+    const list = document.getElementById("feedings-list");
+    list.innerHTML = "";
+    const data = days[activeDay];
+    let count = 0;
+    FEEDING_TIMES.forEach((time, i) => {
+      const val = data.feedings[i] || "";
+      const done = val.trim() !== "";
+      if (done) count++;
+      const row = document.createElement("div");
+      row.className = "feeding-row" + (done ? " done" : "");
+      row.innerHTML = `
+        <div class="feeding-time">${time}</div>
+        <input class="feeding-input" type="text" value="${val.replace(/"/g,'&quot;')}"
+          placeholder="Notes (e.g. 5ml gruel, took well)" data-idx="${i}" />
+        <div class="feeding-check">${done ? "✅" : "⭕"}</div>
+      `;
+      list.appendChild(row);
+    });
+    document.getElementById("feed-count").textContent = `${count}/5 logged`;
+    // Attach input listeners
+    list.querySelectorAll(".feeding-input").forEach(inp => {
+      inp.addEventListener("input", e => {
+        const idx = parseInt(e.target.dataset.idx);
+        days[activeDay].feedings[idx] = e.target.value;
+        save();
+        renderFeedings();
+        renderHistory();
+        // Re-focus same input
+        const inputs = document.querySelectorAll(".feeding-input");
+        if (inputs[idx]) inputs[idx].focus();
+      });
+    });
+  }
+
+  // ── Render weight ────────────────────────────────────────
+  function renderWeight() {
+    const keys = dayKeys();
+    const idx = keys.indexOf(activeDay);
+    const goal = expectedWeight(idx);
+    document.getElementById("goal-value").textContent = goal + "g";
+
+    const wInput = document.getElementById("weight-input");
+    wInput.value = days[activeDay].weight || "";
+
+    const actual = parseFloat(days[activeDay].weight);
+    const status = document.getElementById("weight-status");
+    if (!isNaN(actual) && days[activeDay].weight !== "") {
+      const diff = actual - goal;
+      status.className = "weight-status " + (diff >= 0 ? "good" : "warn");
+      status.style.display = "flex";
+      if (diff >= 0) {
+        status.innerHTML = `<span>✅</span><span>On track! ${diff > 0 ? `+${diff}g above goal` : "Right at goal"}</span>`;
+      } else {
+        status.innerHTML = `<span>⚠️</span><span>${Math.abs(diff)}g below goal — consider tightening feeding intervals</span>`;
+      }
+    } else {
+      status.style.display = "none";
+    }
+  }
+
+  // ── Render notes ─────────────────────────────────────────
+  function renderNotes() {
+    document.getElementById("notes-input").value = days[activeDay].notes || "";
+  }
+
+  // ── Render history ───────────────────────────────────────
+  function renderHistory() {
+    const keys = dayKeys();
+    const card = document.getElementById("history-card");
+    if (keys.length < 2) { card.style.display = "none"; return; }
+    card.style.display = "block";
+    const list = document.getElementById("history-list");
+    list.innerHTML = "";
+    keys.forEach((key, i) => {
+      const w = parseFloat(days[key]?.weight);
+      const goal = expectedWeight(i);
+      const hasW = !isNaN(w) && days[key].weight !== "";
+      const diff = hasW ? w - goal : null;
+      const row = document.createElement("div");
+      row.className = "history-row" + (key === activeDay ? " active" : "");
+      const actualClass = !hasW ? "none" : diff >= 0 ? "ok" : "low";
+      row.innerHTML = `
+        <span class="day-label">Day ${i+1} <span class="day-date">(${fmtDate(key)})</span></span>
+        <span class="goal-lbl">Goal: ${goal}g</span>
+        <span class="actual ${actualClass}">${hasW ? w + "g" : "—"}</span>
+      `;
+      row.onclick = () => { activeDay = key; save(); render(); };
+      list.appendChild(row);
+    });
+  }
+
+  // ── Full render ──────────────────────────────────────────
+  function render() {
+    renderTabs();
+    renderWeight();
+    renderFeedings();
+    renderNotes();
+    renderHistory();
+  }
+
+  // ── Event listeners ──────────────────────────────────────
+  document.getElementById("weight-input").addEventListener("input", e => {
+    days[activeDay].weight = e.target.value;
+    save();
+    renderWeight();
+    renderHistory();
+  });
+
+  document.getElementById("notes-input").addEventListener("input", e => {
+    days[activeDay].notes = e.target.value;
+    save();
+  });
+
+  document.getElementById("add-day-btn").addEventListener("click", () => {
+    const input = document.getElementById("new-day-input");
+    const val = input.value;
+    if (!val || days[val]) return;
+    days[val] = { feedings: Array(5).fill(""), weight: "", notes: "" };
+    activeDay = val;
+    input.value = "";
+    save();
+    render();
+  });
+
+  document.getElementById("reset-btn").addEventListener("click", () => {
+    document.getElementById("modal-overlay").classList.remove("hidden");
+  });
+  document.getElementById("cancel-btn").addEventListener("click", () => {
+    document.getElementById("modal-overlay").classList.add("hidden");
+  });
+  document.getElementById("confirm-btn").addEventListener("click", () => {
+    days = defaultDays();
+    activeDay = START_DATE;
+    try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+    document.getElementById("modal-overlay").classList.add("hidden");
+    render();
+  });
+
+  // ── Init ─────────────────────────────────────────────────
+  render();
+</script>
+</body>
+</html>
