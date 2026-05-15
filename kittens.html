@@ -167,7 +167,7 @@
   <div class="emoji">🍼</div>
   <h1>Kitten Feeding Tracker</h1>
   <p>Starting weight: <strong>265g</strong> · Goal: +10g/day</p>
-  <p style="margin-top:4px;font-size:11px;color:rgba(255,255,255,0.45);letter-spacing:.5px">v1.1.2</p>
+  <p style="margin-top:4px;font-size:11px;color:rgba(255,255,255,0.45);letter-spacing:.5px">v1.1.3</p>
   <button id="reset-btn">🗑 Reset</button>
 </header>
 
@@ -324,6 +324,9 @@
         days[activeDay].feedings[idx] = e.target.value;
         save();
         // Update just the check icon and count without re-rendering the whole list
+        const lines = e.target.value.split("\n");
+        e.target.value = lines.map(l => l.slice(0, 80)).join("\n");
+        days[activeDay].feedings[idx] = e.target.value;
         const done = e.target.value.trim() !== "";
         const row = e.target.closest(".feeding-row");
         row.className = "feeding-row" + (done ? " done" : "");
