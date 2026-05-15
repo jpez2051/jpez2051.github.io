@@ -1,4 +1,4 @@
-<!-- Version: 1.1.3 -->
+<!-- Version: 1.1.4 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -107,6 +107,7 @@
   .feeding-input {
     flex: 1; border: none; background: transparent; font-size: 13px;
     font-family: Georgia, serif; color: #7a3520; outline: none; width: 100%;
+    resize: none; overflow: hidden; min-height: 24px;
   }
   .feeding-check { font-size: 18px; }
 
@@ -311,8 +312,8 @@
       row.className = "feeding-row" + (done ? " done" : "");
       row.innerHTML = `
         <div class="feeding-time">${time}</div>
-        <input class="feeding-input" type="text" value="${val.replace(/"/g,'&quot;')}"
-          placeholder="Notes (e.g. 5ml gruel, took well)" data-idx="${i}" />
+        <textarea class="feeding-input" rows="1" data-idx="${i}"
+          placeholder="Notes (e.g. 5ml gruel, took well)">${val.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
         <div class="feeding-check">${done ? "✅" : "⭕"}</div>
       `;
       list.appendChild(row);
@@ -325,9 +326,20 @@
         days[activeDay].feedings[idx] = e.target.value;
         save();
         // Update just the check icon and count without re-rendering the whole list
-        const lines = e.target.value.split("\n");
-        e.target.value = lines.map(l => l.slice(0, 80)).join("\n");
+        const raw = e.target.value;
+        const wrapped = [];
+        raw.split("\n").forEach(line => {
+          while (line.length > 40) {
+            wrapped.push(line.slice(0, 40));
+            line = line.slice(40);
+          }
+          wrapped.push(line);
+        });
+        const caret = e.target.selectionStart;
+        e.target.value = wrapped.join("\n");
+        e.target.selectionStart = e.target.selectionEnd = Math.min(caret, e.target.value.length);
         days[activeDay].feedings[idx] = e.target.value;
+        autoResize(e.target);
         const done = e.target.value.trim() !== "";
         const row = e.target.closest(".feeding-row");
         row.className = "feeding-row" + (done ? " done" : "");
