@@ -113,7 +113,8 @@
   #notes-input {
     width: 100%; border: 2px solid #fde8d8; border-radius: 10px;
     padding: 10px 12px; font-size: 13px; font-family: Georgia, serif;
-    color: #7a3520; background: #fffaf8; outline: none; resize: vertical;
+    color: #7a3520; background: #fffaf8; outline: none; resize: none;
+    overflow: hidden; min-height: 60px;
   }
 
   /* History */
@@ -166,7 +167,7 @@
   <div class="emoji">🍼</div>
   <h1>Kitten Feeding Tracker</h1>
   <p>Starting weight: <strong>265g</strong> · Goal: +10g/day</p>
-  <p style="margin-top:4px;font-size:11px;color:rgba(255,255,255,0.45);letter-spacing:.5px">v1.1.0</p>
+  <p style="margin-top:4px;font-size:11px;color:rgba(255,255,255,0.45);letter-spacing:.5px">v1.1.1</p>
   <button id="reset-btn">🗑 Reset</button>
 </header>
 
@@ -363,6 +364,7 @@
   // ── Render notes ─────────────────────────────────────────
   function renderNotes() {
     document.getElementById("notes-input").value = days[activeDay].notes || "";
+    autoResize(document.getElementById("notes-input"));
   }
 
   // ── Render history ───────────────────────────────────────
@@ -468,8 +470,14 @@
     renderAvg();
   });
 
+  function autoResize(el) {
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
+  }
+
   document.getElementById("notes-input").addEventListener("input", e => {
     days[activeDay].notes = e.target.value;
+    autoResize(e.target);
     save();
     // Don't re-render — textarea manages its own value
   });
