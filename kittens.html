@@ -114,7 +114,7 @@
     width: 100%; border: 2px solid #fde8d8; border-radius: 10px;
     padding: 10px 12px; font-size: 13px; font-family: Georgia, serif;
     color: #7a3520; background: #fffaf8; outline: none; resize: none;
-    overflow: hidden; min-height: 60px;
+    overflow: hidden; min-height: 60px; white-space: pre-wrap; word-break: break-word;
   }
 
   /* History */
@@ -167,7 +167,7 @@
   <div class="emoji">🍼</div>
   <h1>Kitten Feeding Tracker</h1>
   <p>Starting weight: <strong>265g</strong> · Goal: +10g/day</p>
-  <p style="margin-top:4px;font-size:11px;color:rgba(255,255,255,0.45);letter-spacing:.5px">v1.1.1</p>
+  <p style="margin-top:4px;font-size:11px;color:rgba(255,255,255,0.45);letter-spacing:.5px">v1.1.2</p>
   <button id="reset-btn">🗑 Reset</button>
 </header>
 
@@ -208,7 +208,7 @@
   <!-- Notes -->
   <div class="card">
     <div class="card-title"><span>📝</span><h2>Daily Notes</h2></div>
-    <textarea id="notes-input" rows="3" placeholder="Stool consistency, behavior, any concerns..."></textarea>
+    <textarea id="notes-input" rows="3" maxlength="9999" placeholder="Stool consistency, behavior, any concerns..."></textarea>
   </div>
 
   <!-- History -->
@@ -476,6 +476,11 @@
   }
 
   document.getElementById("notes-input").addEventListener("input", e => {
+    const lines = e.target.value.split("\n");
+    const capped = lines.map(line => line.slice(0, 80));
+    const caret = e.target.selectionStart;
+    e.target.value = capped.join("\n");
+    e.target.selectionStart = e.target.selectionEnd = Math.min(caret, e.target.value.length);
     days[activeDay].notes = e.target.value;
     autoResize(e.target);
     save();
