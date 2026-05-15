@@ -1,4 +1,4 @@
-<!-- Version: 1.1.4 -->
+<!-- Version: 1.1.5 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -22,6 +22,7 @@
   header .emoji { font-size: 32px; margin-bottom: 4px; }
   header h1 { color: #fff; font-size: 26px; letter-spacing: .5px; }
   header p { color: #ffddd0; font-size: 13px; margin-top: 6px; }
+  header .version { margin-top: 4px; font-size: 11px; color: rgba(255,255,255,0.45); letter-spacing: .5px; }
   #reset-btn {
     position: absolute; top: 16px; right: 16px;
     background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
@@ -99,17 +100,17 @@
   }
   #feedings-list { display: flex; flex-direction: column; gap: 10px; }
   .feeding-row {
-    display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+    display: flex; align-items: flex-start; gap: 12px; padding: 10px 14px;
     border-radius: 12px; background: #fffaf8; border: 2px solid #fde8d8; transition: all .2s;
   }
   .feeding-row.done { background: #fef3e8; border-color: #f4b896; }
-  .feeding-time { width: 70px; flex-shrink: 0; font-size: 12px; font-weight: bold; color: #c15a35; }
+  .feeding-time { width: 70px; flex-shrink: 0; font-size: 12px; font-weight: bold; color: #c15a35; padding-top: 2px; }
   .feeding-input {
     flex: 1; border: none; background: transparent; font-size: 13px;
     font-family: Georgia, serif; color: #7a3520; outline: none; width: 100%;
     resize: none; overflow: hidden; min-height: 24px;
   }
-  .feeding-check { font-size: 18px; }
+  .feeding-check { font-size: 18px; flex-shrink: 0; }
 
   /* Notes */
   #notes-input {
@@ -169,12 +170,11 @@
   <div class="emoji">🍼</div>
   <h1>Kitten Feeding Tracker</h1>
   <p>Starting weight: <strong>265g</strong> · Goal: +10g/day</p>
-  <p style="margin-top:4px;font-size:11px;color:rgba(255,255,255,0.45);letter-spacing:.5px">v1.1.4</p>
+  <p class="version">v1.1.5</p>
   <button id="reset-btn">🗑 Reset</button>
 </header>
 
 <div id="tabs">
-  <!-- tabs injected by JS -->
   <div id="add-day-wrap">
     <input type="date" id="new-day-input" />
     <button id="add-day-btn">+ Day</button>
@@ -210,19 +210,19 @@
   <!-- Notes -->
   <div class="card">
     <div class="card-title"><span>📝</span><h2>Daily Notes</h2></div>
-    <textarea id="notes-input" rows="3" maxlength="9999" placeholder="Stool consistency, behavior, any concerns..."></textarea>
-  </div>
-
-  <!-- History -->
-  <div class="card" id="history-card" style="display:none">
-    <div class="card-title"><span>📈</span><h2>Weight History</h2></div>
-    <div id="history-list"></div>
+    <textarea id="notes-input" rows="3" placeholder="Stool consistency, behavior, any concerns..."></textarea>
   </div>
 
   <!-- Avg weight gain -->
   <div class="card" id="avg-card">
     <div class="card-title"><span>📊</span><h2>Average Daily Weight Gain</h2></div>
     <div id="avg-content"></div>
+  </div>
+
+  <!-- History -->
+  <div class="card" id="history-card" style="display:none">
+    <div class="card-title"><span>📈</span><h2>Weight History</h2></div>
+    <div id="history-list"></div>
   </div>
 
   <footer>🐾 Data auto-saves to your browser · Use Reset to clear all 🐾</footer>
@@ -275,18 +275,17 @@
     return `${parseInt(m)}/${parseInt(d)}`;
   }
 
-  function dayKeys() {
-    return Object.keys(days).sort();
-  }
+  function dayKeys() { return Object.keys(days).sort(); }
+  function expectedWeight(idx) { return START_WEIGHT + GOAL_PER_DAY * idx; }
 
-  function expectedWeight(idx) {
-    return START_WEIGHT + GOAL_PER_DAY * idx;
+  function autoResize(el) {
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
   }
 
   // ── Render tabs ──────────────────────────────────────────
   function renderTabs() {
     const tabs = document.getElementById("tabs");
-    // Remove old tab buttons
     tabs.querySelectorAll(".tab-btn").forEach(b => b.remove());
     const wrap = document.getElementById("add-day-wrap");
     dayKeys().forEach((key, i) => {
@@ -317,15 +316,16 @@
         <div class="feeding-check">${done ? "✅" : "⭕"}</div>
       `;
       list.appendChild(row);
+      // Auto-resize on load
+      const ta = row.querySelector(".feeding-input");
+      autoResize(ta);
     });
     document.getElementById("feed-count").textContent = `${count}/5 logged`;
-    // Attach input listeners
+
     list.querySelectorAll(".feeding-input").forEach(inp => {
       inp.addEventListener("input", e => {
         const idx = parseInt(e.target.dataset.idx);
-        days[activeDay].feedings[idx] = e.target.value;
-        save();
-        // Update just the check icon and count without re-rendering the whole list
+        // 40-char line wrap
         const raw = e.target.value;
         const wrapped = [];
         raw.split("\n").forEach(line => {
@@ -339,14 +339,16 @@
         e.target.value = wrapped.join("\n");
         e.target.selectionStart = e.target.selectionEnd = Math.min(caret, e.target.value.length);
         days[activeDay].feedings[idx] = e.target.value;
+        save();
         autoResize(e.target);
         const done = e.target.value.trim() !== "";
         const row = e.target.closest(".feeding-row");
         row.className = "feeding-row" + (done ? " done" : "");
         row.querySelector(".feeding-check").textContent = done ? "✅" : "⭕";
-        const count = days[activeDay].feedings.filter(f => f.trim() !== "").length;
-        document.getElementById("feed-count").textContent = `${count}/5 logged`;
+        const cnt = days[activeDay].feedings.filter(f => f.trim() !== "").length;
+        document.getElementById("feed-count").textContent = `${cnt}/5 logged`;
         renderHistory();
+        renderAvg();
       });
     });
   }
@@ -357,21 +359,16 @@
     const idx = keys.indexOf(activeDay);
     const goal = expectedWeight(idx);
     document.getElementById("goal-value").textContent = goal + "g";
-
-    const wInput = document.getElementById("weight-input");
-    wInput.value = days[activeDay].weight || "";
-
+    document.getElementById("weight-input").value = days[activeDay].weight || "";
     const actual = parseFloat(days[activeDay].weight);
     const status = document.getElementById("weight-status");
     if (!isNaN(actual) && days[activeDay].weight !== "") {
       const diff = actual - goal;
-      status.className = "weight-status " + (diff >= 0 ? "good" : "warn");
+      status.className = diff >= 0 ? "good" : "warn";
       status.style.display = "flex";
-      if (diff >= 0) {
-        status.innerHTML = `<span>✅</span><span>On track! ${diff > 0 ? `+${diff}g above goal` : "Right at goal"}</span>`;
-      } else {
-        status.innerHTML = `<span>⚠️</span><span>${Math.abs(diff)}g below goal — consider tightening feeding intervals</span>`;
-      }
+      status.innerHTML = diff >= 0
+        ? `<span>✅</span><span>On track! ${diff > 0 ? `+${diff}g above goal` : "Right at goal"}</span>`
+        : `<span>⚠️</span><span>${Math.abs(diff)}g below goal — consider tightening feeding intervals</span>`;
     } else {
       status.style.display = "none";
     }
@@ -379,8 +376,65 @@
 
   // ── Render notes ─────────────────────────────────────────
   function renderNotes() {
-    document.getElementById("notes-input").value = days[activeDay].notes || "";
-    autoResize(document.getElementById("notes-input"));
+    const ta = document.getElementById("notes-input");
+    ta.value = days[activeDay].notes || "";
+    autoResize(ta);
+  }
+
+  // ── Render avg weight gain ───────────────────────────────
+  function renderAvg() {
+    const keys = dayKeys();
+    const content = document.getElementById("avg-content");
+    const weighted = keys
+      .map((key, i) => ({ key, idx: i, w: parseFloat(days[key]?.weight) }))
+      .filter(d => !isNaN(d.w) && days[d.key].weight !== "");
+
+    if (weighted.length < 2) {
+      content.innerHTML = `<p style="color:#a0522d;font-size:13px">Enter weights on at least 2 days to see the average gain.</p>`;
+      return;
+    }
+
+    const first = weighted[0];
+    const last = weighted[weighted.length - 1];
+    const totalGain = last.w - first.w;
+    const intervals = last.idx - first.idx;
+    const avg = intervals > 0 ? (totalGain / intervals).toFixed(1) : 0;
+    const isGood = parseFloat(avg) >= GOAL_PER_DAY;
+
+    const rows = weighted.map((d, i) => {
+      if (i === 0) return null;
+      const prev = weighted[i - 1];
+      const gain = d.w - prev.w;
+      const daySpan = d.idx - prev.idx;
+      const perDay = daySpan > 0 ? (gain / daySpan).toFixed(1) : gain.toFixed(1);
+      const ok = parseFloat(perDay) >= GOAL_PER_DAY;
+      return `
+        <div style="display:flex;justify-content:space-between;align-items:center;
+          padding:6px 10px;border-radius:8px;background:${ok?"#e8f5e9":"#fff3e0"};margin-top:6px">
+          <span style="font-size:12px;color:#7a3520">Day ${prev.idx+1} → Day ${d.idx+1}</span>
+          <span style="font-size:13px;font-weight:bold;color:${ok?"#2e7d32":"#e65100"}">
+            ${gain>=0?"+":""}${gain.toFixed(1)}g
+            <span style="font-size:11px;font-weight:normal;color:#a0522d">(${perDay}g/day)</span>
+          </span>
+        </div>`;
+    }).filter(Boolean).join("");
+
+    content.innerHTML = `
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+        <div style="flex:1;min-width:120px;background:#fef3e8;border-radius:12px;padding:12px 16px;text-align:center">
+          <div style="font-size:11px;color:#a0522d;text-transform:uppercase;letter-spacing:.5px">Avg gain/day</div>
+          <div style="font-size:28px;font-weight:bold;color:${isGood?"#2e7d32":"#e65100"}">${avg}g</div>
+          <div style="font-size:11px;color:#a0522d">goal: ${GOAL_PER_DAY}g/day</div>
+        </div>
+        <div style="flex:1;min-width:120px;background:#fef3e8;border-radius:12px;padding:12px 16px;text-align:center">
+          <div style="font-size:11px;color:#a0522d;text-transform:uppercase;letter-spacing:.5px">Total gain</div>
+          <div style="font-size:28px;font-weight:bold;color:#c15a35">${totalGain>=0?"+":""}${totalGain.toFixed(1)}g</div>
+          <div style="font-size:11px;color:#a0522d">over ${intervals} day${intervals!==1?"s":""}</div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:#a0522d;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Day-by-day breakdown</div>
+      ${rows}
+    `;
   }
 
   // ── Render history ───────────────────────────────────────
@@ -402,79 +456,21 @@
       row.innerHTML = `
         <span class="day-label">Day ${i+1} <span class="day-date">(${fmtDate(key)})</span></span>
         <span class="goal-lbl">Goal: ${goal}g</span>
-        <span class="actual ${actualClass}">${hasW ? w + "g" : "—"}</span>
+        <span class="actual ${actualClass}">${hasW ? w+"g" : "—"}</span>
       `;
       row.onclick = () => { activeDay = key; save(); render(); };
       list.appendChild(row);
     });
   }
 
-  // ── Render avg weight gain ───────────────────────────────
-  function renderAvg() {
-    const keys = dayKeys();
-    const content = document.getElementById("avg-content");
-
-    // Collect days that have a weight entered
-    const weighted = keys
-      .map((key, i) => ({ key, idx: i, w: parseFloat(days[key]?.weight) }))
-      .filter(d => !isNaN(d.w) && days[d.key].weight !== "");
-
-    if (weighted.length < 2) {
-      content.innerHTML = `<p style="color:#a0522d;font-size:13px">Enter weights on at least 2 days to see the average gain.</p>`;
-      return;
-    }
-
-    // Average gain = (last weight - first weight) / number of intervals
-    const first = weighted[0];
-    const last = weighted[weighted.length - 1];
-    const totalGain = last.w - first.w;
-    const intervals = last.idx - first.idx;
-    const avg = intervals > 0 ? (totalGain / intervals).toFixed(1) : 0;
-    const isGood = parseFloat(avg) >= GOAL_PER_DAY;
-
-    // Per-day gains for breakdown
-    const rows = weighted.map((d, i) => {
-      if (i === 0) return null;
-      const prev = weighted[i - 1];
-      const gain = d.w - prev.w;
-      const daySpan = d.idx - prev.idx;
-      const perDay = daySpan > 0 ? (gain / daySpan).toFixed(1) : gain.toFixed(1);
-      const ok = parseFloat(perDay) >= GOAL_PER_DAY;
-      return `
-        <div style="display:flex;justify-content:space-between;align-items:center;
-          padding:6px 10px;border-radius:8px;background:${ok ? "#e8f5e9" : "#fff3e0"};margin-top:6px">
-          <span style="font-size:12px;color:#7a3520">Day ${prev.idx+1} → Day ${d.idx+1}</span>
-          <span style="font-size:13px;font-weight:bold;color:${ok ? "#2e7d32" : "#e65100"}">
-            ${gain >= 0 ? "+" : ""}${gain.toFixed(1)}g
-            <span style="font-size:11px;font-weight:normal;color:#a0522d">(${perDay}g/day)</span>
-          </span>
-        </div>`;
-    }).filter(Boolean).join("");
-
-    content.innerHTML = `
-      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
-        <div style="flex:1;min-width:120px;background:#fef3e8;border-radius:12px;padding:12px 16px;text-align:center">
-          <div style="font-size:11px;color:#a0522d;text-transform:uppercase;letter-spacing:.5px">Avg gain/day</div>
-          <div style="font-size:28px;font-weight:bold;color:${isGood ? "#2e7d32" : "#e65100"}">${avg}g</div>
-          <div style="font-size:11px;color:#a0522d">goal: ${GOAL_PER_DAY}g/day</div>
-        </div>
-        <div style="flex:1;min-width:120px;background:#fef3e8;border-radius:12px;padding:12px 16px;text-align:center">
-          <div style="font-size:11px;color:#a0522d;text-transform:uppercase;letter-spacing:.5px">Total gain</div>
-          <div style="font-size:28px;font-weight:bold;color:#c15a35">${totalGain >= 0 ? "+" : ""}${totalGain.toFixed(1)}g</div>
-          <div style="font-size:11px;color:#a0522d">over ${intervals} day${intervals !== 1 ? "s" : ""}</div>
-        </div>
-      </div>
-      <div style="font-size:12px;color:#a0522d;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Day-by-day breakdown</div>
-      ${rows}
-    `;
-  }
+  // ── Full render ──────────────────────────────────────────
   function render() {
     renderTabs();
     renderWeight();
     renderFeedings();
     renderNotes();
-    renderHistory();
     renderAvg();
+    renderHistory();
   }
 
   // ── Event listeners ──────────────────────────────────────
@@ -486,11 +482,6 @@
     renderAvg();
   });
 
-  function autoResize(el) {
-    el.style.height = "auto";
-    el.style.height = el.scrollHeight + "px";
-  }
-
   document.getElementById("notes-input").addEventListener("input", e => {
     const lines = e.target.value.split("\n");
     const capped = lines.map(line => line.slice(0, 80));
@@ -500,7 +491,6 @@
     days[activeDay].notes = e.target.value;
     autoResize(e.target);
     save();
-    // Don't re-render — textarea manages its own value
   });
 
   document.getElementById("add-day-btn").addEventListener("click", () => {
