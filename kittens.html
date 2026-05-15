@@ -216,6 +216,12 @@
     <div id="history-list"></div>
   </div>
 
+  <!-- Avg weight gain -->
+  <div class="card" id="avg-card">
+    <div class="card-title"><span>📊</span><h2>Average Daily Weight Gain</h2></div>
+    <div id="avg-content"></div>
+  </div>
+
   <footer>🐾 Data auto-saves to your browser · Use Reset to clear all 🐾</footer>
 </div>
 
@@ -385,13 +391,72 @@
     });
   }
 
-  // ── Full render ──────────────────────────────────────────
+  // ── Render avg weight gain ───────────────────────────────
+  function renderAvg() {
+    const keys = dayKeys();
+    const content = document.getElementById("avg-content");
+
+    // Collect days that have a weight entered
+    const weighted = keys
+      .map((key, i) => ({ key, idx: i, w: parseFloat(days[key]?.weight) }))
+      .filter(d => !isNaN(d.w) && days[d.key].weight !== "");
+
+    if (weighted.length < 2) {
+      content.innerHTML = `<p style="color:#a0522d;font-size:13px">Enter weights on at least 2 days to see the average gain.</p>`;
+      return;
+    }
+
+    // Average gain = (last weight - first weight) / number of intervals
+    const first = weighted[0];
+    const last = weighted[weighted.length - 1];
+    const totalGain = last.w - first.w;
+    const intervals = last.idx - first.idx;
+    const avg = intervals > 0 ? (totalGain / intervals).toFixed(1) : 0;
+    const isGood = parseFloat(avg) >= GOAL_PER_DAY;
+
+    // Per-day gains for breakdown
+    const rows = weighted.map((d, i) => {
+      if (i === 0) return null;
+      const prev = weighted[i - 1];
+      const gain = d.w - prev.w;
+      const daySpan = d.idx - prev.idx;
+      const perDay = daySpan > 0 ? (gain / daySpan).toFixed(1) : gain.toFixed(1);
+      const ok = parseFloat(perDay) >= GOAL_PER_DAY;
+      return `
+        <div style="display:flex;justify-content:space-between;align-items:center;
+          padding:6px 10px;border-radius:8px;background:${ok ? "#e8f5e9" : "#fff3e0"};margin-top:6px">
+          <span style="font-size:12px;color:#7a3520">Day ${prev.idx+1} → Day ${d.idx+1}</span>
+          <span style="font-size:13px;font-weight:bold;color:${ok ? "#2e7d32" : "#e65100"}">
+            ${gain >= 0 ? "+" : ""}${gain.toFixed(1)}g
+            <span style="font-size:11px;font-weight:normal;color:#a0522d">(${perDay}g/day)</span>
+          </span>
+        </div>`;
+    }).filter(Boolean).join("");
+
+    content.innerHTML = `
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+        <div style="flex:1;min-width:120px;background:#fef3e8;border-radius:12px;padding:12px 16px;text-align:center">
+          <div style="font-size:11px;color:#a0522d;text-transform:uppercase;letter-spacing:.5px">Avg gain/day</div>
+          <div style="font-size:28px;font-weight:bold;color:${isGood ? "#2e7d32" : "#e65100"}">${avg}g</div>
+          <div style="font-size:11px;color:#a0522d">goal: ${GOAL_PER_DAY}g/day</div>
+        </div>
+        <div style="flex:1;min-width:120px;background:#fef3e8;border-radius:12px;padding:12px 16px;text-align:center">
+          <div style="font-size:11px;color:#a0522d;text-transform:uppercase;letter-spacing:.5px">Total gain</div>
+          <div style="font-size:28px;font-weight:bold;color:#c15a35">${totalGain >= 0 ? "+" : ""}${totalGain.toFixed(1)}g</div>
+          <div style="font-size:11px;color:#a0522d">over ${intervals} day${intervals !== 1 ? "s" : ""}</div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:#a0522d;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Day-by-day breakdown</div>
+      ${rows}
+    `;
+  }
   function render() {
     renderTabs();
     renderWeight();
     renderFeedings();
     renderNotes();
     renderHistory();
+    renderAvg();
   }
 
   // ── Event listeners ──────────────────────────────────────
@@ -400,6 +465,7 @@
     save();
     renderWeight();
     renderHistory();
+    renderAvg();
   });
 
   document.getElementById("notes-input").addEventListener("input", e => {
