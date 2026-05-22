@@ -1,4 +1,4 @@
-<!-- Version: 1.3.0 -->
+<!-- Version: 1.4.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -23,7 +23,13 @@
   header h1 { color: #fff; font-size: 26px; letter-spacing: .5px; }
   header p { color: #ffddd0; font-size: 13px; margin-top: 6px; }
   header .version { margin-top: 4px; font-size: 11px; color: rgba(255,255,255,0.45); letter-spacing: .5px; }
-  #reset-btn {
+  #export-btn {
+    position: absolute; top: 16px; left: 16px;
+    background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
+    border-radius: 8px; color: #fff; padding: 6px 12px; font-size: 12px;
+    cursor: pointer; font-family: Georgia, serif;
+  }
+  #export-btn:hover { background: rgba(255,255,255,.25); }
     position: absolute; top: 16px; right: 16px;
     background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
     border-radius: 8px; color: #fff; padding: 6px 12px; font-size: 12px;
@@ -226,7 +232,8 @@
   <div class="emoji">🍼</div>
   <h1>Kitten Feeding Tracker</h1>
   <p>Starting weight: <strong>265g</strong> · Goal: +10g/day</p>
-  <p class="version">v1.3.0</p>
+  <p class="version">v1.4.0</p>
+  <button id="export-btn">📥 Export</button>
   <button id="reset-btn">🗑 Reset</button>
 </header>
 
@@ -683,7 +690,54 @@
     render();
   });
 
-  // ── Init ─────────────────────────────────────────────────
+  // ── Export to CSV ────────────────────────────────────────
+  function exportCSV() {
+    const keys = dayKeys();
+    const kittenName = profile.name || "Kitten";
+    const rows = [];
+
+    // Header
+    rows.push([
+      "Day", "Date", "Actual Weight (g)", "Goal Weight (g)", "Difference (g)",
+      "6:00 AM Feeding", "10:00 AM Feeding", "2:00 PM Feeding",
+      "6:00 PM Feeding", "10:00 PM Feeding",
+      "Medications", "Notes"
+    ]);
+
+    keys.forEach((key, i) => {
+      const d = days[key];
+      const goal = expectedWeight(i);
+      const actual = d.weight !== "" ? parseFloat(d.weight) : "";
+      const diff = actual !== "" ? (actual - goal).toFixed(1) : "";
+      const meds = (d.meds || []).map(m => `${m.name}${m.dosage ? " (" + m.dosage + ")" : ""}`).join("; ");
+      rows.push([
+        `Day ${i + 1}`,
+        key,
+        actual,
+        goal,
+        diff,
+        ...FEEDING_TIMES.map((_, fi) => d.feedings[fi] || ""),
+        meds,
+        d.notes || ""
+      ]);
+    });
+
+    const csv = rows.map(row =>
+      row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+    ).join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${kittenName.replace(/\s+/g, "_")}_feeding_log_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  document.getElementById("export-btn").addEventListener("click", exportCSV);
+
+
   renderProfile();
   render();
 </script>
