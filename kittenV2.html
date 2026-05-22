@@ -1,4 +1,4 @@
-<!-- Version: 1.4.1 -->
+<!-- Version: 1.4.2 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -232,7 +232,7 @@
   <div class="emoji">🍼</div>
   <h1>Kitten Feeding Tracker</h1>
   <p>Starting weight: <strong>265g</strong> · Goal: +10g/day</p>
-  <p class="version">v1.4.1</p>
+  <p class="version">v1.4.2</p>
   <div id="header-btns">
     <button id="export-btn">📥 Export</button>
     <button id="reset-btn">🗑 Reset</button>
@@ -679,16 +679,25 @@
   });
 
   document.getElementById("reset-btn").addEventListener("click", () => {
-    document.getElementById("modal-overlay").classList.remove("hidden");
+    const overlay = document.getElementById("modal-overlay");
+    overlay.classList.remove("hidden");
+    overlay.style.display = "flex";
   });
   document.getElementById("cancel-btn").addEventListener("click", () => {
-    document.getElementById("modal-overlay").classList.add("hidden");
+    const overlay = document.getElementById("modal-overlay");
+    overlay.classList.add("hidden");
+    overlay.style.display = "none";
   });
   document.getElementById("confirm-btn").addEventListener("click", () => {
     days = defaultDays();
     activeDay = START_DATE;
+    profile = {};
     try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
-    document.getElementById("modal-overlay").classList.add("hidden");
+    try { localStorage.removeItem("kitten-profile"); } catch(e) {}
+    const overlay = document.getElementById("modal-overlay");
+    overlay.classList.add("hidden");
+    overlay.style.display = "none";
+    renderProfile();
     render();
   });
 
