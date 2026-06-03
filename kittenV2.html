@@ -1,4 +1,4 @@
-<!-- Version: 2.0.0 -->
+<!-- Version: 3.0.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,14 +9,29 @@
   *{box-sizing:border-box;margin:0;padding:0;}
   body{min-height:100vh;background:linear-gradient(135deg,#fef3e8 0%,#fde8d8 50%,#fce4d6 100%);font-family:Georgia,serif;}
 
+  /* ── Login screen ── */
+  #login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
+  #login-card{background:#fff;border-radius:24px;padding:40px 32px;max-width:340px;width:100%;text-align:center;box-shadow:0 4px 32px rgba(193,90,53,.15);border:1px solid #fde8d8;}
+  #login-card .logo{font-size:48px;margin-bottom:12px;}
+  #login-card h1{color:#7a3520;font-size:24px;margin-bottom:6px;}
+  #login-card p{color:#a0522d;font-size:14px;margin-bottom:28px;}
+  #google-signin-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px 16px;border:2px solid #fde8d8;border-radius:12px;background:#fff;cursor:pointer;font-family:Georgia,serif;font-size:15px;color:#7a3520;transition:background .15s;}
+  #google-signin-btn:hover{background:#fef3e8;}
+  #google-signin-btn img{width:20px;height:20px;}
+  #login-error{margin-top:12px;color:#e65100;font-size:13px;display:none;}
+
+  /* ── App ── */
+  #app-screen{display:none;}
+
   /* ── Header ── */
   header{background:linear-gradient(135deg,#d4704a,#c15a35);padding:16px 16px 0;box-shadow:0 4px 20px rgba(193,90,53,.3);}
   .header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
   .header-top h1{color:#fff;font-size:20px;letter-spacing:.5px;}
   .header-top .version{font-size:10px;color:rgba(255,255,255,.4);margin-top:2px;}
-  .header-btns{display:flex;gap:8px;}
+  .header-btns{display:flex;gap:8px;align-items:center;}
   .header-btns button{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:8px;color:#fff;padding:6px 11px;font-size:12px;cursor:pointer;font-family:Georgia,serif;}
   .header-btns button:hover{background:rgba(255,255,255,.25);}
+  #user-avatar{width:30px;height:30px;border-radius:50%;border:2px solid rgba(255,255,255,.5);cursor:pointer;object-fit:cover;}
 
   /* ── Kitten banner ── */
   #kitten-banner{display:flex;gap:10px;overflow-x:auto;padding-bottom:12px;align-items:flex-end;scrollbar-width:none;}
@@ -24,11 +39,11 @@
   .kitten-card{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:6px 10px;border-radius:12px 12px 0 0;transition:background .15s;}
   .kitten-card.active{background:rgba(255,255,255,.2);}
   .kitten-card:hover:not(.active){background:rgba(255,255,255,.1);}
-  .kitten-avatar{width:52px;height:52px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,.4);display:block;}
+  .kitten-avatar{width:52px;height:52px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,.4);}
   .kitten-avatar-placeholder{width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.2);border:3px dashed rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-size:22px;}
   .kitten-card-name{font-size:11px;color:#fff;font-weight:bold;white-space:nowrap;max-width:70px;overflow:hidden;text-overflow:ellipsis;}
   .kitten-card.active .kitten-card-name{color:#ffe0d0;}
-  #add-kitten-btn{flex-shrink:0;width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.15);border:3px dashed rgba(255,255,255,.5);color:#fff;font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-bottom:18px;transition:background .15s;}
+  #add-kitten-btn{flex-shrink:0;width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.15);border:3px dashed rgba(255,255,255,.5);color:#fff;font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-bottom:18px;}
   #add-kitten-btn:hover{background:rgba(255,255,255,.25);}
 
   /* ── Tabs ── */
@@ -51,7 +66,7 @@
   #photo-wrap img{width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #f4b896;}
   #photo-placeholder{width:80px;height:80px;border-radius:50%;background:#fef3e8;border:3px dashed #f4b896;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:28px;color:#c15a35;}
   #photo-placeholder span{font-size:10px;color:#a0522d;margin-top:2px;}
-  #photo-edit-badge{position:absolute;bottom:2px;right:2px;background:#c15a35;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;box-shadow:0 1px 4px rgba(0,0,0,.2);}
+  #photo-edit-badge{position:absolute;bottom:2px;right:2px;background:#c15a35;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;}
   #photo-input{display:none;}
   #profile-fields{flex:1;min-width:0;}
   #profile-fields label{font-size:11px;color:#a0522d;text-transform:uppercase;letter-spacing:.5px;}
@@ -98,524 +113,643 @@
   #history-list{display:flex;flex-direction:column;gap:6px;}
   .history-row{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:10px;cursor:pointer;background:#fffaf8;border:1px solid #fde8d8;}
   .history-row.active{background:#fef3e8;border-color:#f4b896;}
-  .history-row .day-label{font-size:13px;color:#7a3520;}
-  .history-row .day-date{font-size:11px;color:#a0522d;}
-  .history-row .goal-lbl{font-size:13px;color:#c15a35;}
   .actual{font-size:13px;font-weight:bold;}
   .actual.ok{color:#2e7d32;} .actual.low{color:#e65100;} .actual.none{color:#ccc;}
 
   footer{text-align:center;padding:20px 0 8px;color:#c5927a;font-size:12px;}
 
-  /* Modal */
-  #modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);align-items:center;justify-content:center;z-index:100;}
-  #modal{background:#fff;border-radius:18px;padding:28px 28px 22px;max-width:320px;width:90%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.2);}
-  #modal .m-icon{font-size:36px;margin-bottom:10px;}
-  #modal h3{color:#7a3520;font-size:18px;margin-bottom:8px;}
-  #modal p{color:#a0522d;font-size:14px;margin-bottom:20px;}
-  #modal .btn-row{display:flex;gap:10px;}
-  #modal button{flex:1;padding:10px 0;border-radius:10px;font-family:Georgia,serif;font-size:14px;cursor:pointer;}
-  #cancel-btn{border:2px solid #fde8d8;background:#fff;color:#7a3520;}
-  #confirm-btn{border:none;background:#c15a35;color:#fff;font-weight:bold;}
+  /* Loading */
+  #loading-overlay{display:none;position:fixed;inset:0;background:rgba(254,243,232,.9);align-items:center;justify-content:center;z-index:200;flex-direction:column;gap:12px;}
+  #loading-overlay.show{display:flex;}
+  .spinner{width:40px;height:40px;border:4px solid #fde8d8;border-top-color:#c15a35;border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
 
-  /* New kitten modal */
-  #new-kitten-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);align-items:center;justify-content:center;z-index:100;}
-  #new-kitten-modal{background:#fff;border-radius:18px;padding:28px;max-width:300px;width:90%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.2);}
-  #new-kitten-modal h3{color:#7a3520;font-size:18px;margin-bottom:16px;}
-  #new-kitten-name{width:100%;border:2px solid #fde8d8;border-radius:10px;padding:10px 12px;font-size:16px;font-family:Georgia,serif;color:#7a3520;outline:none;margin-bottom:12px;}
-  #new-kitten-modal .btn-row{display:flex;gap:10px;margin-top:4px;}
+  /* Modals */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);align-items:center;justify-content:center;z-index:100;}
+  .modal-box{background:#fff;border-radius:18px;padding:28px;max-width:320px;width:90%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.2);}
+  .modal-box .m-icon{font-size:36px;margin-bottom:10px;}
+  .modal-box h3{color:#7a3520;font-size:18px;margin-bottom:8px;}
+  .modal-box p{color:#a0522d;font-size:14px;margin-bottom:20px;}
+  .btn-row{display:flex;gap:10px;}
+  .btn-row button{flex:1;padding:10px 0;border-radius:10px;font-family:Georgia,serif;font-size:14px;cursor:pointer;}
+  .btn-cancel{border:2px solid #fde8d8;background:#fff;color:#7a3520;}
+  .btn-danger{border:none;background:#c15a35;color:#fff;font-weight:bold;}
+  .btn-primary{border:none;background:#c15a35;color:#fff;font-weight:bold;}
+  .modal-input{width:100%;border:2px solid #fde8d8;border-radius:10px;padding:10px 12px;font-size:16px;font-family:Georgia,serif;color:#7a3520;outline:none;margin-bottom:12px;}
+
+  /* Save indicator */
+  #save-indicator{position:fixed;bottom:16px;right:16px;background:#2e7d32;color:#fff;border-radius:20px;padding:6px 14px;font-size:12px;font-family:Georgia,serif;opacity:0;transition:opacity .3s;pointer-events:none;z-index:50;}
+  #save-indicator.show{opacity:1;}
 </style>
 </head>
 <body>
 
-<header>
-  <div class="header-top">
-    <div>
-      <h1>🍼 Kitten Tracker</h1>
-      <div class="version">v2.0.0</div>
-    </div>
-    <div class="header-btns">
-      <button id="export-btn">📥 Export</button>
-      <button id="reset-btn">🗑 Reset</button>
-    </div>
-  </div>
-  <div id="kitten-banner">
-    <button id="add-kitten-btn" title="Add kitten">+</button>
-  </div>
-</header>
+<!-- Loading -->
+<div id="loading-overlay" class="show">
+  <div class="spinner"></div>
+  <div style="color:#c15a35;font-family:Georgia,serif;font-size:14px;">Loading...</div>
+</div>
 
-<div id="tabs">
-  <div id="add-day-wrap">
-    <input type="date" id="new-day-input"/>
-    <button id="add-day-btn">+ Day</button>
+<!-- Save indicator -->
+<div id="save-indicator">✓ Saved</div>
+
+<!-- Login screen -->
+<div id="login-screen" style="display:none;">
+  <div id="login-card">
+    <div class="logo">🐱</div>
+    <h1>Kitten Tracker</h1>
+    <p>Sign in to access your kitten feeding logs from any device.</p>
+    <button id="google-signin-btn">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"/>
+      Sign in with Google
+    </button>
+    <div id="login-error">Sign in failed. Please try again.</div>
   </div>
 </div>
 
-<div id="main">
-  <div id="profile-card" class="card">
-    <div id="photo-wrap">
-      <div id="photo-placeholder">🐱<span>Add photo</span></div>
-      <img id="photo-img" style="display:none" alt="Kitten"/>
-      <div id="photo-edit-badge">✏️</div>
-      <input type="file" id="photo-input" accept="image/*"/>
-    </div>
-    <div id="profile-fields">
-      <label for="kitten-name-input">Kitten Name</label>
-      <input type="text" id="kitten-name-input" placeholder="Enter name..." maxlength="30"/>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-title"><span>⚖️</span><h2>Daily Weight</h2></div>
-    <div id="weight-row">
-      <div style="flex:1;min-width:120px">
-        <label for="weight-input">Actual weight (g)</label>
-        <input type="number" id="weight-input" placeholder="e.g. 275"/>
+<!-- App -->
+<div id="app-screen">
+  <header>
+    <div class="header-top">
+      <div>
+        <h1>🍼 Kitten Tracker</h1>
+        <div class="version">v3.0.0</div>
       </div>
-      <div id="goal-box">
-        <div class="label">Goal today</div>
-        <div class="value" id="goal-value">—</div>
+      <div class="header-btns">
+        <button id="export-btn">📥 Export</button>
+        <button id="reset-btn">🗑 Reset</button>
+        <img id="user-avatar" src="" alt="You" title="Sign out"/>
       </div>
     </div>
-    <div id="weight-status"></div>
-  </div>
-
-  <div class="card">
-    <div id="feedings-header">
-      <div class="left"><span>🍼</span><h2>Feedings</h2></div>
-      <div id="feed-count">0/5 logged</div>
+    <div id="kitten-banner">
+      <button id="add-kitten-btn" title="Add kitten">+</button>
     </div>
-    <div id="feedings-list"></div>
+  </header>
+
+  <div id="tabs">
+    <div id="add-day-wrap">
+      <input type="date" id="new-day-input"/>
+      <button id="add-day-btn">+ Day</button>
+    </div>
   </div>
 
-  <div class="card">
-    <div class="card-title"><span>📝</span><h2>Daily Notes</h2></div>
-    <textarea id="notes-input" rows="3" placeholder="Stool consistency, behavior, any concerns..."></textarea>
-  </div>
+  <div id="main">
+    <div id="profile-card" class="card">
+      <div id="photo-wrap">
+        <div id="photo-placeholder">🐱<span>Add photo</span></div>
+        <img id="photo-img" style="display:none" alt="Kitten"/>
+        <div id="photo-edit-badge">✏️</div>
+        <input type="file" id="photo-input" accept="image/*"/>
+      </div>
+      <div id="profile-fields">
+        <label for="kitten-name-input">Kitten Name</label>
+        <input type="text" id="kitten-name-input" placeholder="Enter name..." maxlength="30"/>
+      </div>
+    </div>
 
-  <div class="card">
-    <div class="card-title"><span>💊</span><h2>Medications</h2></div>
-    <div id="med-list"></div>
-    <button id="add-med-btn">+ Add Medication</button>
-  </div>
+    <div class="card">
+      <div class="card-title"><span>⚖️</span><h2>Daily Weight</h2></div>
+      <div id="weight-row">
+        <div style="flex:1;min-width:120px">
+          <label for="weight-input">Actual weight (g)</label>
+          <input type="number" id="weight-input" placeholder="e.g. 275"/>
+        </div>
+        <div id="goal-box">
+          <div class="label">Goal today</div>
+          <div class="value" id="goal-value">—</div>
+        </div>
+      </div>
+      <div id="weight-status"></div>
+    </div>
 
-  <div class="card" id="avg-card">
-    <div class="card-title"><span>📊</span><h2>Average Daily Weight Gain</h2></div>
-    <div id="avg-content"></div>
-  </div>
+    <div class="card">
+      <div id="feedings-header">
+        <div class="left"><span>🍼</span><h2>Feedings</h2></div>
+        <div id="feed-count">0/5 logged</div>
+      </div>
+      <div id="feedings-list"></div>
+    </div>
 
-  <div class="card" id="history-card" style="display:none">
-    <div class="card-title"><span>📈</span><h2>Weight History</h2></div>
-    <div id="history-list"></div>
-  </div>
+    <div class="card">
+      <div class="card-title"><span>📝</span><h2>Daily Notes</h2></div>
+      <textarea id="notes-input" rows="3" placeholder="Stool consistency, behavior, any concerns..."></textarea>
+    </div>
 
-  <footer>🐾 Tap a kitten in the banner to switch · Export saves current kitten 🐾</footer>
+    <div class="card">
+      <div class="card-title"><span>💊</span><h2>Medications</h2></div>
+      <div id="med-list"></div>
+      <button id="add-med-btn">+ Add Medication</button>
+    </div>
+
+    <div class="card" id="avg-card">
+      <div class="card-title"><span>📊</span><h2>Average Daily Weight Gain</h2></div>
+      <div id="avg-content"></div>
+    </div>
+
+    <div class="card" id="history-card" style="display:none">
+      <div class="card-title"><span>📈</span><h2>Weight History</h2></div>
+      <div id="history-list"></div>
+    </div>
+
+    <footer>🐾 Data syncs to the cloud · Each user's kittens are private 🐾</footer>
+  </div>
 </div>
 
 <!-- Reset modal -->
-<div id="modal-overlay">
-  <div id="modal">
+<div id="reset-modal" class="modal-overlay">
+  <div class="modal-box">
     <div class="m-icon">⚠️</div>
     <h3>Reset this kitten?</h3>
-    <p>This will permanently delete all data for <strong id="reset-kitten-name">this kitten</strong>, including their photo.</p>
+    <p>This will permanently delete all data for <strong id="reset-kitten-name">this kitten</strong>.</p>
     <div class="btn-row">
-      <button id="cancel-btn">Cancel</button>
-      <button id="confirm-btn">Yes, Reset</button>
+      <button class="btn-cancel" id="reset-cancel">Cancel</button>
+      <button class="btn-danger" id="reset-confirm">Yes, Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sign out modal -->
+<div id="signout-modal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="m-icon">👋</div>
+    <h3>Sign out?</h3>
+    <p>Your data is safely saved to the cloud.</p>
+    <div class="btn-row">
+      <button class="btn-cancel" id="signout-cancel">Cancel</button>
+      <button class="btn-danger" id="signout-confirm">Sign Out</button>
     </div>
   </div>
 </div>
 
 <!-- New kitten modal -->
-<div id="new-kitten-overlay">
-  <div id="new-kitten-modal">
-    <div style="font-size:32px;margin-bottom:8px">🐱</div>
+<div id="new-kitten-modal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="m-icon">🐱</div>
     <h3>Add New Kitten</h3>
-    <input type="text" id="new-kitten-name" placeholder="Kitten name..." maxlength="30"/>
+    <input type="text" id="new-kitten-name" class="modal-input" placeholder="Kitten name..." maxlength="30"/>
     <div class="btn-row">
-      <button id="new-kitten-cancel" style="flex:1;padding:10px 0;border-radius:10px;border:2px solid #fde8d8;background:#fff;color:#7a3520;font-family:Georgia,serif;font-size:14px;cursor:pointer;">Cancel</button>
-      <button id="new-kitten-confirm" style="flex:1;padding:10px 0;border-radius:10px;border:none;background:#c15a35;color:#fff;font-weight:bold;font-family:Georgia,serif;font-size:14px;cursor:pointer;">Add</button>
+      <button class="btn-cancel" id="new-kitten-cancel">Cancel</button>
+      <button class="btn-primary" id="new-kitten-confirm">Add</button>
     </div>
   </div>
 </div>
 
-<script>
-  const DATA_KEY   = "kt-data-v2";
-  const FEEDING_TIMES = ["6:00 AM","10:00 AM","2:00 PM","6:00 PM","10:00 PM"];
-  const GOAL_PER_DAY = 10;
-  const START_WEIGHT = 265;
-  const START_DATE   = "2026-05-12";
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot }
+  from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
 
-  // ── State ────────────────────────────────────────────────
-  // state = { kittens: [{id,name,photo,days:{date:{feedings,weight,notes,meds}}}], activeKittenId, activeDay }
-  function newKitten(name) {
-    return { id: Date.now().toString(), name: name||"", photo: "", days: { [START_DATE]: emptyDay() } };
-  }
-  function emptyDay() { return { feedings: Array(5).fill(""), weight: "", notes: "", meds: [] }; }
+// ── Firebase config ──────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyA3iD_hmeez14rcRGrkXUZ_Ihxb_SbISU0",
+  authDomain: "a4a-kitten-tracker.firebaseapp.com",
+  projectId: "a4a-kitten-tracker",
+  storageBucket: "a4a-kitten-tracker.firebasestorage.app",
+  messagingSenderId: "279453040680",
+  appId: "1:279453040680:web:b31365f1f76a86857e751d",
+  measurementId: "G-T7WEQGDNTH"
+};
 
-  function loadState() {
-    try { const r = localStorage.getItem(DATA_KEY); if (r) return JSON.parse(r); } catch(e) {}
-    return null;
-  }
-  function saveState() {
-    try { localStorage.setItem(DATA_KEY, JSON.stringify(state)); } catch(e) {}
-  }
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
 
-  let state = loadState();
-  if (!state) {
-    const k = newKitten("Kitten 1");
-    state = { kittens: [k], activeKittenId: k.id, activeDay: START_DATE };
-  }
+// ── Constants ────────────────────────────────────────────
+const FEEDING_TIMES = ["6:00 AM","10:00 AM","2:00 PM","6:00 PM","10:00 PM"];
+const GOAL_PER_DAY  = 10;
+const START_WEIGHT  = 265;
+const START_DATE    = "2026-05-12";
 
-  function activeKitten() { return state.kittens.find(k => k.id === state.activeKittenId) || state.kittens[0]; }
-  function activeDayData() {
-    const k = activeKitten();
-    if (!k.days[state.activeDay]) k.days[state.activeDay] = emptyDay();
-    return k.days[state.activeDay];
-  }
-  function dayKeys() { 
-    const all = new Set();
-    state.kittens.forEach(k => Object.keys(k.days).forEach(d => all.add(d)));
-    return Array.from(all).sort();
-  }
-  function expectedWeight(idx) { return START_WEIGHT + GOAL_PER_DAY * idx; }
-  function fmtDate(str) { const [,m,d]=str.split("-"); return `${parseInt(m)}/${parseInt(d)}`; }
-  function autoResize(el) { el.style.height="auto"; el.style.height=el.scrollHeight+"px"; }
+// ── State ────────────────────────────────────────────────
+let currentUser  = null;
+let unsubscribe  = null;
+let state        = null;
+let saveTimeout  = null;
 
-  // ── Kitten banner ────────────────────────────────────────
-  function renderBanner() {
-    const banner = document.getElementById("kitten-banner");
-    banner.querySelectorAll(".kitten-card").forEach(c => c.remove());
-    const addBtn = document.getElementById("add-kitten-btn");
-    state.kittens.forEach(k => {
-      const card = document.createElement("div");
-      card.className = "kitten-card" + (k.id === state.activeKittenId ? " active" : "");
-      const avatarHTML = k.photo
-        ? `<img class="kitten-avatar" src="${k.photo}" alt="${k.name}"/>`
-        : `<div class="kitten-avatar-placeholder">🐱</div>`;
-      card.innerHTML = `${avatarHTML}<div class="kitten-card-name">${k.name || "Unnamed"}</div>`;
-      card.onclick = () => { state.activeKittenId = k.id; saveState(); render(); };
-      banner.insertBefore(card, addBtn);
-    });
-  }
+function emptyDay() { return { feedings: Array(5).fill(""), weight: "", notes: "", meds: [] }; }
+function newKitten(name) {
+  return { id: Date.now().toString(), name: name||"", photo: "", days: { [START_DATE]: emptyDay() } };
+}
+function defaultState() {
+  const k = newKitten("Kitten 1");
+  return { kittens: [k], activeKittenId: k.id, activeDay: START_DATE };
+}
+function activeKitten() { return state.kittens.find(k => k.id === state.activeKittenId) || state.kittens[0]; }
+function activeDayData() {
+  const k = activeKitten();
+  if (!k.days[state.activeDay]) k.days[state.activeDay] = emptyDay();
+  return k.days[state.activeDay];
+}
+function dayKeys() {
+  const all = new Set();
+  state.kittens.forEach(k => Object.keys(k.days).forEach(d => all.add(d)));
+  return Array.from(all).sort();
+}
+function expectedWeight(idx) { return START_WEIGHT + GOAL_PER_DAY * idx; }
+function fmtDate(str) { const [,m,d]=str.split("-"); return `${parseInt(m)}/${parseInt(d)}`; }
+function autoResize(el) { el.style.height="auto"; el.style.height=el.scrollHeight+"px"; }
 
-  // ── Profile ──────────────────────────────────────────────
-  function renderProfile() {
-    const k = activeKitten();
-    document.getElementById("kitten-name-input").value = k.name || "";
-    if (k.photo) {
-      document.getElementById("photo-img").src = k.photo;
-      document.getElementById("photo-img").style.display = "block";
-      document.getElementById("photo-placeholder").style.display = "none";
-    } else {
-      document.getElementById("photo-img").style.display = "none";
-      document.getElementById("photo-placeholder").style.display = "flex";
-    }
-    document.getElementById("reset-kitten-name").textContent = k.name || "this kitten";
-  }
+// ── Firestore save (debounced) ───────────────────────────
+function saveState() {
+  if (!currentUser) return;
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(async () => {
+    try {
+      await setDoc(doc(db, "users", currentUser.uid), state);
+      showSaved();
+    } catch(e) { console.error("Save error:", e); }
+  }, 800);
+}
 
-  document.getElementById("kitten-name-input").addEventListener("input", e => {
-    activeKitten().name = e.target.value;
-    saveState(); renderBanner();
+function showSaved() {
+  const el = document.getElementById("save-indicator");
+  el.classList.add("show");
+  setTimeout(() => el.classList.remove("show"), 2000);
+}
+
+// ── Auth ─────────────────────────────────────────────────
+onAuthStateChanged(auth, async user => {
+  if (user) {
+    currentUser = user;
+    document.getElementById("user-avatar").src = user.photoURL || "";
+    await loadUserData();
+    document.getElementById("loading-overlay").classList.remove("show");
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("app-screen").style.display = "block";
+    render();
+  } else {
+    currentUser = null;
+    if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+    document.getElementById("loading-overlay").classList.remove("show");
+    document.getElementById("app-screen").style.display = "none";
+    document.getElementById("login-screen").style.display = "flex";
+  }
+});
+
+async function loadUserData() {
+  const ref = doc(db, "users", currentUser.uid);
+  const snap = await getDoc(ref);
+  state = snap.exists() ? snap.data() : defaultState();
+  // Ensure activeDay exists
+  if (!state.activeDay) state.activeDay = START_DATE;
+  if (!state.kittens || state.kittens.length === 0) state.kittens = [newKitten("Kitten 1")];
+  if (!state.activeKittenId) state.activeKittenId = state.kittens[0].id;
+}
+
+document.getElementById("google-signin-btn").addEventListener("click", async () => {
+  try {
+    document.getElementById("login-error").style.display = "none";
+    await signInWithPopup(auth, new GoogleAuthProvider());
+  } catch(e) {
+    document.getElementById("login-error").style.display = "block";
+  }
+});
+
+document.getElementById("user-avatar").addEventListener("click", () => {
+  document.getElementById("signout-modal").style.display = "flex";
+});
+document.getElementById("signout-cancel").addEventListener("click", () => {
+  document.getElementById("signout-modal").style.display = "none";
+});
+document.getElementById("signout-confirm").addEventListener("click", async () => {
+  document.getElementById("signout-modal").style.display = "none";
+  await signOut(auth);
+});
+
+// ── Banner ───────────────────────────────────────────────
+function renderBanner() {
+  const banner = document.getElementById("kitten-banner");
+  banner.querySelectorAll(".kitten-card").forEach(c => c.remove());
+  const addBtn = document.getElementById("add-kitten-btn");
+  state.kittens.forEach(k => {
+    const card = document.createElement("div");
+    card.className = "kitten-card" + (k.id === state.activeKittenId ? " active" : "");
+    card.innerHTML = k.photo
+      ? `<img class="kitten-avatar" src="${k.photo}" alt="${k.name}"/>`
+      : `<div class="kitten-avatar-placeholder">🐱</div>`;
+    card.innerHTML += `<div class="kitten-card-name">${k.name||"Unnamed"}</div>`;
+    card.onclick = () => { state.activeKittenId = k.id; saveState(); render(); };
+    banner.insertBefore(card, addBtn);
   });
-  document.getElementById("photo-wrap").addEventListener("click", () => {
-    document.getElementById("photo-input").click();
-  });
-  document.getElementById("photo-input").addEventListener("change", e => {
-    const file = e.target.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      activeKitten().photo = ev.target.result;
-      saveState(); renderProfile(); renderBanner();
-    };
-    reader.readAsDataURL(file);
-  });
+}
 
-  // ── Tabs ─────────────────────────────────────────────────
-  function renderTabs() {
-    const tabs = document.getElementById("tabs");
-    tabs.querySelectorAll(".tab-btn").forEach(b => b.remove());
-    const wrap = document.getElementById("add-day-wrap");
-    dayKeys().forEach((key, i) => {
-      const btn = document.createElement("button");
-      btn.className = "tab-btn" + (key === state.activeDay ? " active" : "");
-      btn.innerHTML = `Day ${i+1} <span style="opacity:.7">(${fmtDate(key)})</span>`;
-      btn.onclick = () => { state.activeDay = key; saveState(); render(); };
-      tabs.insertBefore(btn, wrap);
-    });
+// ── Profile ──────────────────────────────────────────────
+function renderProfile() {
+  const k = activeKitten();
+  document.getElementById("kitten-name-input").value = k.name || "";
+  if (k.photo) {
+    document.getElementById("photo-img").src = k.photo;
+    document.getElementById("photo-img").style.display = "block";
+    document.getElementById("photo-placeholder").style.display = "none";
+  } else {
+    document.getElementById("photo-img").style.display = "none";
+    document.getElementById("photo-placeholder").style.display = "flex";
   }
+  document.getElementById("reset-kitten-name").textContent = k.name || "this kitten";
+}
 
-  // ── Weight ───────────────────────────────────────────────
-  function renderWeight() {
-    const idx = dayKeys().indexOf(state.activeDay);
-    const goal = expectedWeight(idx);
-    document.getElementById("goal-value").textContent = goal + "g";
-    document.getElementById("weight-input").value = activeDayData().weight || "";
-    const actual = parseFloat(activeDayData().weight);
-    const status = document.getElementById("weight-status");
-    if (!isNaN(actual) && activeDayData().weight !== "") {
-      const diff = actual - goal;
-      status.className = diff >= 0 ? "good" : "warn";
-      status.innerHTML = diff >= 0
-        ? `<span>✅</span><span>On track! ${diff > 0 ? `+${diff}g above goal` : "Right at goal"}</span>`
-        : `<span>⚠️</span><span>${Math.abs(diff)}g below goal — consider tightening feeding intervals</span>`;
-    } else {
-      status.className = ""; status.innerHTML = ""; status.style.display = "none";
-    }
+document.getElementById("kitten-name-input").addEventListener("input", e => {
+  activeKitten().name = e.target.value;
+  saveState(); renderBanner();
+});
+document.getElementById("photo-wrap").addEventListener("click", () => {
+  document.getElementById("photo-input").click();
+});
+document.getElementById("photo-input").addEventListener("change", e => {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    activeKitten().photo = ev.target.result;
+    saveState(); renderProfile(); renderBanner();
+  };
+  reader.readAsDataURL(file);
+});
+
+// ── Tabs ─────────────────────────────────────────────────
+function renderTabs() {
+  const tabs = document.getElementById("tabs");
+  tabs.querySelectorAll(".tab-btn").forEach(b => b.remove());
+  const wrap = document.getElementById("add-day-wrap");
+  dayKeys().forEach((key, i) => {
+    const btn = document.createElement("button");
+    btn.className = "tab-btn" + (key === state.activeDay ? " active" : "");
+    btn.innerHTML = `Day ${i+1} <span style="opacity:.7">(${fmtDate(key)})</span>`;
+    btn.onclick = () => { state.activeDay = key; saveState(); render(); };
+    tabs.insertBefore(btn, wrap);
+  });
+}
+
+// ── Weight ───────────────────────────────────────────────
+function renderWeight() {
+  const idx  = dayKeys().indexOf(state.activeDay);
+  const goal = expectedWeight(idx);
+  document.getElementById("goal-value").textContent = goal + "g";
+  document.getElementById("weight-input").value = activeDayData().weight || "";
+  const actual = parseFloat(activeDayData().weight);
+  const status = document.getElementById("weight-status");
+  if (!isNaN(actual) && activeDayData().weight !== "") {
+    const diff = actual - goal;
+    status.className = diff >= 0 ? "good" : "warn";
+    status.innerHTML = diff >= 0
+      ? `<span>✅</span><span>On track! ${diff > 0 ? `+${diff}g above goal` : "Right at goal"}</span>`
+      : `<span>⚠️</span><span>${Math.abs(diff)}g below goal — consider tightening feeding intervals</span>`;
+  } else {
+    status.className = ""; status.innerHTML = ""; status.style.display = "none";
   }
+}
 
-  // ── Feedings ─────────────────────────────────────────────
-  function renderFeedings() {
-    const list = document.getElementById("feedings-list");
-    list.innerHTML = "";
-    const data = activeDayData();
-    let count = 0;
-    FEEDING_TIMES.forEach((time, i) => {
-      const val = data.feedings[i] || "";
-      const done = val.trim() !== "";
-      if (done) count++;
-      const row = document.createElement("div");
+// ── Feedings ─────────────────────────────────────────────
+function renderFeedings() {
+  const list = document.getElementById("feedings-list");
+  list.innerHTML = "";
+  const data = activeDayData();
+  let count = 0;
+  FEEDING_TIMES.forEach((time, i) => {
+    const val  = data.feedings[i] || "";
+    const done = val.trim() !== "";
+    if (done) count++;
+    const row = document.createElement("div");
+    row.className = "feeding-row" + (done ? " done" : "");
+    row.innerHTML = `
+      <div class="feeding-time">${time}</div>
+      <textarea class="feeding-input" rows="1" data-idx="${i}"
+        placeholder="Notes (e.g. 5ml gruel)">${val.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</textarea>
+      <div class="feeding-check">${done?"✅":"⭕"}</div>`;
+    list.appendChild(row);
+    autoResize(row.querySelector(".feeding-input"));
+  });
+  document.getElementById("feed-count").textContent = `${count}/5 logged`;
+  list.querySelectorAll(".feeding-input").forEach(inp => {
+    inp.addEventListener("input", e => {
+      const idx = parseInt(e.target.dataset.idx);
+      const raw = e.target.value;
+      const wrapped = [];
+      raw.split("\n").forEach(line => {
+        while (line.length > 40) { wrapped.push(line.slice(0,40)); line = line.slice(40); }
+        wrapped.push(line);
+      });
+      const caret = e.target.selectionStart;
+      e.target.value = wrapped.join("\n");
+      e.target.selectionStart = e.target.selectionEnd = Math.min(caret, e.target.value.length);
+      activeDayData().feedings[idx] = e.target.value;
+      saveState(); autoResize(e.target);
+      const done = e.target.value.trim() !== "";
+      const row  = e.target.closest(".feeding-row");
       row.className = "feeding-row" + (done ? " done" : "");
-      row.innerHTML = `
-        <div class="feeding-time">${time}</div>
-        <textarea class="feeding-input" rows="1" data-idx="${i}"
-          placeholder="Notes (e.g. 5ml gruel)">${val.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</textarea>
-        <div class="feeding-check">${done?"✅":"⭕"}</div>`;
-      list.appendChild(row);
-      autoResize(row.querySelector(".feeding-input"));
+      row.querySelector(".feeding-check").textContent = done ? "✅" : "⭕";
+      const cnt = activeDayData().feedings.filter(f => f.trim() !== "").length;
+      document.getElementById("feed-count").textContent = `${cnt}/5 logged`;
+      renderHistory(); renderAvg();
     });
-    document.getElementById("feed-count").textContent = `${count}/5 logged`;
-    list.querySelectorAll(".feeding-input").forEach(inp => {
-      inp.addEventListener("input", e => {
-        const idx = parseInt(e.target.dataset.idx);
-        const raw = e.target.value;
-        const wrapped = [];
-        raw.split("\n").forEach(line => {
-          while (line.length > 40) { wrapped.push(line.slice(0,40)); line = line.slice(40); }
-          wrapped.push(line);
-        });
-        const caret = e.target.selectionStart;
-        e.target.value = wrapped.join("\n");
-        e.target.selectionStart = e.target.selectionEnd = Math.min(caret, e.target.value.length);
-        activeDayData().feedings[idx] = e.target.value;
-        saveState(); autoResize(e.target);
-        const done = e.target.value.trim() !== "";
-        const row = e.target.closest(".feeding-row");
-        row.className = "feeding-row" + (done ? " done" : "");
-        row.querySelector(".feeding-check").textContent = done ? "✅" : "⭕";
-        const cnt = activeDayData().feedings.filter(f => f.trim() !== "").length;
-        document.getElementById("feed-count").textContent = `${cnt}/5 logged`;
-        renderHistory(); renderAvg();
-      });
-    });
-  }
-
-  // ── Notes ────────────────────────────────────────────────
-  function renderNotes() {
-    const ta = document.getElementById("notes-input");
-    ta.value = activeDayData().notes || "";
-    autoResize(ta);
-  }
-
-  // ── Meds ─────────────────────────────────────────────────
-  function renderMeds() {
-    const list = document.getElementById("med-list");
-    list.innerHTML = "";
-    const meds = activeDayData().meds || [];
-    meds.forEach((med, i) => {
-      const row = document.createElement("div");
-      row.className = "med-row";
-      row.innerHTML = `
-        <input class="med-name" type="text" placeholder="Medication name" value="${med.name.replace(/"/g,'&quot;')}" data-idx="${i}" data-field="name"/>
-        <input class="med-dosage" type="text" placeholder="Dosage (e.g. 0.1ml)" value="${med.dosage.replace(/"/g,'&quot;')}" data-idx="${i}" data-field="dosage"/>
-        <button class="med-remove" data-idx="${i}">✕</button>`;
-      list.appendChild(row);
-    });
-    list.querySelectorAll(".med-name,.med-dosage").forEach(inp => {
-      inp.addEventListener("input", e => {
-        activeDayData().meds[parseInt(e.target.dataset.idx)][e.target.dataset.field] = e.target.value;
-        saveState();
-      });
-    });
-    list.querySelectorAll(".med-remove").forEach(btn => {
-      btn.addEventListener("click", e => {
-        activeDayData().meds.splice(parseInt(e.target.dataset.idx), 1);
-        saveState(); renderMeds();
-      });
-    });
-  }
-
-  document.getElementById("add-med-btn").addEventListener("click", () => {
-    if (!activeDayData().meds) activeDayData().meds = [];
-    activeDayData().meds.push({ name:"", dosage:"" });
-    saveState(); renderMeds();
-    const inputs = document.querySelectorAll(".med-name");
-    if (inputs.length) inputs[inputs.length-1].focus();
   });
+}
 
-  // ── Avg ──────────────────────────────────────────────────
-  function renderAvg() {
-    const keys = dayKeys();
-    const k = activeKitten();
-    const content = document.getElementById("avg-content");
-    const weighted = keys
-      .map((key, i) => ({ key, idx:i, w: parseFloat(k.days[key]?.weight) }))
-      .filter(d => !isNaN(d.w) && k.days[d.key]?.weight !== "");
-    if (weighted.length < 2) {
-      content.innerHTML = `<p style="color:#a0522d;font-size:13px">Enter weights on at least 2 days to see the average gain.</p>`;
-      return;
-    }
-    const first=weighted[0], last=weighted[weighted.length-1];
-    const totalGain=last.w-first.w, intervals=last.idx-first.idx;
-    const avg = intervals > 0 ? (totalGain/intervals).toFixed(1) : 0;
-    const isGood = parseFloat(avg) >= GOAL_PER_DAY;
-    const rows = weighted.map((d,i) => {
-      if (i===0) return null;
-      const prev=weighted[i-1], gain=d.w-prev.w, span=d.idx-prev.idx;
-      const perDay = span > 0 ? (gain/span).toFixed(1) : gain.toFixed(1);
-      const ok = parseFloat(perDay) >= GOAL_PER_DAY;
-      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-radius:8px;background:${ok?"#e8f5e9":"#fff3e0"};margin-top:6px">
-        <span style="font-size:12px;color:#7a3520">Day ${prev.idx+1} → Day ${d.idx+1}</span>
-        <span style="font-size:13px;font-weight:bold;color:${ok?"#2e7d32":"#e65100"}">${gain>=0?"+":""}${gain.toFixed(1)}g <span style="font-size:11px;font-weight:normal;color:#a0522d">(${perDay}g/day)</span></span>
-      </div>`;
-    }).filter(Boolean).join("");
-    content.innerHTML = `
-      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">
-        <div style="flex:1;min-width:120px;background:#fef3e8;border-radius:12px;padding:12px 16px;text-align:center">
-          <div style="font-size:11px;color:#a0522d;text-transform:uppercase;letter-spacing:.5px">Avg gain/day</div>
-          <div style="font-size:28px;font-weight:bold;color:${isGood?"#2e7d32":"#e65100"}">${avg}g</div>
-          <div style="font-size:11px;color:#a0522d">goal: ${GOAL_PER_DAY}g/day</div>
-        </div>
-        <div style="flex:1;min-width:120px;background:#fef3e8;border-radius:12px;padding:12px 16px;text-align:center">
-          <div style="font-size:11px;color:#a0522d;text-transform:uppercase;letter-spacing:.5px">Total gain</div>
-          <div style="font-size:28px;font-weight:bold;color:#c15a35">${totalGain>=0?"+":""}${totalGain.toFixed(1)}g</div>
-          <div style="font-size:11px;color:#a0522d">over ${intervals} day${intervals!==1?"s":""}</div>
-        </div>
+// ── Notes ────────────────────────────────────────────────
+function renderNotes() {
+  const ta = document.getElementById("notes-input");
+  ta.value = activeDayData().notes || "";
+  autoResize(ta);
+}
+
+// ── Meds ─────────────────────────────────────────────────
+function renderMeds() {
+  const list = document.getElementById("med-list");
+  list.innerHTML = "";
+  const meds = activeDayData().meds || [];
+  meds.forEach((med, i) => {
+    const row = document.createElement("div");
+    row.className = "med-row";
+    row.innerHTML = `
+      <input class="med-name" type="text" placeholder="Medication name" value="${med.name.replace(/"/g,'&quot;')}" data-idx="${i}" data-field="name"/>
+      <input class="med-dosage" type="text" placeholder="Dosage (e.g. 0.1ml)" value="${med.dosage.replace(/"/g,'&quot;')}" data-idx="${i}" data-field="dosage"/>
+      <button class="med-remove" data-idx="${i}">✕</button>`;
+    list.appendChild(row);
+  });
+  list.querySelectorAll(".med-name,.med-dosage").forEach(inp => {
+    inp.addEventListener("input", e => {
+      activeDayData().meds[parseInt(e.target.dataset.idx)][e.target.dataset.field] = e.target.value;
+      saveState();
+    });
+  });
+  list.querySelectorAll(".med-remove").forEach(btn => {
+    btn.addEventListener("click", e => {
+      activeDayData().meds.splice(parseInt(e.target.dataset.idx), 1);
+      saveState(); renderMeds();
+    });
+  });
+}
+
+document.getElementById("add-med-btn").addEventListener("click", () => {
+  if (!activeDayData().meds) activeDayData().meds = [];
+  activeDayData().meds.push({ name:"", dosage:"" });
+  saveState(); renderMeds();
+  const inputs = document.querySelectorAll(".med-name");
+  if (inputs.length) inputs[inputs.length-1].focus();
+});
+
+// ── Avg ──────────────────────────────────────────────────
+function renderAvg() {
+  const keys    = dayKeys();
+  const k       = activeKitten();
+  const content = document.getElementById("avg-content");
+  const weighted = keys
+    .map((key,i) => ({ key, idx:i, w: parseFloat(k.days[key]?.weight) }))
+    .filter(d => !isNaN(d.w) && k.days[d.key]?.weight !== "");
+  if (weighted.length < 2) {
+    content.innerHTML = `<p style="color:#a0522d;font-size:13px">Enter weights on at least 2 days to see the average gain.</p>`;
+    return;
+  }
+  const first=weighted[0], last=weighted[weighted.length-1];
+  const totalGain=last.w-first.w, intervals=last.idx-first.idx;
+  const avg = intervals > 0 ? (totalGain/intervals).toFixed(1) : 0;
+  const isGood = parseFloat(avg) >= GOAL_PER_DAY;
+  const rows = weighted.map((d,i) => {
+    if (i===0) return null;
+    const prev=weighted[i-1], gain=d.w-prev.w, span=d.idx-prev.idx;
+    const perDay = span>0?(gain/span).toFixed(1):gain.toFixed(1);
+    const ok = parseFloat(perDay) >= GOAL_PER_DAY;
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-radius:8px;background:${ok?"#e8f5e9":"#fff3e0"};margin-top:6px">
+      <span style="font-size:12px;color:#7a3520">Day ${prev.idx+1} → Day ${d.idx+1}</span>
+      <span style="font-size:13px;font-weight:bold;color:${ok?"#2e7d32":"#e65100"}">${gain>=0?"+":""}${gain.toFixed(1)}g
+        <span style="font-size:11px;font-weight:normal;color:#a0522d">(${perDay}g/day)</span></span>
+    </div>`;
+  }).filter(Boolean).join("");
+  content.innerHTML = `
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+      <div style="flex:1;min-width:120px;background:#fef3e8;border-radius:12px;padding:12px 16px;text-align:center">
+        <div style="font-size:11px;color:#a0522d;text-transform:uppercase;letter-spacing:.5px">Avg gain/day</div>
+        <div style="font-size:28px;font-weight:bold;color:${isGood?"#2e7d32":"#e65100"}">${avg}g</div>
+        <div style="font-size:11px;color:#a0522d">goal: ${GOAL_PER_DAY}g/day</div>
       </div>
-      <div style="font-size:12px;color:#a0522d;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Day-by-day breakdown</div>
-      ${rows}`;
-  }
+      <div style="flex:1;min-width:120px;background:#fef3e8;border-radius:12px;padding:12px 16px;text-align:center">
+        <div style="font-size:11px;color:#a0522d;text-transform:uppercase;letter-spacing:.5px">Total gain</div>
+        <div style="font-size:28px;font-weight:bold;color:#c15a35">${totalGain>=0?"+":""}${totalGain.toFixed(1)}g</div>
+        <div style="font-size:11px;color:#a0522d">over ${intervals} day${intervals!==1?"s":""}</div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:#a0522d;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Day-by-day breakdown</div>
+    ${rows}`;
+}
 
-  // ── History ──────────────────────────────────────────────
-  function renderHistory() {
-    const keys = dayKeys();
-    const card = document.getElementById("history-card");
-    if (keys.length < 2) { card.style.display="none"; return; }
-    card.style.display = "block";
-    const list = document.getElementById("history-list");
-    list.innerHTML = "";
-    const k = activeKitten();
-    keys.forEach((key, i) => {
-      const w = parseFloat(k.days[key]?.weight);
-      const goal = expectedWeight(i);
-      const hasW = !isNaN(w) && k.days[key]?.weight !== "";
-      const diff = hasW ? w - goal : null;
-      const row = document.createElement("div");
-      row.className = "history-row" + (key === state.activeDay ? " active" : "");
-      const cls = !hasW ? "none" : diff >= 0 ? "ok" : "low";
-      row.innerHTML = `
-        <span class="day-label">Day ${i+1} <span class="day-date">(${fmtDate(key)})</span></span>
-        <span class="goal-lbl">Goal: ${goal}g</span>
-        <span class="actual ${cls}">${hasW ? w+"g" : "—"}</span>`;
-      row.onclick = () => { state.activeDay = key; saveState(); render(); };
-      list.appendChild(row);
-    });
-  }
-
-  // ── Export ───────────────────────────────────────────────
-  function exportCSV() {
-    const k = activeKitten();
-    const keys = dayKeys();
-    const rows = [["Day","Date","Actual Weight (g)","Goal Weight (g)","Difference (g)",
-      "6:00 AM","10:00 AM","2:00 PM","6:00 PM","10:00 PM","Medications","Notes"]];
-    keys.forEach((key, i) => {
-      const d = k.days[key] || emptyDay();
-      const goal = expectedWeight(i);
-      const actual = d.weight !== "" ? parseFloat(d.weight) : "";
-      const diff = actual !== "" ? (actual-goal).toFixed(1) : "";
-      const meds = (d.meds||[]).map(m=>`${m.name}${m.dosage?" ("+m.dosage+")":""}`).join("; ");
-      rows.push([`Day ${i+1}`,key,actual,goal,diff,...FEEDING_TIMES.map((_,fi)=>d.feedings[fi]||""),meds,d.notes||""]);
-    });
-    const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
-    const blob = new Blob([csv],{type:"text/csv;charset=utf-8;"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${(k.name||"Kitten").replace(/\s+/g,"_")}_feeding_log_${new Date().toISOString().slice(0,10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  // ── Full render ──────────────────────────────────────────
-  function render() {
-    renderBanner(); renderProfile(); renderTabs();
-    renderWeight(); renderFeedings(); renderNotes();
-    renderMeds(); renderAvg(); renderHistory();
-  }
-
-  // ── Event listeners ──────────────────────────────────────
-  document.getElementById("weight-input").addEventListener("input", e => {
-    activeDayData().weight = e.target.value;
-    saveState(); renderWeight(); renderHistory(); renderAvg();
+// ── History ──────────────────────────────────────────────
+function renderHistory() {
+  const keys = dayKeys();
+  const card = document.getElementById("history-card");
+  if (keys.length < 2) { card.style.display="none"; return; }
+  card.style.display = "block";
+  const list = document.getElementById("history-list");
+  list.innerHTML = "";
+  const k = activeKitten();
+  keys.forEach((key,i) => {
+    const w    = parseFloat(k.days[key]?.weight);
+    const goal = expectedWeight(i);
+    const hasW = !isNaN(w) && k.days[key]?.weight !== "";
+    const diff = hasW ? w-goal : null;
+    const row  = document.createElement("div");
+    row.className = "history-row" + (key===state.activeDay?" active":"");
+    const cls = !hasW?"none":diff>=0?"ok":"low";
+    row.innerHTML = `
+      <span style="font-size:13px;color:#7a3520">Day ${i+1} <span style="font-size:11px;color:#a0522d">(${fmtDate(key)})</span></span>
+      <span style="font-size:13px;color:#c15a35">Goal: ${goal}g</span>
+      <span class="actual ${cls}">${hasW?w+"g":"—"}</span>`;
+    row.onclick = () => { state.activeDay = key; saveState(); render(); };
+    list.appendChild(row);
   });
+}
 
-  document.getElementById("notes-input").addEventListener("input", e => {
-    const lines = e.target.value.split("\n");
-    const capped = lines.map(l=>l.slice(0,80));
-    const caret = e.target.selectionStart;
-    e.target.value = capped.join("\n");
-    e.target.selectionStart = e.target.selectionEnd = Math.min(caret, e.target.value.length);
-    activeDayData().notes = e.target.value;
-    autoResize(e.target); saveState();
+// ── Export ───────────────────────────────────────────────
+function exportCSV() {
+  const k    = activeKitten();
+  const keys = dayKeys();
+  const rows = [["Day","Date","Actual Weight (g)","Goal Weight (g)","Difference (g)",
+    "6:00 AM","10:00 AM","2:00 PM","6:00 PM","10:00 PM","Medications","Notes"]];
+  keys.forEach((key,i) => {
+    const d    = k.days[key] || emptyDay();
+    const goal = expectedWeight(i);
+    const actual = d.weight!==""?parseFloat(d.weight):"";
+    const diff   = actual!==""?(actual-goal).toFixed(1):"";
+    const meds   = (d.meds||[]).map(m=>`${m.name}${m.dosage?" ("+m.dosage+")":""}`).join("; ");
+    rows.push([`Day ${i+1}`,key,actual,goal,diff,...FEEDING_TIMES.map((_,fi)=>d.feedings[fi]||""),meds,d.notes||""]);
   });
+  const csv  = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob = new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = `${(k.name||"Kitten").replace(/\s+/g,"_")}_feeding_log_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
-  document.getElementById("add-day-btn").addEventListener("click", () => {
-    const input = document.getElementById("new-day-input");
-    const val = input.value;
-    if (!val) return;
-    state.kittens.forEach(k => { if (!k.days[val]) k.days[val] = emptyDay(); });
-    state.activeDay = val; input.value = "";
-    saveState(); render();
-  });
+// ── Full render ──────────────────────────────────────────
+function render() {
+  renderBanner(); renderProfile(); renderTabs();
+  renderWeight(); renderFeedings(); renderNotes();
+  renderMeds(); renderAvg(); renderHistory();
+}
 
-  document.getElementById("export-btn").addEventListener("click", exportCSV);
+// ── Event listeners ──────────────────────────────────────
+document.getElementById("weight-input").addEventListener("input", e => {
+  activeDayData().weight = e.target.value;
+  saveState(); renderWeight(); renderHistory(); renderAvg();
+});
 
-  document.getElementById("reset-btn").addEventListener("click", () => {
-    document.getElementById("reset-kitten-name").textContent = activeKitten().name || "this kitten";
-    document.getElementById("modal-overlay").style.display = "flex";
-  });
-  document.getElementById("cancel-btn").addEventListener("click", () => {
-    document.getElementById("modal-overlay").style.display = "none";
-  });
-  document.getElementById("confirm-btn").addEventListener("click", () => {
-    const k = activeKitten();
-    k.name = ""; k.photo = "";
-    k.days = { [START_DATE]: emptyDay() };
-    state.activeDay = START_DATE;
-    document.getElementById("modal-overlay").style.display = "none";
-    saveState(); render();
-  });
+document.getElementById("notes-input").addEventListener("input", e => {
+  const lines = e.target.value.split("\n");
+  const capped = lines.map(l=>l.slice(0,80));
+  const caret  = e.target.selectionStart;
+  e.target.value = capped.join("\n");
+  e.target.selectionStart = e.target.selectionEnd = Math.min(caret,e.target.value.length);
+  activeDayData().notes = e.target.value;
+  autoResize(e.target); saveState();
+});
 
-  // Add kitten
-  document.getElementById("add-kitten-btn").addEventListener("click", () => {
-    document.getElementById("new-kitten-name").value = "";
-    document.getElementById("new-kitten-overlay").style.display = "flex";
-    setTimeout(() => document.getElementById("new-kitten-name").focus(), 100);
-  });
-  document.getElementById("new-kitten-cancel").addEventListener("click", () => {
-    document.getElementById("new-kitten-overlay").style.display = "none";
-  });
-  document.getElementById("new-kitten-confirm").addEventListener("click", () => {
-    const name = document.getElementById("new-kitten-name").value.trim();
-    const k = newKitten(name || `Kitten ${state.kittens.length + 1}`);
-    // Give new kitten all existing days
-    dayKeys().forEach(d => { if (!k.days[d]) k.days[d] = emptyDay(); });
-    state.kittens.push(k);
-    state.activeKittenId = k.id;
-    document.getElementById("new-kitten-overlay").style.display = "none";
-    saveState(); render();
-  });
+document.getElementById("add-day-btn").addEventListener("click", () => {
+  const input = document.getElementById("new-day-input");
+  const val   = input.value;
+  if (!val) return;
+  state.kittens.forEach(k => { if (!k.days[val]) k.days[val] = emptyDay(); });
+  state.activeDay = val; input.value = "";
+  saveState(); render();
+});
 
-  // ── Init ─────────────────────────────────────────────────
-  render();
+document.getElementById("export-btn").addEventListener("click", exportCSV);
+
+document.getElementById("reset-btn").addEventListener("click", () => {
+  document.getElementById("reset-kitten-name").textContent = activeKitten().name || "this kitten";
+  document.getElementById("reset-modal").style.display = "flex";
+});
+document.getElementById("reset-cancel").addEventListener("click", () => {
+  document.getElementById("reset-modal").style.display = "none";
+});
+document.getElementById("reset-confirm").addEventListener("click", () => {
+  const k = activeKitten();
+  k.name = ""; k.photo = "";
+  k.days = { [START_DATE]: emptyDay() };
+  state.activeDay = START_DATE;
+  document.getElementById("reset-modal").style.display = "none";
+  saveState(); render();
+});
+
+document.getElementById("add-kitten-btn").addEventListener("click", () => {
+  document.getElementById("new-kitten-name").value = "";
+  document.getElementById("new-kitten-modal").style.display = "flex";
+  setTimeout(() => document.getElementById("new-kitten-name").focus(), 100);
+});
+document.getElementById("new-kitten-cancel").addEventListener("click", () => {
+  document.getElementById("new-kitten-modal").style.display = "none";
+});
+document.getElementById("new-kitten-confirm").addEventListener("click", () => {
+  const name = document.getElementById("new-kitten-name").value.trim();
+  const k    = newKitten(name || `Kitten ${state.kittens.length+1}`);
+  dayKeys().forEach(d => { if (!k.days[d]) k.days[d] = emptyDay(); });
+  state.kittens.push(k);
+  state.activeKittenId = k.id;
+  document.getElementById("new-kitten-modal").style.display = "none";
+  saveState(); render();
+});
 </script>
 </body>
 </html>
