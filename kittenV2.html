@@ -1,4 +1,4 @@
-<!-- Version: 4.1.1 -->
+<!-- Version: 4.1.2 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -25,7 +25,7 @@
   header{background:linear-gradient(135deg,#d4704a,#c15a35);padding:16px 16px 0;box-shadow:0 4px 20px rgba(193,90,53,.3);}
   .header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
   .header-top h1{color:#fff;font-size:20px;letter-spacing:.5px;}
-  .header-top .version{font-size:10px;color(255,255,255,.4);margin-top:2px;}
+  .header-top .version{font-size:10px;color:rgba(255,255,255,.4);margin-top:2px;}
   .header-btns{display:flex;gap:8px;align-items:center;}
   .header-btns button{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:8px;color:#fff;padding:6px 11px;font-size:12px;cursor:pointer;font-family:Georgia,serif;}
   .header-btns button:hover{background:rgba(255,255,255,.25);}
@@ -75,4 +75,18 @@
   /* Weight */
   #weight-row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;}
   #weight-row label{display:block;font-size:11px;color:#a0522d;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;}
-  #weight-input{width:100%;border:2px solid #fde8d8;border-radius:10px;padding:10px 12px;font-size:18px;font-family:Georgia,
+  #weight-input{width:100%;border:2px solid #fde8d8;border-radius:10px;padding:10px 12px;font-size:18px;font-family:Georgia,serif;color:#7a3520;background:#fffaf8;outline:none;}
+  #goal-box{background:#fef3e8;border-radius:10px;padding:10px 16px;text-align:center;min-width:110px;flex-shrink:0;}
+  #goal-box .label{font-size:11px;color:#a0522d;text-transform:uppercase;letter-spacing:.5px;}
+  #goal-box .value{font-size:22px;font-weight:bold;color:#c15a35;}
+  #goal-box .sublabel{font-size:10px;color:#a0522d;margin-top:2px;}
+  #weight-status{margin-top:12px;padding:10px 14px;border-radius:10px;font-size:14px;font-weight:bold;display:none;align-items:center;gap:8px;}
+  #weight-status.good{background:#e8f5e9;color:#2e7d32;display:flex;}
+  #weight-status.warn{background:#fff3e0;color:#e65100;display:flex;}
+
+  /* Feedings */
+  #feedings-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  #feedings-header .left{display:flex;align-items:center;gap:8px;}
+  #feedings-header h2{font-size:16px;color:#7a3520;}
+  #feed-count{background:#fef3e8;border-radius:20px;padding:4px 12px;font-size:12px;color:#c15a35;font-weight:bold;}
+  #feedings-list{display:flex
