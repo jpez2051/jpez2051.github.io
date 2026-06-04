@@ -173,7 +173,7 @@
 <div id="app-screen">
   <header>
     <div class="header-top">
-      <div><h1>🍼 Kitten Tracker</h1><div class="version">v4.1.0</div></div>
+      <div><h1>🍼 Kitten Tracker</h1><div class="version">v4.1.1</div></div>
       <div class="header-btns">
         <button id="export-btn">📥 Export</button>
         <button id="reset-btn">🗑 Reset</button>
@@ -480,11 +480,17 @@ const cropCtx=cropCanvas.getContext("2d");
 
 function openCropper(src,cb){
   cropCallback=cb;
+  
+  // 1. Show the modal FIRST so the browser gives it actual width/height dimensions
+  document.getElementById("crop-modal").classList.add("show");
+  
   const img=new Image();
   img.onload=()=>{
+    // 2. NOW measure the viewport and set up the canvas
     const vp=document.getElementById("crop-viewport");
     const vw=vp.clientWidth, vh=vp.clientHeight;
     cropCanvas.width=vw; cropCanvas.height=vh;
+    
     const scaleX=vw/img.width, scaleY=vh/img.height;
     const minScale=Math.min(scaleX,scaleY);
     cropState={img,scale:minScale,minScale,
@@ -493,7 +499,6 @@ function openCropper(src,cb){
                selX:0,selY:0,selW:0,selH:0,hasSel:false,
                dragging:false,dragMode:null,lastTouches:null};
     drawCrop();
-    document.getElementById("crop-modal").classList.add("show");
   };
   img.src=src;
 }
