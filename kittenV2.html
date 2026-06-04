@@ -1,4 +1,4 @@
-<!-- Version: 3.0.0 -->
+<!-- Version: 4.0.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,7 +9,7 @@
   *{box-sizing:border-box;margin:0;padding:0;}
   body{min-height:100vh;background:linear-gradient(135deg,#fef3e8 0%,#fde8d8 50%,#fce4d6 100%);font-family:Georgia,serif;}
 
-  /* ── Login screen ── */
+  /* ── Login ── */
   #login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
   #login-card{background:#fff;border-radius:24px;padding:40px 32px;max-width:340px;width:100%;text-align:center;box-shadow:0 4px 32px rgba(193,90,53,.15);border:1px solid #fde8d8;}
   #login-card .logo{font-size:48px;margin-bottom:12px;}
@@ -61,17 +61,20 @@
   .card-title h2{font-size:16px;color:#7a3520;font-weight:bold;}
 
   /* Profile */
-  #profile-card{display:flex;gap:16px;align-items:center;}
+  #profile-card{display:flex;gap:16px;align-items:flex-start;}
   #photo-wrap{flex-shrink:0;position:relative;width:80px;height:80px;cursor:pointer;}
   #photo-wrap img{width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #f4b896;}
   #photo-placeholder{width:80px;height:80px;border-radius:50%;background:#fef3e8;border:3px dashed #f4b896;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:28px;color:#c15a35;}
   #photo-placeholder span{font-size:10px;color:#a0522d;margin-top:2px;}
   #photo-edit-badge{position:absolute;bottom:2px;right:2px;background:#c15a35;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;}
   #photo-input{display:none;}
-  #profile-fields{flex:1;min-width:0;}
+  #profile-fields{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;}
   #profile-fields label{font-size:11px;color:#a0522d;text-transform:uppercase;letter-spacing:.5px;}
-  #kitten-name-input{display:block;width:100%;border:none;border-bottom:2px solid #fde8d8;background:transparent;font-family:Georgia,serif;font-size:22px;font-weight:bold;color:#7a3520;outline:none;padding:4px 0;margin-top:4px;}
+  #kitten-name-input{display:block;width:100%;border:none;border-bottom:2px solid #fde8d8;background:transparent;font-family:Georgia,serif;font-size:20px;font-weight:bold;color:#7a3520;outline:none;padding:4px 0;}
   #kitten-name-input::placeholder{color:#d4a898;font-weight:normal;}
+  .profile-row{display:flex;flex-direction:column;gap:3px;}
+  .profile-input{width:100%;border:none;border-bottom:2px solid #fde8d8;background:transparent;font-family:Georgia,serif;font-size:14px;color:#7a3520;outline:none;padding:4px 0;}
+  #age-display{font-size:12px;color:#c15a35;margin-top:2px;min-height:16px;}
 
   /* Weight */
   #weight-row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;}
@@ -80,6 +83,7 @@
   #goal-box{background:#fef3e8;border-radius:10px;padding:10px 16px;text-align:center;min-width:110px;flex-shrink:0;}
   #goal-box .label{font-size:11px;color:#a0522d;text-transform:uppercase;letter-spacing:.5px;}
   #goal-box .value{font-size:22px;font-weight:bold;color:#c15a35;}
+  #goal-box .sublabel{font-size:10px;color:#a0522d;margin-top:2px;}
   #weight-status{margin-top:12px;padding:10px 14px;border-radius:10px;font-size:14px;font-weight:bold;display:none;align-items:center;gap:8px;}
   #weight-status.good{background:#e8f5e9;color:#2e7d32;display:flex;}
   #weight-status.warn{background:#fff3e0;color:#e65100;display:flex;}
@@ -126,7 +130,7 @@
 
   /* Modals */
   .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);align-items:center;justify-content:center;z-index:100;}
-  .modal-box{background:#fff;border-radius:18px;padding:28px;max-width:320px;width:90%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.2);}
+  .modal-box{background:#fff;border-radius:18px;padding:28px;max-width:340px;width:90%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.2);}
   .modal-box .m-icon{font-size:36px;margin-bottom:10px;}
   .modal-box h3{color:#7a3520;font-size:18px;margin-bottom:8px;}
   .modal-box p{color:#a0522d;font-size:14px;margin-bottom:20px;}
@@ -135,7 +139,20 @@
   .btn-cancel{border:2px solid #fde8d8;background:#fff;color:#7a3520;}
   .btn-danger{border:none;background:#c15a35;color:#fff;font-weight:bold;}
   .btn-primary{border:none;background:#c15a35;color:#fff;font-weight:bold;}
-  .modal-input{width:100%;border:2px solid #fde8d8;border-radius:10px;padding:10px 12px;font-size:16px;font-family:Georgia,serif;color:#7a3520;outline:none;margin-bottom:12px;}
+  .modal-input{width:100%;border:2px solid #fde8d8;border-radius:10px;padding:10px 12px;font-size:15px;font-family:Georgia,serif;color:#7a3520;outline:none;margin-bottom:12px;}
+  .modal-label{font-size:11px;color:#a0522d;text-transform:uppercase;letter-spacing:.5px;text-align:left;display:block;margin-bottom:4px;}
+
+  /* Crop modal */
+  #crop-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);align-items:center;justify-content:center;z-index:150;flex-direction:column;gap:16px;padding:20px;}
+  #crop-modal.show{display:flex;}
+  #crop-container{position:relative;width:100%;max-width:400px;max-height:60vh;overflow:hidden;border-radius:12px;background:#000;cursor:crosshair;}
+  #crop-image{display:block;max-width:100%;max-height:60vh;user-select:none;-webkit-user-drag:none;}
+  #crop-selection{position:absolute;border:2px solid #fff;box-shadow:0 0 0 9999px rgba(0,0,0,.5);pointer-events:none;}
+  .crop-btns{display:flex;gap:12px;}
+  .crop-btns button{padding:10px 24px;border-radius:10px;font-family:Georgia,serif;font-size:14px;cursor:pointer;border:none;}
+  #crop-cancel-btn{background:rgba(255,255,255,.2);color:#fff;}
+  #crop-confirm-btn{background:#c15a35;color:#fff;font-weight:bold;}
+  #crop-hint{color:rgba(255,255,255,.7);font-size:12px;font-family:Georgia,serif;}
 
   /* Save indicator */
   #save-indicator{position:fixed;bottom:16px;right:16px;background:#2e7d32;color:#fff;border-radius:20px;padding:6px 14px;font-size:12px;font-family:Georgia,serif;opacity:0;transition:opacity .3s;pointer-events:none;z-index:50;}
@@ -144,16 +161,10 @@
 </head>
 <body>
 
-<!-- Loading -->
-<div id="loading-overlay" class="show">
-  <div class="spinner"></div>
-  <div style="color:#c15a35;font-family:Georgia,serif;font-size:14px;">Loading...</div>
-</div>
-
-<!-- Save indicator -->
+<div id="loading-overlay" class="show"><div class="spinner"></div><div style="color:#c15a35;font-family:Georgia,serif;font-size:14px;">Loading...</div></div>
 <div id="save-indicator">✓ Saved</div>
 
-<!-- Login screen -->
+<!-- Login -->
 <div id="login-screen" style="display:none;">
   <div id="login-card">
     <div class="logo">🐱</div>
@@ -171,19 +182,14 @@
 <div id="app-screen">
   <header>
     <div class="header-top">
-      <div>
-        <h1>🍼 Kitten Tracker</h1>
-        <div class="version">v3.0.0</div>
-      </div>
+      <div><h1>🍼 Kitten Tracker</h1><div class="version">v4.0.0</div></div>
       <div class="header-btns">
         <button id="export-btn">📥 Export</button>
         <button id="reset-btn">🗑 Reset</button>
         <img id="user-avatar" src="" alt="You" title="Sign out"/>
       </div>
     </div>
-    <div id="kitten-banner">
-      <button id="add-kitten-btn" title="Add kitten">+</button>
-    </div>
+    <div id="kitten-banner"><button id="add-kitten-btn" title="Add kitten">+</button></div>
   </header>
 
   <div id="tabs">
@@ -202,8 +208,15 @@
         <input type="file" id="photo-input" accept="image/*"/>
       </div>
       <div id="profile-fields">
-        <label for="kitten-name-input">Kitten Name</label>
-        <input type="text" id="kitten-name-input" placeholder="Enter name..." maxlength="30"/>
+        <div class="profile-row">
+          <label for="kitten-name-input">Kitten Name</label>
+          <input type="text" id="kitten-name-input" placeholder="Enter name..." maxlength="30"/>
+        </div>
+        <div class="profile-row">
+          <label for="kitten-dob-input">Date of Birth</label>
+          <input type="date" id="kitten-dob-input" class="profile-input"/>
+          <div id="age-display"></div>
+        </div>
       </div>
     </div>
 
@@ -217,6 +230,7 @@
         <div id="goal-box">
           <div class="label">Goal today</div>
           <div class="value" id="goal-value">—</div>
+          <div class="sublabel" id="goal-sublabel"></div>
         </div>
       </div>
       <div id="weight-status"></div>
@@ -255,6 +269,19 @@
   </div>
 </div>
 
+<!-- Crop modal -->
+<div id="crop-modal">
+  <div id="crop-hint">Drag to select the area you want to keep</div>
+  <div id="crop-container">
+    <img id="crop-image" alt="crop"/>
+    <div id="crop-selection" style="display:none"></div>
+  </div>
+  <div class="crop-btns">
+    <button id="crop-cancel-btn">Cancel</button>
+    <button id="crop-confirm-btn">✓ Use this crop</button>
+  </div>
+</div>
+
 <!-- Reset modal -->
 <div id="reset-modal" class="modal-overlay">
   <div class="modal-box">
@@ -286,10 +313,15 @@
   <div class="modal-box">
     <div class="m-icon">🐱</div>
     <h3>Add New Kitten</h3>
-    <input type="text" id="new-kitten-name" class="modal-input" placeholder="Kitten name..." maxlength="30"/>
+    <label class="modal-label">Kitten Name</label>
+    <input type="text" id="new-kitten-name" class="modal-input" placeholder="e.g. Mochi" maxlength="30"/>
+    <label class="modal-label">Date of Birth</label>
+    <input type="date" id="new-kitten-dob" class="modal-input"/>
+    <label class="modal-label">Day 1 Date</label>
+    <input type="date" id="new-kitten-day1" class="modal-input"/>
     <div class="btn-row">
       <button class="btn-cancel" id="new-kitten-cancel">Cancel</button>
-      <button class="btn-primary" id="new-kitten-confirm">Add</button>
+      <button class="btn-primary" id="new-kitten-confirm">Add Kitten</button>
     </div>
   </div>
 </div>
@@ -298,45 +330,80 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, onSnapshot }
+import { getFirestore, doc, getDoc, setDoc }
   from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
 
-// ── Firebase config ──────────────────────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyA3iD_hmeez14rcRGrkXUZ_Ihxb_SbISU0",
   authDomain: "a4a-kitten-tracker.firebaseapp.com",
   projectId: "a4a-kitten-tracker",
   storageBucket: "a4a-kitten-tracker.firebasestorage.app",
   messagingSenderId: "279453040680",
-  appId: "1:279453040680:web:b31365f1f76a86857e751d",
-  measurementId: "G-T7WEQGDNTH"
+  appId: "1:279453040680:web:b31365f1f76a86857e751d"
 };
-
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
 
 // ── Constants ────────────────────────────────────────────
 const FEEDING_TIMES = ["6:00 AM","10:00 AM","2:00 PM","6:00 PM","10:00 PM"];
-const GOAL_PER_DAY  = 10;
-const START_WEIGHT  = 265;
-const START_DATE    = "2026-05-12";
+
+// Weight chart: [minWeeks, maxWeeks, startGrams, endGrams, label]
+const WEIGHT_CHART = [
+  [0, 1,  50,  150, "0-1 wk"],
+  [1, 2,  150, 250, "1-2 wk"],
+  [2, 3,  250, 350, "2-3 wk"],
+  [3, 4,  350, 450, "3-4 wk"],
+  [4, 5,  450, 550, "4-5 wk"],
+  [5, 8,  550, 850, "5-8 wk"],
+];
+
+function goalForDate(dob, targetDate) {
+  if (!dob) return null;
+  const dobMs  = new Date(dob + "T00:00:00").getTime();
+  const tgtMs  = new Date(targetDate + "T00:00:00").getTime();
+  const ageMs  = tgtMs - dobMs;
+  if (ageMs < 0) return null;
+  const ageWeeks = ageMs / (7 * 24 * 3600 * 1000);
+  const band = WEIGHT_CHART.find(b => ageWeeks >= b[0] && ageWeeks < b[1])
+            || WEIGHT_CHART[WEIGHT_CHART.length - 1];
+  const [minW, maxW, startG, endG] = band;
+  const daysIntoBand = (ageWeeks - minW) * 7;
+  const bandDays     = (maxW - minW) * 7;
+  const goal = Math.round(startG + (daysIntoBand / bandDays) * (endG - startG));
+  return { goal, label: band[4] };
+}
+
+function ageString(dob) {
+  if (!dob) return "";
+  const dobMs   = new Date(dob + "T00:00:00").getTime();
+  const nowMs   = Date.now();
+  const diffMs  = nowMs - dobMs;
+  if (diffMs < 0) return "DOB is in the future";
+  const days  = Math.floor(diffMs / (24 * 3600 * 1000));
+  const weeks = Math.floor(days / 7);
+  const rem   = days % 7;
+  if (weeks === 0) return `${days} day${days !== 1 ? "s" : ""} old`;
+  return `${weeks} wk${weeks !== 1 ? "s" : ""}${rem > 0 ? ` ${rem}d` : ""} old`;
+}
+
+function todayStr() { return new Date().toISOString().slice(0, 10); }
 
 // ── State ────────────────────────────────────────────────
-let currentUser  = null;
-let unsubscribe  = null;
-let state        = null;
-let saveTimeout  = null;
+let currentUser = null;
+let state       = null;
+let saveTimeout = null;
 
 function emptyDay() { return { feedings: Array(5).fill(""), weight: "", notes: "", meds: [] }; }
-function newKitten(name) {
-  return { id: Date.now().toString(), name: name||"", photo: "", days: { [START_DATE]: emptyDay() } };
+function newKitten(name, dob, day1) {
+  const d = day1 || todayStr();
+  return { id: Date.now().toString(), name: name||"", photo: "", dob: dob||"", days: { [d]: emptyDay() } };
 }
 function defaultState() {
-  const k = newKitten("Kitten 1");
-  return { kittens: [k], activeKittenId: k.id, activeDay: START_DATE };
+  const k = newKitten("Kitten 1", "", todayStr());
+  return { kittens:[k], activeKittenId:k.id, activeDay: todayStr() };
 }
-function activeKitten() { return state.kittens.find(k => k.id === state.activeKittenId) || state.kittens[0]; }
+function activeKitten() { return state.kittens.find(k=>k.id===state.activeKittenId)||state.kittens[0]; }
 function activeDayData() {
   const k = activeKitten();
   if (!k.days[state.activeDay]) k.days[state.activeDay] = emptyDay();
@@ -344,93 +411,175 @@ function activeDayData() {
 }
 function dayKeys() {
   const all = new Set();
-  state.kittens.forEach(k => Object.keys(k.days).forEach(d => all.add(d)));
+  state.kittens.forEach(k => Object.keys(k.days).forEach(d=>all.add(d)));
   return Array.from(all).sort();
 }
-function expectedWeight(idx) { return START_WEIGHT + GOAL_PER_DAY * idx; }
 function fmtDate(str) { const [,m,d]=str.split("-"); return `${parseInt(m)}/${parseInt(d)}`; }
 function autoResize(el) { el.style.height="auto"; el.style.height=el.scrollHeight+"px"; }
 
-// ── Firestore save (debounced) ───────────────────────────
+// ── Save ─────────────────────────────────────────────────
 function saveState() {
   if (!currentUser) return;
   clearTimeout(saveTimeout);
   saveTimeout = setTimeout(async () => {
     try {
-      await setDoc(doc(db, "users", currentUser.uid), state);
-      showSaved();
-    } catch(e) { console.error("Save error:", e); }
+      await setDoc(doc(db,"users",currentUser.uid), state);
+      const el = document.getElementById("save-indicator");
+      el.classList.add("show");
+      setTimeout(()=>el.classList.remove("show"), 2000);
+    } catch(e) { console.error(e); }
   }, 800);
-}
-
-function showSaved() {
-  const el = document.getElementById("save-indicator");
-  el.classList.add("show");
-  setTimeout(() => el.classList.remove("show"), 2000);
 }
 
 // ── Auth ─────────────────────────────────────────────────
 onAuthStateChanged(auth, async user => {
   if (user) {
     currentUser = user;
-    document.getElementById("user-avatar").src = user.photoURL || "";
-    await loadUserData();
+    document.getElementById("user-avatar").src = user.photoURL||"";
+    const snap = await getDoc(doc(db,"users",user.uid));
+    state = snap.exists() ? snap.data() : defaultState();
+    if (!state.kittens?.length) state.kittens = [newKitten("Kitten 1","",todayStr())];
+    if (!state.activeKittenId) state.activeKittenId = state.kittens[0].id;
+    if (!state.activeDay) state.activeDay = todayStr();
     document.getElementById("loading-overlay").classList.remove("show");
     document.getElementById("login-screen").style.display = "none";
     document.getElementById("app-screen").style.display = "block";
     render();
   } else {
     currentUser = null;
-    if (unsubscribe) { unsubscribe(); unsubscribe = null; }
     document.getElementById("loading-overlay").classList.remove("show");
     document.getElementById("app-screen").style.display = "none";
     document.getElementById("login-screen").style.display = "flex";
   }
 });
 
-async function loadUserData() {
-  const ref = doc(db, "users", currentUser.uid);
-  const snap = await getDoc(ref);
-  state = snap.exists() ? snap.data() : defaultState();
-  // Ensure activeDay exists
-  if (!state.activeDay) state.activeDay = START_DATE;
-  if (!state.kittens || state.kittens.length === 0) state.kittens = [newKitten("Kitten 1")];
-  if (!state.activeKittenId) state.activeKittenId = state.kittens[0].id;
-}
-
 document.getElementById("google-signin-btn").addEventListener("click", async () => {
   try {
     document.getElementById("login-error").style.display = "none";
     await signInWithPopup(auth, new GoogleAuthProvider());
-  } catch(e) {
-    document.getElementById("login-error").style.display = "block";
-  }
+  } catch(e) { document.getElementById("login-error").style.display="block"; }
+});
+document.getElementById("user-avatar").addEventListener("click", ()=>{ document.getElementById("signout-modal").style.display="flex"; });
+document.getElementById("signout-cancel").addEventListener("click", ()=>{ document.getElementById("signout-modal").style.display="none"; });
+document.getElementById("signout-confirm").addEventListener("click", async ()=>{ document.getElementById("signout-modal").style.display="none"; await signOut(auth); });
+
+// ── Photo crop ───────────────────────────────────────────
+let cropCallback = null;
+let cropDrag = { active:false, startX:0, startY:0, x:0, y:0, w:0, h:0 };
+
+function openCropper(imageSrc, callback) {
+  cropCallback = callback;
+  const modal = document.getElementById("crop-modal");
+  const img   = document.getElementById("crop-image");
+  const sel   = document.getElementById("crop-selection");
+  img.src = imageSrc;
+  sel.style.display = "none";
+  modal.classList.add("show");
+}
+
+const cropContainer = document.getElementById("crop-container");
+const cropSel       = document.getElementById("crop-selection");
+const cropImg       = document.getElementById("crop-image");
+
+function getPos(e, el) {
+  const r = el.getBoundingClientRect();
+  const cx = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+  const cy = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
+  return { x: Math.max(0,Math.min(cx,r.width)), y: Math.max(0,Math.min(cy,r.height)) };
+}
+
+function drawSel() {
+  const {x,y,w,h} = cropDrag;
+  const rx = w<0?x+w:x, ry = h<0?y+h:y;
+  const rw = Math.abs(w), rh = Math.abs(h);
+  cropSel.style.cssText = `display:block;left:${rx}px;top:${ry}px;width:${rw}px;height:${rh}px;position:absolute;border:2px solid #fff;box-shadow:0 0 0 9999px rgba(0,0,0,.5);pointer-events:none;`;
+}
+
+cropContainer.addEventListener("mousedown", e => {
+  const p = getPos(e, cropContainer);
+  cropDrag = { active:true, startX:p.x, startY:p.y, x:p.x, y:p.y, w:0, h:0 };
+  e.preventDefault();
+});
+cropContainer.addEventListener("touchstart", e => {
+  const p = getPos(e, cropContainer);
+  cropDrag = { active:true, startX:p.x, startY:p.y, x:p.x, y:p.y, w:0, h:0 };
+}, {passive:true});
+
+window.addEventListener("mousemove", e => {
+  if (!cropDrag.active) return;
+  const p = getPos(e, cropContainer);
+  cropDrag.w = p.x - cropDrag.startX;
+  cropDrag.h = p.y - cropDrag.startY;
+  drawSel();
+});
+window.addEventListener("touchmove", e => {
+  if (!cropDrag.active) return;
+  const p = getPos(e, cropContainer);
+  cropDrag.w = p.x - cropDrag.startX;
+  cropDrag.h = p.y - cropDrag.startY;
+  drawSel();
+}, {passive:true});
+
+window.addEventListener("mouseup",  () => { cropDrag.active = false; });
+window.addEventListener("touchend", () => { cropDrag.active = false; });
+
+document.getElementById("crop-cancel-btn").addEventListener("click", () => {
+  document.getElementById("crop-modal").classList.remove("show");
+  cropCallback = null;
 });
 
-document.getElementById("user-avatar").addEventListener("click", () => {
-  document.getElementById("signout-modal").style.display = "flex";
+document.getElementById("crop-confirm-btn").addEventListener("click", () => {
+  const rw = Math.abs(cropDrag.w), rh = Math.abs(cropDrag.h);
+  if (rw < 10 || rh < 10) {
+    // No selection — use full image
+    cropCallback && cropCallback(cropImg.src);
+    document.getElementById("crop-modal").classList.remove("show");
+    return;
+  }
+  const container = cropContainer.getBoundingClientRect();
+  const scaleX = cropImg.naturalWidth  / cropImg.clientWidth;
+  const scaleY = cropImg.naturalHeight / cropImg.clientHeight;
+  const rx = (cropDrag.w<0 ? cropDrag.x+cropDrag.w : cropDrag.x) * scaleX;
+  const ry = (cropDrag.h<0 ? cropDrag.y+cropDrag.h : cropDrag.y) * scaleY;
+  const canvas = document.createElement("canvas");
+  canvas.width  = rw * scaleX;
+  canvas.height = rh * scaleY;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(cropImg, rx, ry, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+  const result = canvas.toDataURL("image/jpeg", 0.85);
+  cropCallback && cropCallback(result);
+  document.getElementById("crop-modal").classList.remove("show");
+  cropCallback = null;
 });
-document.getElementById("signout-cancel").addEventListener("click", () => {
-  document.getElementById("signout-modal").style.display = "none";
-});
-document.getElementById("signout-confirm").addEventListener("click", async () => {
-  document.getElementById("signout-modal").style.display = "none";
-  await signOut(auth);
+
+// ── Profile photo ────────────────────────────────────────
+document.getElementById("photo-wrap").addEventListener("click", () => document.getElementById("photo-input").click());
+document.getElementById("photo-input").addEventListener("change", e => {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    openCropper(ev.target.result, cropped => {
+      activeKitten().photo = cropped;
+      saveState(); renderProfile(); renderBanner();
+    });
+  };
+  reader.readAsDataURL(file);
+  e.target.value = "";
 });
 
 // ── Banner ───────────────────────────────────────────────
 function renderBanner() {
   const banner = document.getElementById("kitten-banner");
-  banner.querySelectorAll(".kitten-card").forEach(c => c.remove());
+  banner.querySelectorAll(".kitten-card").forEach(c=>c.remove());
   const addBtn = document.getElementById("add-kitten-btn");
   state.kittens.forEach(k => {
     const card = document.createElement("div");
-    card.className = "kitten-card" + (k.id === state.activeKittenId ? " active" : "");
-    card.innerHTML = k.photo
+    card.className = "kitten-card"+(k.id===state.activeKittenId?" active":"");
+    card.innerHTML = (k.photo
       ? `<img class="kitten-avatar" src="${k.photo}" alt="${k.name}"/>`
-      : `<div class="kitten-avatar-placeholder">🐱</div>`;
-    card.innerHTML += `<div class="kitten-card-name">${k.name||"Unnamed"}</div>`;
-    card.onclick = () => { state.activeKittenId = k.id; saveState(); render(); };
+      : `<div class="kitten-avatar-placeholder">🐱</div>`)
+      + `<div class="kitten-card-name">${k.name||"Unnamed"}</div>`;
+    card.onclick = () => { state.activeKittenId=k.id; saveState(); render(); };
     banner.insertBefore(card, addBtn);
   });
 }
@@ -438,7 +587,9 @@ function renderBanner() {
 // ── Profile ──────────────────────────────────────────────
 function renderProfile() {
   const k = activeKitten();
-  document.getElementById("kitten-name-input").value = k.name || "";
+  document.getElementById("kitten-name-input").value = k.name||"";
+  document.getElementById("kitten-dob-input").value  = k.dob||"";
+  document.getElementById("age-display").textContent  = k.dob ? ageString(k.dob) : "";
   if (k.photo) {
     document.getElementById("photo-img").src = k.photo;
     document.getElementById("photo-img").style.display = "block";
@@ -447,56 +598,56 @@ function renderProfile() {
     document.getElementById("photo-img").style.display = "none";
     document.getElementById("photo-placeholder").style.display = "flex";
   }
-  document.getElementById("reset-kitten-name").textContent = k.name || "this kitten";
+  document.getElementById("reset-kitten-name").textContent = k.name||"this kitten";
 }
 
 document.getElementById("kitten-name-input").addEventListener("input", e => {
-  activeKitten().name = e.target.value;
-  saveState(); renderBanner();
+  activeKitten().name = e.target.value; saveState(); renderBanner();
 });
-document.getElementById("photo-wrap").addEventListener("click", () => {
-  document.getElementById("photo-input").click();
-});
-document.getElementById("photo-input").addEventListener("change", e => {
-  const file = e.target.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    activeKitten().photo = ev.target.result;
-    saveState(); renderProfile(); renderBanner();
-  };
-  reader.readAsDataURL(file);
+document.getElementById("kitten-dob-input").addEventListener("change", e => {
+  activeKitten().dob = e.target.value;
+  document.getElementById("age-display").textContent = e.target.value ? ageString(e.target.value) : "";
+  saveState(); renderWeight(); renderHistory();
 });
 
 // ── Tabs ─────────────────────────────────────────────────
 function renderTabs() {
   const tabs = document.getElementById("tabs");
-  tabs.querySelectorAll(".tab-btn").forEach(b => b.remove());
+  tabs.querySelectorAll(".tab-btn").forEach(b=>b.remove());
   const wrap = document.getElementById("add-day-wrap");
-  dayKeys().forEach((key, i) => {
+  dayKeys().forEach((key,i) => {
     const btn = document.createElement("button");
-    btn.className = "tab-btn" + (key === state.activeDay ? " active" : "");
+    btn.className = "tab-btn"+(key===state.activeDay?" active":"");
     btn.innerHTML = `Day ${i+1} <span style="opacity:.7">(${fmtDate(key)})</span>`;
-    btn.onclick = () => { state.activeDay = key; saveState(); render(); };
+    btn.onclick = () => { state.activeDay=key; saveState(); render(); };
     tabs.insertBefore(btn, wrap);
   });
 }
 
 // ── Weight ───────────────────────────────────────────────
 function renderWeight() {
-  const idx  = dayKeys().indexOf(state.activeDay);
-  const goal = expectedWeight(idx);
-  document.getElementById("goal-value").textContent = goal + "g";
-  document.getElementById("weight-input").value = activeDayData().weight || "";
+  const k    = activeKitten();
+  const info = goalForDate(k.dob, state.activeDay);
+  const goalEl    = document.getElementById("goal-value");
+  const subEl     = document.getElementById("goal-sublabel");
+  if (info) {
+    goalEl.textContent = info.goal + "g";
+    subEl.textContent  = info.label;
+  } else {
+    goalEl.textContent = "—";
+    subEl.textContent  = k.dob ? "" : "Add DOB for goal";
+  }
+  document.getElementById("weight-input").value = activeDayData().weight||"";
   const actual = parseFloat(activeDayData().weight);
   const status = document.getElementById("weight-status");
-  if (!isNaN(actual) && activeDayData().weight !== "") {
-    const diff = actual - goal;
-    status.className = diff >= 0 ? "good" : "warn";
-    status.innerHTML = diff >= 0
-      ? `<span>✅</span><span>On track! ${diff > 0 ? `+${diff}g above goal` : "Right at goal"}</span>`
-      : `<span>⚠️</span><span>${Math.abs(diff)}g below goal — consider tightening feeding intervals</span>`;
+  if (!isNaN(actual) && activeDayData().weight !== "" && info) {
+    const diff = actual - info.goal;
+    status.className = diff>=0?"good":"warn";
+    status.innerHTML = diff>=0
+      ? `<span>✅</span><span>On track! ${diff>0?`+${diff}g above goal`:"Right at goal"}</span>`
+      : `<span>⚠️</span><span>${Math.abs(diff)}g below goal</span>`;
   } else {
-    status.className = ""; status.innerHTML = ""; status.style.display = "none";
+    status.className=""; status.innerHTML=""; status.style.display="none";
   }
 }
 
@@ -506,12 +657,12 @@ function renderFeedings() {
   list.innerHTML = "";
   const data = activeDayData();
   let count = 0;
-  FEEDING_TIMES.forEach((time, i) => {
-    const val  = data.feedings[i] || "";
-    const done = val.trim() !== "";
+  FEEDING_TIMES.forEach((time,i) => {
+    const val  = data.feedings[i]||"";
+    const done = val.trim()!=="";
     if (done) count++;
     const row = document.createElement("div");
-    row.className = "feeding-row" + (done ? " done" : "");
+    row.className = "feeding-row"+(done?" done":"");
     row.innerHTML = `
       <div class="feeding-time">${time}</div>
       <textarea class="feeding-input" rows="1" data-idx="${i}"
@@ -527,20 +678,20 @@ function renderFeedings() {
       const raw = e.target.value;
       const wrapped = [];
       raw.split("\n").forEach(line => {
-        while (line.length > 40) { wrapped.push(line.slice(0,40)); line = line.slice(40); }
+        while (line.length>40){ wrapped.push(line.slice(0,40)); line=line.slice(40); }
         wrapped.push(line);
       });
       const caret = e.target.selectionStart;
       e.target.value = wrapped.join("\n");
-      e.target.selectionStart = e.target.selectionEnd = Math.min(caret, e.target.value.length);
+      e.target.selectionStart = e.target.selectionEnd = Math.min(caret,e.target.value.length);
       activeDayData().feedings[idx] = e.target.value;
       saveState(); autoResize(e.target);
-      const done = e.target.value.trim() !== "";
+      const done = e.target.value.trim()!=="";
       const row  = e.target.closest(".feeding-row");
-      row.className = "feeding-row" + (done ? " done" : "");
-      row.querySelector(".feeding-check").textContent = done ? "✅" : "⭕";
-      const cnt = activeDayData().feedings.filter(f => f.trim() !== "").length;
-      document.getElementById("feed-count").textContent = `${cnt}/5 logged`;
+      row.className = "feeding-row"+(done?" done":"");
+      row.querySelector(".feeding-check").textContent = done?"✅":"⭕";
+      document.getElementById("feed-count").textContent =
+        `${activeDayData().feedings.filter(f=>f.trim()!=="").length}/5 logged`;
       renderHistory(); renderAvg();
     });
   });
@@ -549,7 +700,7 @@ function renderFeedings() {
 // ── Notes ────────────────────────────────────────────────
 function renderNotes() {
   const ta = document.getElementById("notes-input");
-  ta.value = activeDayData().notes || "";
+  ta.value = activeDayData().notes||"";
   autoResize(ta);
 }
 
@@ -557,8 +708,7 @@ function renderNotes() {
 function renderMeds() {
   const list = document.getElementById("med-list");
   list.innerHTML = "";
-  const meds = activeDayData().meds || [];
-  meds.forEach((med, i) => {
+  (activeDayData().meds||[]).forEach((med,i) => {
     const row = document.createElement("div");
     row.className = "med-row";
     row.innerHTML = `
@@ -569,21 +719,20 @@ function renderMeds() {
   });
   list.querySelectorAll(".med-name,.med-dosage").forEach(inp => {
     inp.addEventListener("input", e => {
-      activeDayData().meds[parseInt(e.target.dataset.idx)][e.target.dataset.field] = e.target.value;
+      activeDayData().meds[parseInt(e.target.dataset.idx)][e.target.dataset.field]=e.target.value;
       saveState();
     });
   });
   list.querySelectorAll(".med-remove").forEach(btn => {
     btn.addEventListener("click", e => {
-      activeDayData().meds.splice(parseInt(e.target.dataset.idx), 1);
+      activeDayData().meds.splice(parseInt(e.target.dataset.idx),1);
       saveState(); renderMeds();
     });
   });
 }
-
-document.getElementById("add-med-btn").addEventListener("click", () => {
-  if (!activeDayData().meds) activeDayData().meds = [];
-  activeDayData().meds.push({ name:"", dosage:"" });
+document.getElementById("add-med-btn").addEventListener("click", ()=>{
+  if (!activeDayData().meds) activeDayData().meds=[];
+  activeDayData().meds.push({name:"",dosage:""});
   saveState(); renderMeds();
   const inputs = document.querySelectorAll(".med-name");
   if (inputs.length) inputs[inputs.length-1].focus();
@@ -595,33 +744,32 @@ function renderAvg() {
   const k       = activeKitten();
   const content = document.getElementById("avg-content");
   const weighted = keys
-    .map((key,i) => ({ key, idx:i, w: parseFloat(k.days[key]?.weight) }))
-    .filter(d => !isNaN(d.w) && k.days[d.key]?.weight !== "");
-  if (weighted.length < 2) {
-    content.innerHTML = `<p style="color:#a0522d;font-size:13px">Enter weights on at least 2 days to see the average gain.</p>`;
+    .map((key,i)=>({key,idx:i,w:parseFloat(k.days[key]?.weight)}))
+    .filter(d=>!isNaN(d.w)&&k.days[d.key]?.weight!=="");
+  if (weighted.length<2){
+    content.innerHTML=`<p style="color:#a0522d;font-size:13px">Enter weights on at least 2 days to see the average gain.</p>`;
     return;
   }
-  const first=weighted[0], last=weighted[weighted.length-1];
-  const totalGain=last.w-first.w, intervals=last.idx-first.idx;
-  const avg = intervals > 0 ? (totalGain/intervals).toFixed(1) : 0;
-  const isGood = parseFloat(avg) >= GOAL_PER_DAY;
-  const rows = weighted.map((d,i) => {
-    if (i===0) return null;
-    const prev=weighted[i-1], gain=d.w-prev.w, span=d.idx-prev.idx;
-    const perDay = span>0?(gain/span).toFixed(1):gain.toFixed(1);
-    const ok = parseFloat(perDay) >= GOAL_PER_DAY;
+  const first=weighted[0],last=weighted[weighted.length-1];
+  const totalGain=last.w-first.w,intervals=last.idx-first.idx;
+  const avg=intervals>0?(totalGain/intervals).toFixed(1):0;
+  const rows=weighted.map((d,i)=>{
+    if(i===0)return null;
+    const prev=weighted[i-1],gain=d.w-prev.w,span=d.idx-prev.idx;
+    const perDay=span>0?(gain/span).toFixed(1):gain.toFixed(1);
+    const goalInfo=goalForDate(k.dob,d.key);
+    const goalG=goalInfo?goalInfo.goal:null;
+    const ok=goalG?d.w>=goalG:parseFloat(perDay)>0;
     return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-radius:8px;background:${ok?"#e8f5e9":"#fff3e0"};margin-top:6px">
-      <span style="font-size:12px;color:#7a3520">Day ${prev.idx+1} → Day ${d.idx+1}</span>
-      <span style="font-size:13px;font-weight:bold;color:${ok?"#2e7d32":"#e65100"}">${gain>=0?"+":""}${gain.toFixed(1)}g
-        <span style="font-size:11px;font-weight:normal;color:#a0522d">(${perDay}g/day)</span></span>
+      <span style="font-size:12px;color:#7a3520">Day ${prev.idx+1}→${d.idx+1}</span>
+      <span style="font-size:13px;font-weight:bold;color:${ok?"#2e7d32":"#e65100"}">${gain>=0?"+":""}${gain.toFixed(1)}g <span style="font-size:11px;font-weight:normal;color:#a0522d">(${perDay}g/day)</span></span>
     </div>`;
   }).filter(Boolean).join("");
-  content.innerHTML = `
+  content.innerHTML=`
     <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">
       <div style="flex:1;min-width:120px;background:#fef3e8;border-radius:12px;padding:12px 16px;text-align:center">
         <div style="font-size:11px;color:#a0522d;text-transform:uppercase;letter-spacing:.5px">Avg gain/day</div>
-        <div style="font-size:28px;font-weight:bold;color:${isGood?"#2e7d32":"#e65100"}">${avg}g</div>
-        <div style="font-size:11px;color:#a0522d">goal: ${GOAL_PER_DAY}g/day</div>
+        <div style="font-size:28px;font-weight:bold;color:${parseFloat(avg)>0?"#2e7d32":"#e65100"}">${avg}g</div>
       </div>
       <div style="flex:1;min-width:120px;background:#fef3e8;border-radius:12px;padding:12px 16px;text-align:center">
         <div style="font-size:11px;color:#a0522d;text-transform:uppercase;letter-spacing:.5px">Total gain</div>
@@ -635,50 +783,51 @@ function renderAvg() {
 
 // ── History ──────────────────────────────────────────────
 function renderHistory() {
-  const keys = dayKeys();
-  const card = document.getElementById("history-card");
-  if (keys.length < 2) { card.style.display="none"; return; }
-  card.style.display = "block";
-  const list = document.getElementById("history-list");
-  list.innerHTML = "";
-  const k = activeKitten();
-  keys.forEach((key,i) => {
-    const w    = parseFloat(k.days[key]?.weight);
-    const goal = expectedWeight(i);
-    const hasW = !isNaN(w) && k.days[key]?.weight !== "";
-    const diff = hasW ? w-goal : null;
-    const row  = document.createElement("div");
-    row.className = "history-row" + (key===state.activeDay?" active":"");
-    const cls = !hasW?"none":diff>=0?"ok":"low";
-    row.innerHTML = `
+  const keys=dayKeys();
+  const card=document.getElementById("history-card");
+  if(keys.length<2){card.style.display="none";return;}
+  card.style.display="block";
+  const list=document.getElementById("history-list");
+  list.innerHTML="";
+  const k=activeKitten();
+  keys.forEach((key,i)=>{
+    const w=parseFloat(k.days[key]?.weight);
+    const goalInfo=goalForDate(k.dob,key);
+    const goal=goalInfo?goalInfo.goal:null;
+    const hasW=!isNaN(w)&&k.days[key]?.weight!=="";
+    const diff=hasW&&goal?w-goal:null;
+    const row=document.createElement("div");
+    row.className="history-row"+(key===state.activeDay?" active":"");
+    const cls=!hasW?"none":diff===null?"none":diff>=0?"ok":"low";
+    row.innerHTML=`
       <span style="font-size:13px;color:#7a3520">Day ${i+1} <span style="font-size:11px;color:#a0522d">(${fmtDate(key)})</span></span>
-      <span style="font-size:13px;color:#c15a35">Goal: ${goal}g</span>
+      <span style="font-size:13px;color:#c15a35">${goal?`Goal: ${goal}g`:""}</span>
       <span class="actual ${cls}">${hasW?w+"g":"—"}</span>`;
-    row.onclick = () => { state.activeDay = key; saveState(); render(); };
+    row.onclick=()=>{state.activeDay=key;saveState();render();};
     list.appendChild(row);
   });
 }
 
 // ── Export ───────────────────────────────────────────────
 function exportCSV() {
-  const k    = activeKitten();
-  const keys = dayKeys();
-  const rows = [["Day","Date","Actual Weight (g)","Goal Weight (g)","Difference (g)",
+  const k=activeKitten(),keys=dayKeys();
+  const rows=[["Day","Date","Actual Weight (g)","Goal Weight (g)","Difference (g)",
     "6:00 AM","10:00 AM","2:00 PM","6:00 PM","10:00 PM","Medications","Notes"]];
-  keys.forEach((key,i) => {
-    const d    = k.days[key] || emptyDay();
-    const goal = expectedWeight(i);
-    const actual = d.weight!==""?parseFloat(d.weight):"";
-    const diff   = actual!==""?(actual-goal).toFixed(1):"";
-    const meds   = (d.meds||[]).map(m=>`${m.name}${m.dosage?" ("+m.dosage+")":""}`).join("; ");
+  keys.forEach((key,i)=>{
+    const d=k.days[key]||emptyDay();
+    const goalInfo=goalForDate(k.dob,key);
+    const goal=goalInfo?goalInfo.goal:"";
+    const actual=d.weight!==""?parseFloat(d.weight):"";
+    const diff=actual!==""&&goal!==""?(actual-goal).toFixed(1):"";
+    const meds=(d.meds||[]).map(m=>`${m.name}${m.dosage?" ("+m.dosage+")":""}`).join("; ");
     rows.push([`Day ${i+1}`,key,actual,goal,diff,...FEEDING_TIMES.map((_,fi)=>d.feedings[fi]||""),meds,d.notes||""]);
   });
-  const csv  = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
-  const blob = new Blob([csv],{type:"text/csv;charset=utf-8;"});
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement("a");
-  a.href     = url;
-  a.download = `${(k.name||"Kitten").replace(/\s+/g,"_")}_feeding_log_${new Date().toISOString().slice(0,10)}.csv`;
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download=`${(k.name||"Kitten").replace(/\s+/g,"_")}_feeding_log_${todayStr()}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -690,64 +839,55 @@ function render() {
   renderMeds(); renderAvg(); renderHistory();
 }
 
-// ── Event listeners ──────────────────────────────────────
-document.getElementById("weight-input").addEventListener("input", e => {
-  activeDayData().weight = e.target.value;
+// ── Events ───────────────────────────────────────────────
+document.getElementById("weight-input").addEventListener("input", e=>{
+  activeDayData().weight=e.target.value;
   saveState(); renderWeight(); renderHistory(); renderAvg();
 });
-
-document.getElementById("notes-input").addEventListener("input", e => {
-  const lines = e.target.value.split("\n");
-  const capped = lines.map(l=>l.slice(0,80));
-  const caret  = e.target.selectionStart;
-  e.target.value = capped.join("\n");
-  e.target.selectionStart = e.target.selectionEnd = Math.min(caret,e.target.value.length);
-  activeDayData().notes = e.target.value;
+document.getElementById("notes-input").addEventListener("input", e=>{
+  const lines=e.target.value.split("\n");
+  const capped=lines.map(l=>l.slice(0,80));
+  const caret=e.target.selectionStart;
+  e.target.value=capped.join("\n");
+  e.target.selectionStart=e.target.selectionEnd=Math.min(caret,e.target.value.length);
+  activeDayData().notes=e.target.value;
   autoResize(e.target); saveState();
 });
-
-document.getElementById("add-day-btn").addEventListener("click", () => {
-  const input = document.getElementById("new-day-input");
-  const val   = input.value;
-  if (!val) return;
-  state.kittens.forEach(k => { if (!k.days[val]) k.days[val] = emptyDay(); });
-  state.activeDay = val; input.value = "";
+document.getElementById("add-day-btn").addEventListener("click",()=>{
+  const input=document.getElementById("new-day-input");
+  const val=input.value; if(!val)return;
+  state.kittens.forEach(k=>{if(!k.days[val])k.days[val]=emptyDay();});
+  state.activeDay=val; input.value="";
   saveState(); render();
 });
-
 document.getElementById("export-btn").addEventListener("click", exportCSV);
-
-document.getElementById("reset-btn").addEventListener("click", () => {
-  document.getElementById("reset-kitten-name").textContent = activeKitten().name || "this kitten";
-  document.getElementById("reset-modal").style.display = "flex";
+document.getElementById("reset-btn").addEventListener("click",()=>{
+  document.getElementById("reset-kitten-name").textContent=activeKitten().name||"this kitten";
+  document.getElementById("reset-modal").style.display="flex";
 });
-document.getElementById("reset-cancel").addEventListener("click", () => {
-  document.getElementById("reset-modal").style.display = "none";
-});
-document.getElementById("reset-confirm").addEventListener("click", () => {
-  const k = activeKitten();
-  k.name = ""; k.photo = "";
-  k.days = { [START_DATE]: emptyDay() };
-  state.activeDay = START_DATE;
-  document.getElementById("reset-modal").style.display = "none";
+document.getElementById("reset-cancel").addEventListener("click",()=>{ document.getElementById("reset-modal").style.display="none"; });
+document.getElementById("reset-confirm").addEventListener("click",()=>{
+  const k=activeKitten(); k.name=""; k.photo=""; k.dob="";
+  k.days={[todayStr()]:emptyDay()}; state.activeDay=todayStr();
+  document.getElementById("reset-modal").style.display="none";
   saveState(); render();
 });
-
-document.getElementById("add-kitten-btn").addEventListener("click", () => {
-  document.getElementById("new-kitten-name").value = "";
-  document.getElementById("new-kitten-modal").style.display = "flex";
-  setTimeout(() => document.getElementById("new-kitten-name").focus(), 100);
+document.getElementById("add-kitten-btn").addEventListener("click",()=>{
+  document.getElementById("new-kitten-name").value="";
+  document.getElementById("new-kitten-dob").value="";
+  document.getElementById("new-kitten-day1").value=todayStr();
+  document.getElementById("new-kitten-modal").style.display="flex";
+  setTimeout(()=>document.getElementById("new-kitten-name").focus(),100);
 });
-document.getElementById("new-kitten-cancel").addEventListener("click", () => {
-  document.getElementById("new-kitten-modal").style.display = "none";
-});
-document.getElementById("new-kitten-confirm").addEventListener("click", () => {
-  const name = document.getElementById("new-kitten-name").value.trim();
-  const k    = newKitten(name || `Kitten ${state.kittens.length+1}`);
-  dayKeys().forEach(d => { if (!k.days[d]) k.days[d] = emptyDay(); });
-  state.kittens.push(k);
-  state.activeKittenId = k.id;
-  document.getElementById("new-kitten-modal").style.display = "none";
+document.getElementById("new-kitten-cancel").addEventListener("click",()=>{ document.getElementById("new-kitten-modal").style.display="none"; });
+document.getElementById("new-kitten-confirm").addEventListener("click",()=>{
+  const name=document.getElementById("new-kitten-name").value.trim();
+  const dob =document.getElementById("new-kitten-dob").value;
+  const day1=document.getElementById("new-kitten-day1").value||todayStr();
+  const k=newKitten(name||`Kitten ${state.kittens.length+1}`, dob, day1);
+  dayKeys().forEach(d=>{if(!k.days[d])k.days[d]=emptyDay();});
+  state.kittens.push(k); state.activeKittenId=k.id;
+  document.getElementById("new-kitten-modal").style.display="none";
   saveState(); render();
 });
 </script>
