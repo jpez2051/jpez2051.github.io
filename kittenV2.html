@@ -570,7 +570,7 @@ cropCanvas.addEventListener("touchmove",e=>{
     const ratio=newDist/prevDist;
     cropState.scale=Math.max(cropState.minScale,cropState.scale*ratio);
     // Pan with midpoint
-    const prevMid=[(prev[0].x+prev[1].x)/2,(prev[0].y+prev[1].y)/2];
+    const const prevMid=[(prev[0].x+prev[1].x)/2,(prev[0].y+prev[1].y)/2];;
     const newMid=[(t0.x+t1.x)/2,(t0.y+t1.y)/2];
     cropState.panX+=(newMid[0]-prevMid[0]);
     cropState.panY+=(newMid[1]-prevMid[1]);
