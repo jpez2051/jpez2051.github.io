@@ -5,259 +5,395 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Tracker v2.5.8</title>
+    <title>Debt Tracker v2.6.0</title>
     <style>
         :root { --bg: #1e272e; --primary: #2ecc71; --accent: #3498db; --danger: #ff4757; --text: #f4f7f6; --card-bg: #2f3640; }
         html, body { background: var(--bg); overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; }
-        body { font-family: -apple-system, sans-serif; margin: 0; padding: 10px; padding-bottom: 120px; color: var(--text); overflow-x: hidden; }
-        
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 10px; padding-bottom: 120px; color: var(--text); overflow-x: hidden; }
+        * { box-sizing: border-box; }
+
         .dashboard { background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(30,39,46,0) 100%); padding: 25px 12px 15px 12px; text-align: center; }
         .main-total-container { display: flex; align-items: baseline; justify-content: center; gap: 8px; flex-wrap: wrap; }
         .main-total { font-size: 32px; font-weight: 800; }
         .delta-badge { font-size: 14px; font-weight: 800; padding: 2px 8px; border-radius: 6px; background: rgba(0,0,0,0.2); }
         .delta-down { color: var(--primary); }
         .delta-up { color: var(--danger); }
-        
+
         .main-freedom { background: rgba(46, 204, 113, 0.1); color: var(--primary); font-size: 11px; font-weight: 800; padding: 5px 12px; border-radius: 20px; display: inline-block; margin-top: 8px; text-transform: uppercase; }
         .stack-chart { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: rgba(255,255,255,0.05); margin: 15px 0; width: 100%; }
         .stack-segment { height: 100%; transition: width 0.5s ease; }
-        
+        .debt-free { margin: 15px 0; font-size: 18px; font-weight: 900; color: var(--primary); letter-spacing: 2px; }
+
         .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; }
         .stat-val { font-size: 15px; font-weight: 800; display: block; }
         .stat-lab { font-size: 7px; font-weight: 800; color: #a4b0be; text-transform: uppercase; letter-spacing: 0.5px;}
-        
-        .card-container { margin-bottom: 15px; border-radius: 20px; padding: 18px 18px 18px 12px; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08); position: relative; display: flex; flex-direction: column; gap: 12px;}
+
+        .card-container { margin-bottom: 15px; border-radius: 20px; padding: 18px 18px 18px 12px; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08); position: relative; display: flex; flex-direction: column; gap: 12px; }
         .card-target { border: 1px solid var(--accent) !important; box-shadow: 0 0 20px rgba(52, 152, 219, 0.15); }
         .target-tag { background: var(--accent); color: white; font-size: 8px; font-weight: 900; padding: 3px 8px; border-radius: 5px; text-transform: uppercase;}
-        .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
-        
-        .progress-ring { position: relative; width: 54px; height: 54px; }
+        .completed-tag { font-size: 8px; font-weight: 900; color: var(--primary); }
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+        .card-top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+
+        .progress-ring { position: relative; width: 54px; height: 54px; flex-shrink: 0; }
         .progress-ring svg { transform: rotate(-90deg); }
         .ring-circle { fill: none; stroke-width: 6; stroke-linecap: round; }
         .ring-bg { stroke: rgba(255,255,255,0.05); }
         .ring-bar { stroke-dasharray: 151; transition: stroke-dashoffset 0.6s ease; }
         .prog-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; }
-        
+
         .paid-btn { background: #353b48; color: #a4b0be; font-size: 9px; padding: 6px 12px; border-radius: 8px; font-weight: 800; border: none; text-transform: uppercase; cursor: pointer; }
         .paid-btn.active { background: var(--primary); color: white; }
-        
-        label { font-size: 8px; font-weight: 800; color: #a4b0be; text-transform: uppercase; margin-bottom: 4px; display: block; }
-        input { width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; font-size: 13px; background: rgba(0,0,0,0.2); color: #fff; box-sizing: border-box; }
-        .reset-link { font-size: 9px; color: var(--danger); opacity: 0.3; text-decoration: none; text-align: right; display: block; font-weight: 700; cursor: pointer; margin-top: 5px; }
-        
-        .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.95); padding: 18px 0; font-size: 11px; display: flex; justify-content: space-around; z-index: 100; border-top: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
+
+        .name-input { font-weight: 800; border: none; background: none; font-size: 16px; width: 100%; color: #fff; padding: 0; outline: none; }
+        .due-label { font-size: 9px; font-weight: 800; margin-top: 4px; }
+
+        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .input-grid label { font-size: 8px; font-weight: 800; color: #a4b0be; text-transform: uppercase; margin-bottom: 4px; display: block; }
+        .input-grid input { width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; font-size: 13px; background: rgba(0,0,0,0.2); color: #fff; outline: none; }
+        .input-grid input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+
+        .card-actions { display: flex; justify-content: space-between; align-items: center; }
+        .reset-link { font-size: 9px; color: var(--danger); opacity: 0.4; font-weight: 700; cursor: pointer; }
+        .reset-link:hover { opacity: 1; }
+        .delete-link { font-size: 9px; color: var(--danger); opacity: 0.4; font-weight: 700; cursor: pointer; }
+        .delete-link:hover { opacity: 1; }
+
+        .toggle-completed { background: rgba(255,255,255,0.08); color: #a4b0be; font-size: 9px; padding: 8px 16px; border-radius: 8px; font-weight: 800; border: none; text-transform: uppercase; cursor: pointer; display: block; margin: 10px auto; width: 100%; }
+
+        .add-btn { background: var(--primary); color: white; padding: 16px; border-radius: 14px; width: 100%; margin-top: 10px; font-weight: 800; border: none; cursor: pointer; font-size: 14px; }
+
         .version-tag { text-align: center; font-size: 8px; color: #57606f; margin-top: 30px; letter-spacing: 2px; text-transform: uppercase; }
+
+        .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.95); padding: 18px 0; font-size: 11px; display: flex; justify-content: space-around; z-index: 100; border-top: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
+        .footer span { font-weight: 800; cursor: pointer; }
+        .footer-reset { color: var(--primary); }
+        .footer-export { color: var(--accent); }
+        .footer-wipe { color: var(--danger); }
     </style>
 </head>
 <body>
 
-<div id="app-root">
-    <div class="dashboard">
-        <div class="main-total-container">
-            <div class="main-total" id="main-debt">$0.00</div>
-            <div id="delta-badge" class="delta-badge"></div>
-        </div>
-        <div id="main-freedom" class="main-freedom">Calculating...</div>
-        <div id="stack-chart" class="stack-chart"></div>
-        <div class="stat-grid">
-            <div class="stat-item"><span class="stat-val" id="stat-min">$0</span><span class="stat-lab">Total Min</span></div>
-            <div class="stat-item"><span class="stat-val" id="stat-interest" style="color:var(--danger)">$0</span><span class="stat-lab">Int. Leakage/mo</span></div>
-            <div class="stat-item"><span class="stat-val" id="stat-apr">0%</span><span class="stat-lab">Avg APR</span></div>
-        </div>
-    </div>
-    <div id="card-list" style="margin-top:20px;"></div>
-    <button onclick="addCard()" style="background:var(--primary); color:white; padding:16px; border-radius:14px; width:100%; margin-top:10px; font-weight: 800; border:none; cursor:pointer;">+ ADD NEW DEBT</button>
-    
-    <div class="version-tag">Build v2.5.8 • Snowball Protocol</div>
-</div>
-
-<div class="footer">
-    <span onclick="resetGlobalBaseline()" style="color:var(--primary); font-weight: 800; cursor:pointer;">RESET BASELINE</span>
-    <span onclick="exportCSV()" style="color:var(--accent); font-weight: 800; cursor:pointer;">EXPORT CSV</span>
-    <span onclick="nuke()" style="color:var(--danger); font-weight: 800; cursor:pointer;">WIPE ALL</span>
-</div>
+<div id="app-root"></div>
 
 <script>
-const KEY = 'debt_v125';
+const KEY = 'debt_v126';
 const BASE_KEY = 'debt_global_baseline';
 const COLORS = ['#2ecc71', '#3498db', '#9b59b6', '#f1c40f', '#e67e22', '#1abc9c', '#e74c3c'];
 let cards = [];
+let baseline = 0;
+let hideCompleted = false;
+let idCounter = 0;
 
-function loadData() {
+function generateId() { return 'card_' + Date.now() + '_' + (idCounter++); }
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str || '';
+    return div.innerHTML;
+}
+
+function formatCurrency(val, opts) {
+    const decimals = (opts && opts.decimals !== undefined) ? opts.decimals : 2;
+    return '$' + (val || 0).toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+function getMonthKey() { return (new Date().getMonth() + 1) + '-' + new Date().getFullYear(); }
+
+function daysUntilDue(dueDate) {
+    if (!dueDate) return null;
+    const today = new Date(); today.setHours(0,0,0,0);
+    const due = new Date(dueDate); due.setHours(0,0,0,0);
+    return Math.round((due - today) / (1000 * 60 * 60 * 24));
+}
+
+function loadCards() {
     try {
         const raw = localStorage.getItem(KEY);
-        cards = raw ? JSON.parse(raw) : [];
-        if (localStorage.getItem(BASE_KEY) === null) {
-            let total = cards.reduce((s, c) => s + (parseFloat(c.bal) || 0), 0);
-            localStorage.setItem(BASE_KEY, total);
-        }
-        renderUI();
-    } catch (e) { cards = []; }
+        const loaded = raw ? JSON.parse(raw) : [];
+        return loaded.map(c => ({ ...c, id: c.id || generateId(), highestBal: c.highestBal !== undefined ? c.highestBal : (parseFloat(c.bal) || 0) }));
+    } catch (e) { return []; }
 }
 
-function resetGlobalBaseline() {
-    let currentTotal = cards.reduce((s, c) => s + (parseFloat(c.bal) || 0), 0);
-    localStorage.setItem(BASE_KEY, currentTotal);
-    alert("Snowball baseline set: $" + currentTotal.toLocaleString());
-    calculate();
+function loadBaseline(fallbackTotal) {
+    if (localStorage.getItem(BASE_KEY) === null) localStorage.setItem(BASE_KEY, String(fallbackTotal));
+    return parseFloat(localStorage.getItem(BASE_KEY)) || fallbackTotal;
 }
 
-function renderUI() {
-    const list = document.getElementById('card-list');
-    list.innerHTML = '';
-    const curMonthKey = (new Date().getMonth() + 1) + '-' + new Date().getFullYear();
-    
-    // SNOWBALL SORTING: Smallest Balance First
-    cards.sort((a, b) => {
+function saveCards() { localStorage.setItem(KEY, JSON.stringify(cards)); }
+
+function sortCards(arr) {
+    return arr.slice().sort((a, b) => {
         const balA = parseFloat(a.bal) || 0;
         const balB = parseFloat(b.bal) || 0;
         if (balA > 0 && balB <= 0) return -1;
         if (balA <= 0 && balB > 0) return 1;
         if (balA === 0 && balB === 0) return 0;
-        return balA - balB; // Smallest to largest
+        return balA - balB;
     });
-
-    const targetIdx = cards.findIndex(c => parseFloat(c.bal) > 0);
-
-    cards.forEach((c, i) => {
-        const bal = parseFloat(c.bal) || 0;
-        const isTarget = (i === targetIdx && bal > 0);
-        const highest = parseFloat(c.highestBal) || bal;
-        const progPercent = highest > bal ? Math.round(((highest - bal) / highest) * 100) : (bal === 0 ? 100 : 0);
-        const offset = 151 - (151 * (progPercent / 100));
-        const isPaid = c.lastPaidMonth === curMonthKey;
-        const syncColor = COLORS[i % COLORS.length];
-
-        list.innerHTML += `
-            <div class="card-container ${isTarget ? 'card-target' : ''}" style="opacity: ${bal === 0 ? 0.3 : (isPaid ? 0.6 : 1)}; border-left: 6px solid ${syncColor};">
-                <div class="card-header">
-                    <div style="flex:1">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                            ${isTarget ? '<span class="target-tag">SNOWBALL TARGET</span>' : (bal === 0 ? '<span style="font-size:8px; font-weight:900; color:var(--primary);">COMPLETED ✓</span>' : '<span></span>')}
-                            ${bal > 0 ? `<button class="paid-btn ${isPaid ? 'active' : ''}" onclick="markPaid(${i})">${isPaid ? 'PAID ✓' : 'MARK PAID'}</button>` : ''}
-                        </div>
-                        <input type="text" value="${c.name || ''}" placeholder="Debt Name" onchange="update(${i}, 'name', this.value)" style="font-weight:800; border:none; background:none; font-size:16px; width:100%; color:#fff; padding:0;">
-                    </div>
-                    <div class="progress-ring">
-                        <svg width="54" height="54">
-                            <circle class="ring-circle ring-bg" cx="27" cy="27" r="24"></circle>
-                            <circle class="ring-circle ring-bar" cx="27" cy="27" r="24" style="stroke-dashoffset: ${offset}; stroke: ${syncColor};"></circle>
-                        </svg>
-                        <div class="prog-text">${progPercent}%</div>
-                    </div>
-                </div>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
-                    <div><label>Balance</label><input type="number" step="0.01" value="${bal}" onchange="update(${i}, 'bal', this.value)"></div>
-                    <div><label>APR %</label><input type="number" step="0.1" value="${c.apr || 0}" onchange="update(${i}, 'apr', this.value)"></div>
-                </div>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
-                    <div><label>Min Pay</label><input type="number" value="${c.min || 0}" onchange="update(${i}, 'min', this.value)"></div>
-                    <div><label>Due Date</label><input type="date" value="${c.due || ''}" onchange="update(${i}, 'due', this.value)"></div>
-                </div>
-                <span class="reset-link" onclick="resetHighest(${i})">RESET CARD START</span>
-            </div>`;
-    });
-    calculate();
 }
 
-function update(i, field, val) {
-    cards[i][field] = (field === 'name' || field === 'due') ? val : parseFloat(val) || 0;
-    if (field === 'bal' && cards[i].bal > (cards[i].highestBal || 0)) cards[i].highestBal = cards[i].bal;
-    localStorage.setItem(KEY, JSON.stringify(cards));
-    renderUI();
-}
-
-function markPaid(i) {
-    const key = (new Date().getMonth() + 1) + '-' + new Date().getFullYear();
-    cards[i].lastPaidMonth = (cards[i].lastPaidMonth === key) ? "" : key;
-    localStorage.setItem(KEY, JSON.stringify(cards));
-    renderUI();
-}
-
-function resetHighest(i) {
-    cards[i].highestBal = parseFloat(cards[i].bal) || 0;
-    localStorage.setItem(KEY, JSON.stringify(cards));
-    renderUI();
-}
-
-function calculate() {
+function calculateStats(cards) {
     let currentTotal = 0, totalMin = 0, aprSum = 0, count = 0, monthlyInterest = 0;
     cards.forEach(c => {
-        let b = parseFloat(c.bal) || 0;
-        let r = parseFloat(c.apr) || 0;
+        const b = parseFloat(c.bal) || 0;
+        const r = parseFloat(c.apr) || 0;
         currentTotal += b;
         if (b > 0) {
-            totalMin += (parseFloat(c.min) || 0);
+            totalMin += parseFloat(c.min) || 0;
             aprSum += r;
             monthlyInterest += (b * (r / 100) / 12);
             count++;
         }
     });
-    
-    document.getElementById('main-debt').innerText = '$' + currentTotal.toLocaleString(undefined, {minimumFractionDigits:2});
-    
-    const deltaEl = document.getElementById('delta-badge');
-    const globalBase = parseFloat(localStorage.getItem(BASE_KEY)) || currentTotal;
-    const delta = currentTotal - globalBase;
-    
-    if (Math.abs(delta) > 0.01) {
-        deltaEl.innerText = (delta > 0 ? '+' : '-') + '$' + Math.abs(delta).toLocaleString(undefined, {minimumFractionDigits:2});
-        deltaEl.className = 'delta-badge ' + (delta > 0 ? 'delta-up' : 'delta-down');
-    } else {
-        deltaEl.innerText = '$0.00';
-        deltaEl.className = 'delta-badge';
-    }
-
-    document.getElementById('stat-min').innerText = '$' + Math.round(totalMin);
-    document.getElementById('stat-apr').innerText = count > 0 ? Math.round(aprSum / count) + '%' : '0%';
-    document.getElementById('stat-interest').innerText = '$' + Math.round(monthlyInterest);
-    
-    const freedomEl = document.getElementById('main-freedom');
-    const months = projectTimeline(cards);
-    if (months > 0) {
-        let d = new Date(); d.setMonth(d.getMonth() + months);
-        freedomEl.innerText = "Freedom: " + d.toLocaleDateString('en-US', {month:'short', year:'numeric'});
-    } else {
-        freedomEl.innerText = currentTotal > 0 ? "Add Min Payments" : "Debt Free!";
-    }
-
-    const stack = document.getElementById('stack-chart');
-    stack.innerHTML = '';
-    cards.forEach((c, i) => {
-        const bal = parseFloat(c.bal) || 0;
-        if (bal > 0) {
-            const width = (bal / currentTotal) * 100;
-            stack.innerHTML += `<div class="stack-segment" style="width: ${width}%; background: ${COLORS[i % COLORS.length]}"></div>`;
-        }
-    });
+    const delta = currentTotal - baseline;
+    return { currentTotal, totalMin, monthlyInterest, avgApr: count > 0 ? Math.round(aprSum / count) : 0, delta };
 }
 
 function projectTimeline(cards) {
     let temp = cards.filter(c => (parseFloat(c.bal) || 0) > 0).map(c => ({
         bal: parseFloat(c.bal) || 0, apr: parseFloat(c.apr) || 0, min: parseFloat(c.min) || 0
-    }));
-    let totalMin = temp.reduce((s, c) => s + c.min, 0);
-    if (temp.length === 0 || totalMin <= 0) return 0;
-    let months = 0;
+    })).sort((a, b) => a.bal - b.bal);
+    if (temp.length === 0) return 0;
+    const totalMin = temp.reduce((s, c) => s + c.min, 0);
+    if (totalMin <= 0) return 0;
+    let months = 0, freedMinPool = 0, prevTotal = temp.reduce((s, c) => s + c.bal, 0), stagnantCount = 0;
     while (months < 360) {
-        months++; let pool = totalMin;
-        temp.forEach(c => {
-            c.bal = (c.bal + (c.bal * ((c.apr / 100) / 12))) - c.min;
-            pool -= c.min;
-        });
-        if (temp[0]) { temp[0].bal -= pool; if (temp[0].bal <= 0) temp.shift(); }
+        months++;
+        let availableExtra = freedMinPool;
+        for (let i = 0; i < temp.length; i++) {
+            const c = temp[i];
+            c.bal += c.bal * ((c.apr / 100) / 12);
+            const payment = c.min + availableExtra;
+            availableExtra = 0;
+            if (c.bal <= payment) {
+                const surplus = payment - c.bal;
+                freedMinPool += c.min;
+                availableExtra = surplus;
+                temp.splice(i, 1); i--;
+            } else { c.bal -= payment; }
+        }
         if (temp.length === 0) break;
+        const currentTotal = temp.reduce((s, c) => s + c.bal, 0);
+        if (currentTotal >= prevTotal) { stagnantCount++; if (stagnantCount >= 3) return -1; } else stagnantCount = 0;
+        prevTotal = currentTotal;
     }
-    return months;
+    return months >= 360 ? -1 : months;
 }
 
-function addCard() {
-    cards.push({name: "New Debt", bal: 0, apr: 0, min: 0, highestBal: 0, due: "", lastPaidMonth: ""});
+function exportCSV() {
+    const headers = ['Name', 'Balance', 'APR %', 'Min Payment', 'Due Date', 'Paid This Month'];
+    const rows = cards.map(c => [
+        '"' + (c.name || '').replace(/"/g, '""') + '"',
+        parseFloat(c.bal) || 0, parseFloat(c.apr) || 0, parseFloat(c.min) || 0,
+        c.due || '', c.lastPaidMonth || ''
+    ].join(','));
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'debt-tracker-export.csv'; a.click();
+    URL.revokeObjectURL(url);
+}
+
+function loadData() {
+    cards = loadCards();
+    const total = cards.reduce((s, c) => s + (parseFloat(c.bal) || 0), 0);
+    baseline = loadBaseline(total);
     renderUI();
 }
 
-function nuke() { if(confirm("Wipe all data? This cannot be undone.")) { localStorage.clear(); location.reload(); } }
-function exportCSV() { alert(JSON.stringify(cards)); }
+function renderUI() {
+    const root = document.getElementById('app-root');
+    const sorted = sortCards(cards);
+    const targetIdx = sorted.findIndex(c => (parseFloat(c.bal) || 0) > 0);
+    const stats = calculateStats(cards);
+    const freedomMonths = projectTimeline(sorted);
+
+    const displayCards = hideCompleted ? sorted.filter(c => (parseFloat(c.bal) || 0) !== 0) : sorted;
+    const hasCompleted = sorted.some(c => (parseFloat(c.bal) || 0) === 0);
+
+    let freedomLabel;
+    if (freedomMonths > 0) {
+        const d = new Date(); d.setMonth(d.getMonth() + freedomMonths);
+        freedomLabel = 'Freedom: ' + d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    } else if (freedomMonths === -1) {
+        freedomLabel = '\u26A0 Interest Exceeds Payments';
+    } else {
+        freedomLabel = stats.currentTotal > 0 ? 'Add Min Payments' : 'Debt Free!';
+    }
+
+    const showDelta = Math.abs(stats.delta) > 0.01;
+    const deltaArrow = stats.delta > 0 ? '\u2191' : '\u2193';
+    const deltaLabel = showDelta ? deltaArrow + ' ' + formatCurrency(Math.abs(stats.delta)) : '$0.00';
+    const deltaClass = showDelta ? (stats.delta > 0 ? 'delta-up' : 'delta-down') : '';
+
+    let html = '<div class="dashboard">';
+    html += '<div class="main-total-container"><div class="main-total">' + formatCurrency(stats.currentTotal) + '</div><div class="delta-badge ' + deltaClass + '">' + deltaLabel + '</div></div>';
+    html += '<div class="main-freedom">' + escapeHtml(freedomLabel) + '</div>';
+    if (stats.currentTotal > 0) {
+        html += '<div class="stack-chart">';
+        sorted.forEach((c, i) => {
+            const bal = parseFloat(c.bal) || 0;
+            if (bal > 0) {
+                const width = (bal / stats.currentTotal) * 100;
+                html += '<div class="stack-segment" style="width:' + width + '%; background:' + COLORS[i % COLORS.length] + '"></div>';
+            }
+        });
+        html += '</div>';
+    } else {
+        html += '<div class="debt-free">\uD83C\uDF89 DEBT FREE \uD83C\uDF89</div>';
+    }
+    html += '<div class="stat-grid">';
+    html += '<div class="stat-item"><span class="stat-val">' + formatCurrency(stats.totalMin, { decimals: 0 }) + '</span><span class="stat-lab">Total Min</span></div>';
+    html += '<div class="stat-item"><span class="stat-val" style="color:var(--danger)">' + formatCurrency(stats.monthlyInterest, { decimals: 0 }) + '</span><span class="stat-lab">Int. Leakage/mo</span></div>';
+    html += '<div class="stat-item"><span class="stat-val">' + stats.avgApr + '%</span><span class="stat-lab">Avg APR</span></div>';
+    html += '</div></div>';
+
+    html += '<div style="margin-top:20px;">';
+    const indexMap = {};
+    sorted.forEach((c, i) => { indexMap[c.id] = i; });
+
+    displayCards.forEach(c => {
+        const i = indexMap[c.id];
+        const bal = parseFloat(c.bal) || 0;
+        const min = parseFloat(c.min) || 0;
+        const isPaid = c.lastPaidMonth === getMonthKey();
+        const highest = parseFloat(c.highestBal) || bal;
+        const isTarget = (i === targetIdx && bal > 0);
+        const progPercent = highest > bal ? Math.round(((highest - bal) / highest) * 100) : (bal === 0 ? 100 : 0);
+        const offset = 151 - (151 * (progPercent / 100));
+        const syncColor = COLORS[i % COLORS.length];
+
+        const daysToDue = daysUntilDue(c.due);
+        let dueLabel = '', dueColor = '#a4b0be';
+        if (daysToDue !== null) {
+            if (daysToDue < 0) { dueLabel = Math.abs(daysToDue) + 'd overdue'; dueColor = 'var(--danger)'; }
+            else if (daysToDue <= 3) { dueLabel = daysToDue + 'd left'; dueColor = 'var(--danger)'; }
+            else if (daysToDue <= 7) { dueLabel = daysToDue + 'd left'; dueColor = 'var(--accent)'; }
+            else dueLabel = daysToDue + 'd left';
+        }
+
+        let cardStyle = 'opacity:' + (bal === 0 ? 0.3 : (isPaid ? 0.6 : 1)) + '; border-left:6px solid ' + syncColor + ';';
+        if (isTarget) cardStyle = 'opacity:1; border:1px solid var(--accent); border-left:6px solid ' + syncColor + '; box-shadow:0 0 20px rgba(52,152,219,0.15);';
+
+        html += '<div class="card-container ' + (isTarget ? 'card-target' : '') + '" style="' + cardStyle + '">';
+        html += '<div class="card-header"><div style="flex:1">';
+        html += '<div class="card-top-row">';
+        if (isTarget) html += '<span class="target-tag">SNOWBALL TARGET</span>';
+        else if (bal === 0) html += '<span class="completed-tag">COMPLETED \u2713</span>';
+        else html += '<span></span>';
+        if (bal > 0) {
+            html += '<div style="display:flex; gap:5px;">';
+            html += '<button class="paid-btn" onclick="payMin(\'' + c.id + '\')" style="opacity:' + (min > 0 ? 1 : 0.3) + '; pointer-events:' + (min > 0 ? 'auto' : 'none') + ';">MIN PAID</button>';
+            html += '<button class="paid-btn ' + (isPaid ? 'active' : '') + '" onclick="markPaid(\'' + c.id + '\')">' + (isPaid ? 'PAID \u2713' : 'MARK PAID') + '</button>';
+            html += '</div>';
+        }
+        html += '</div>';
+        html += '<input type="text" value="' + escapeHtml(c.name || '') + '" placeholder="Debt Name" onfocus="this.select()" onchange="update(\'' + c.id + '\', \'name\', this.value)" class="name-input">';
+        if (dueLabel) html += '<div class="due-label" style="color:' + dueColor + ';">' + escapeHtml(dueLabel) + '</div>';
+        html += '</div>';
+        html += '<div class="progress-ring"><svg width="54" height="54"><circle class="ring-circle ring-bg" cx="27" cy="27" r="24"></circle><circle class="ring-circle ring-bar" cx="27" cy="27" r="24" style="stroke-dashoffset:' + offset + '; stroke:' + syncColor + ';"></circle></svg><div class="prog-text">' + progPercent + '%</div></div>';
+        html += '</div>';
+
+        html += '<div class="input-grid">';
+        html += '<div><label>Balance</label><input type="number" step="0.01" min="0" value="' + bal + '" onfocus="this.select()" onchange="update(\'' + c.id + '\', \'bal\', this.value)"></div>';
+        html += '<div><label>APR %</label><input type="number" step="0.1" min="0" max="100" value="' + (c.apr || 0) + '" onfocus="this.select()" onchange="update(\'' + c.id + '\', \'apr\', this.value)"></div>';
+        html += '</div>';
+        html += '<div class="input-grid">';
+        html += '<div><label>Min Pay</label><input type="number" min="0" value="' + (c.min || 0) + '" onfocus="this.select()" onchange="update(\'' + c.id + '\', \'min\', this.value)"></div>';
+        html += '<div><label>Due Date</label><input type="date" value="' + (c.due || '') + '" onfocus="this.select()" onchange="update(\'' + c.id + '\', \'due\', this.value)"></div>';
+        html += '</div>';
+        html += '<div class="card-actions"><span class="reset-link" onclick="resetHighest(\'' + c.id + '\')">RESET CARD START</span><span class="delete-link" onclick="deleteCard(\'' + c.id + '\')">DELETE</span></div>';
+        html += '</div>';
+    });
+    html += '</div>';
+
+    if (hasCompleted) {
+        html += '<button class="toggle-completed" onclick="toggleCompleted()">' + (hideCompleted ? 'SHOW' : 'HIDE') + ' COMPLETED</button>';
+    }
+    html += '<button class="add-btn" onclick="addCard()">+ ADD NEW DEBT</button>';
+    html += '<div class="version-tag">Build v2.6.0 \u2022 Snowball Protocol</div>';
+    html += '</div>';
+
+    html += '<div class="footer">';
+    html += '<span class="footer-reset" onclick="resetBaseline()">RESET BASELINE</span>';
+    html += '<span class="footer-export" onclick="exportCSV()">EXPORT CSV</span>';
+    html += '<span class="footer-wipe" onclick="wipeAll()">WIPE ALL</span>';
+    html += '</div>';
+
+    root.innerHTML = html;
+}
+
+function update(id, field, val) {
+    const card = cards.find(c => c.id === id);
+    if (!card) return;
+    card[field] = (field === 'name' || field === 'due') ? val : (parseFloat(val) || 0);
+    if (field === 'bal' && card.bal > (parseFloat(card.highestBal) || 0)) card.highestBal = card.bal;
+    saveCards();
+    renderUI();
+}
+
+function markPaid(id) {
+    const key = getMonthKey();
+    const card = cards.find(c => c.id === id);
+    if (!card) return;
+    card.lastPaidMonth = (card.lastPaidMonth === key) ? '' : key;
+    saveCards();
+    renderUI();
+}
+
+function payMin(id) {
+    const card = cards.find(c => c.id === id);
+    if (!card) return;
+    const bal = parseFloat(card.bal) || 0;
+    const min = parseFloat(card.min) || 0;
+    if (min <= 0) return;
+    card.bal = Math.max(0, Math.round((bal - min) * 100) / 100);
+    saveCards();
+    renderUI();
+}
+
+function resetHighest(id) {
+    const card = cards.find(c => c.id === id);
+    if (!card) return;
+    card.highestBal = parseFloat(card.bal) || 0;
+    saveCards();
+    renderUI();
+}
+
+function deleteCard(id) {
+    if (!confirm('Delete this debt? This cannot be undone.')) return;
+    cards = cards.filter(c => c.id !== id);
+    saveCards();
+    renderUI();
+}
+
+function addCard() {
+    cards.push({ id: generateId(), name: 'New Debt', bal: 0, apr: 0, min: 0, highestBal: 0, due: '', lastPaidMonth: '' });
+    saveCards();
+    renderUI();
+}
+
+function toggleCompleted() { hideCompleted = !hideCompleted; renderUI(); }
+
+function resetBaseline() {
+    if (!confirm('Reset snowball baseline to current total?')) return;
+    const total = cards.reduce((s, c) => s + (parseFloat(c.bal) || 0), 0);
+    localStorage.setItem(BASE_KEY, String(total));
+    baseline = total;
+    alert('Snowball baseline set: $' + total.toLocaleString());
+    renderUI();
+}
+
+function wipeAll() {
+    if (!confirm('Wipe all debt data? This cannot be undone.')) return;
+    localStorage.removeItem(KEY);
+    localStorage.removeItem(BASE_KEY);
+    cards = [];
+    baseline = 0;
+    renderUI();
+}
 
 loadData();
 </script>
