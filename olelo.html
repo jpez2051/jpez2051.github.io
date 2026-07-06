@@ -1,85 +1,1179 @@
 <!DOCTYPE html>
-<html lang="haw">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>‘Ōlelo Hiwa v1.4.0</title>
-    <style>
-        :root { --primary: #e74c3c; --gold: #f1c40f; --bg: #0a0e12; --card: #1c252c; --text: #f5f6fa; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; padding-bottom: 70px; }
-        
-        /* Header & Tray */
-        header { text-align: center; padding: 10px; border-bottom: 1px solid #2c3e50; }
-        .tray { display: flex; gap: 8px; margin: 15px 0; overflow-x: auto; }
-        .tray-btn { background: #2f3942; color: var(--gold); padding: 8px 12px; border-radius: 15px; font-size: 10px; text-decoration: none; font-weight: 800; white-space: nowrap; border: 1px solid rgba(255,255,255,0.1); }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ʻŌlelo Hawaiʻi Flashcards</title>
+<style>
+  :root {
+    --ocean: #0a5c66;
+    --ocean-dark: #073e45;
+    --sand: #f5efe0;
+    --lava: #b5442e;
+    --leaf: #4a7c59;
+    --ink: #2b2b2b;
+    --card-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: linear-gradient(180deg, var(--ocean) 0%, var(--ocean-dark) 100%);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+  header {
+    text-align: center;
+    padding: 24px 16px 12px;
+    color: var(--sand);
+  }
+  header h1 { margin: 0 0 4px; font-size: 1.6em; letter-spacing: 0.5px; }
+  header p { margin: 0; opacity: 0.85; font-size: 0.9em; }
 
-        /* The Learning Card */
-        .card { background: var(--card); border-radius: 25px; padding: 30px 20px; min-height: 280px; text-align: center; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .haw-display { font-size: 40px; font-weight: 800; margin-bottom: 5px; }
-        .syllables { color: var(--gold); letter-spacing: 3px; font-size: 14px; margin-bottom: 15px; text-transform: uppercase; }
-        .eng-display { font-size: 18px; color: #a4b0be; margin-bottom: 20px; font-style: italic; }
-        
-        .mana-o { font-size: 13px; line-height: 1.6; color: #ced6e0; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 15px; text-align: left; display: none; }
-        .revealed .mana-o { display: block; }
+  nav {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 12px 16px;
+    flex-wrap: wrap;
+  }
+  nav button {
+    background: rgba(255,255,255,0.12);
+    color: var(--sand);
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background 0.2s;
+  }
+  nav button.active {
+    background: var(--sand);
+    color: var(--ocean-dark);
+    font-weight: 600;
+    border-color: var(--sand);
+  }
+  nav button:hover:not(.active) { background: rgba(255,255,255,0.22); }
 
-        /* New Audio Strategy */
-        .audio-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
-        .btn { background: #34495e; border: none; color: white; padding: 15px; border-radius: 12px; font-weight: 700; font-size: 13px; }
-        .btn-ref { background: var(--primary); grid-column: span 2; margin-top: 5px; }
-        
-        .footer { position: fixed; bottom: 0; left: 0; width: 100%; height: 45px; background: #000; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #57606f; font-weight: 700; border-top: 1px solid #222; }
-    </style>
+  main {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 16px 60px;
+  }
+  .panel {
+    background: var(--sand);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 16px;
+  }
+  .panel h2 { margin-top: 0; color: var(--ocean-dark); font-size: 1.15em; }
+
+  /* STUDY TAB */
+  .study-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .study-controls .control-group {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.78em;
+    color: var(--ocean-dark);
+    gap: 3px;
+  }
+  .study-controls select {
+    font-size: 0.9em;
+  }
+  .deck-progress {
+    font-size: 0.85em;
+    color: #555;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .category-badge {
+    display: inline-block;
+    background: var(--ocean);
+    color: white;
+    font-size: 0.7em;
+    padding: 2px 9px;
+    border-radius: 10px;
+    margin-bottom: 6px;
+  }
+  .flashcard-wrap {
+    perspective: 1200px;
+    height: 260px;
+    margin: 10px 0 18px;
+  }
+  .flashcard {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    transform-style: preserve-3d;
+    transition: transform 0.5s;
+  }
+  .flashcard.flipped { transform: rotateY(180deg); }
+  .face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+    overflow-y: auto;
+  }
+  .face.front {
+    background: white;
+    border: 2px solid var(--ocean);
+  }
+  .face.back {
+    background: var(--ocean);
+    color: white;
+    transform: rotateY(180deg);
+  }
+  .face .main-text { font-size: 1.5em; font-weight: 700; margin-bottom: 6px; }
+  .face .example-text { font-size: 0.9em; margin-top: 8px; max-width: 90%; }
+  .face .example-text .eng-example { opacity: 0.75; font-style: italic; }
+  .face .notes { font-size: 0.85em; opacity: 0.9; font-style: italic; margin-top: 8px; max-width: 90%; }
+  .face .hint { font-size: 0.75em; opacity: 0.55; position: absolute; bottom: 12px; }
+  .miss-badge {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    background: var(--lava);
+    color: white;
+    font-size: 0.7em;
+    padding: 3px 8px;
+    border-radius: 10px;
+  }
+  .hint-toggle-btn {
+    position: absolute;
+    top: 10px;
+    left: 12px;
+    background: #eef4f0;
+    border: 1px solid var(--leaf);
+    color: var(--leaf);
+    font-size: 0.72em;
+    padding: 3px 8px;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .hint-toggle-btn:hover { background: #dff0e0; }
+  .front-hint-reveal {
+    font-size: 0.8em;
+    color: var(--leaf);
+    font-style: italic;
+    margin-top: 10px;
+    max-width: 90%;
+  }
+
+  .answer-buttons {
+    display: flex;
+    gap: 10px;
+  }
+  .answer-buttons button {
+    flex: 1;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    color: white;
+  }
+  .btn-wrong { background: var(--lava); }
+  .btn-right { background: var(--leaf); }
+  .answer-buttons button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .flip-hint {
+    text-align: center;
+    font-size: 0.8em;
+    color: #777;
+    margin-bottom: 10px;
+  }
+
+  /* Type-answer mode */
+  .type-answer-box {
+    background: white;
+    border: 2px solid var(--ocean);
+    border-radius: 14px;
+    padding: 20px;
+    margin: 10px 0 18px;
+    min-height: 260px;
+  }
+  .type-answer-box .prompt-text { font-size: 1.4em; font-weight: 700; text-align: center; color: var(--ocean-dark); }
+  .type-answer-box .category-badge { display: block; text-align: center; margin: 0 auto 10px; width: fit-content; }
+  .special-chars {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin: 12px 0;
+  }
+  .special-chars button {
+    background: #eef4f0;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 1em;
+    cursor: pointer;
+  }
+  .special-chars button:hover { background: #dff0e0; }
+  #type-answer-input {
+    width: 100%;
+    padding: 12px;
+    font-size: 1.1em;
+    border: 1px solid #bbb;
+    border-radius: 8px;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  .check-result {
+    text-align: center;
+    font-size: 0.95em;
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 8px;
+  }
+  .check-correct { background: #dff0e0; color: var(--leaf); }
+  .check-incorrect { background: #fbe0da; color: var(--lava); }
+  .correct-answer-reveal { font-weight: 700; margin-top: 4px; }
+
+  /* MANAGE TAB */
+  .card-form { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .card-form input, .card-form textarea {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 0.95em;
+    font-family: inherit;
+  }
+  .card-form-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .card-form-row > * { flex: 1; min-width: 140px; }
+  .field-label { font-size: 0.78em; color: var(--ocean-dark); font-weight: 600; margin-bottom: -4px; }
+  .btn-primary {
+    background: var(--ocean);
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .btn-secondary {
+    background: #ddd;
+    color: #333;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .bulk-box textarea { width: 100%; height: 90px; }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.88em; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid #ddd; }
+  th { color: var(--ocean-dark); }
+  .row-actions button {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 0.95em;
+    margin-right: 6px;
+  }
+  .empty-msg { color: #888; font-style: italic; text-align: center; padding: 20px 0; }
+  .tag-chip {
+    display: inline-block;
+    background: #e5eef0;
+    color: var(--ocean-dark);
+    font-size: 0.78em;
+    padding: 2px 8px;
+    border-radius: 8px;
+  }
+
+  .stat-badge {
+    display: inline-block;
+    min-width: 22px;
+    text-align: center;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 0.8em;
+    font-weight: 600;
+  }
+  .stat-good { background: #dff0e0; color: var(--leaf); }
+  .stat-bad { background: #fbe0da; color: var(--lava); }
+  .stat-neutral { background: #e8e8e8; color: #666; }
+
+  .data-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--ocean-dark);
+    color: white;
+    padding: 10px 18px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    z-index: 50;
+  }
+  .toast.show { opacity: 1; }
+  .small-note { font-size: 0.8em; color: #666; margin-top: 6px; }
+  select { padding: 6px 8px; border-radius: 6px; border: 1px solid #ccc; }
+  datalist {}
+</style>
 </head>
 <body>
 
 <header>
-    <h1 style="font-size: 18px; letter-spacing: 2px;">‘ŌLELO HIWA</h1>
+  <h1>ʻŌlelo Hawaiʻi Flashcards</h1>
+  <p>A no-nonsense trainer that remembers what trips you up</p>
 </header>
 
-<div class="tray">
-    <a href="https://wehewehe.org" target="_blank" class="tray-btn">📙 DICTIONARY</a>
-    <a href="https://oleloonline.com/tag/audio-2/" target="_blank" class="tray-btn">🔊 NATIVE AUDIO</a>
-    <a href="https://ulukau.org" target="_blank" class="tray-btn">🏛️ ARCHIVES</a>
-</div>
+<nav>
+  <button class="tab-btn active" data-tab="study">Study</button>
+  <button class="tab-btn" data-tab="manage">Manage Cards</button>
+  <button class="tab-btn" data-tab="stats">Stats</button>
+  <button class="tab-btn" data-tab="data">Save / Load</button>
+</nav>
 
-<div class="card" id="card" onclick="this.classList.toggle('revealed')">
-    <div id="cat" style="font-size:9px; color:var(--gold); font-weight:800; margin-bottom:10px;">...</div>
-    <div class="haw-display" id="haw">...</div>
-    <div class="syllables" id="syl">...</div>
-    <div class="eng-display" id="eng">...</div>
-    <div class="mana-o" id="note">...</div>
-</div>
+<main>
 
-<div class="audio-controls">
-    <button class="btn" onclick="event.stopPropagation(); next()">HULI (NEXT)</button>
-    <button class="btn" onclick="event.stopPropagation(); save()">MĀLAMA (SAVE)</button>
-    <a id="audio-ref" href="#" target="_blank" class="btn btn-ref" style="text-align: center; line-height: 1;">HEAR NATIVE PRONUNCIATION</a>
-</div>
+  <!-- STUDY TAB -->
+  <section id="tab-study" class="panel">
+    <div class="study-controls">
+      <div class="control-group">
+        <label for="category-select">Category</label>
+        <select id="category-select">
+          <option value="all">All categories</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label for="direction-select">Direction</label>
+        <select id="direction-select">
+          <option value="random">Mixed (random)</option>
+          <option value="haw-eng">ʻŌlelo → English</option>
+          <option value="eng-haw">English → ʻŌlelo</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label for="review-mode-select">Cards</label>
+        <select id="review-mode-select">
+          <option value="all">All cards</option>
+          <option value="missed">Focus on missed</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label for="answer-mode-select">Practice mode</label>
+        <select id="answer-mode-select">
+          <option value="flip">Flip card</option>
+          <option value="type">Type the answer</option>
+        </select>
+      </div>
+    </div>
 
-<div class="footer">‘ŌLELO HIWA — v1.4.0 — HAKALAMA & NATIVE REFERENCE</div>
+    <div id="study-empty" class="empty-msg" style="display:none;">
+      No cards yet. Go to <strong>Manage Cards</strong> to add some!
+    </div>
+
+    <div id="study-area">
+      <div class="deck-progress" id="deck-progress"></div>
+
+      <!-- FLIP MODE -->
+      <div id="flip-mode-wrap">
+        <div class="flip-hint">Tap the card to flip it</div>
+        <div class="flashcard-wrap">
+          <div class="flashcard" id="flashcard">
+            <div class="face front">
+              <span class="miss-badge" id="miss-badge-front" style="display:none;"></span>
+              <button class="hint-toggle-btn" id="hint-toggle-btn" style="display:none;">💡 Hint</button>
+              <span class="category-badge" id="category-badge-front" style="display:none;"></span>
+              <div class="main-text" id="front-text"></div>
+              <div class="front-hint-reveal" id="front-hint-text" style="display:none;"></div>
+              <div class="hint">tap to reveal</div>
+            </div>
+            <div class="face back">
+              <div class="main-text" id="back-text"></div>
+              <div class="example-text" id="back-example" style="display:none;"></div>
+              <div class="notes" id="back-notes"></div>
+            </div>
+          </div>
+        </div>
+        <div class="answer-buttons">
+          <button class="btn-wrong" id="btn-wrong" disabled>Got it wrong</button>
+          <button class="btn-right" id="btn-right" disabled>Got it right</button>
+        </div>
+      </div>
+
+      <!-- TYPE MODE -->
+      <div id="type-mode-wrap" style="display:none;">
+        <div class="type-answer-box">
+          <span class="category-badge" id="category-badge-type" style="display:none;"></span>
+          <div class="prompt-text" id="type-prompt-text"></div>
+          <button class="hint-toggle-btn" id="type-hint-toggle-btn" style="display:none; position:static; margin: 10px auto; display:block;">💡 Hint</button>
+          <div class="front-hint-reveal" id="type-hint-text" style="display:none; text-align:center;"></div>
+
+          <input type="text" id="type-answer-input" placeholder="Type your answer here..." autocomplete="off" autocapitalize="off" spellcheck="false">
+          <div class="special-chars">
+            <button type="button" data-char="ʻ">ʻ</button>
+            <button type="button" data-char="ā">ā</button>
+            <button type="button" data-char="ē">ē</button>
+            <button type="button" data-char="ī">ī</button>
+            <button type="button" data-char="ō">ō</button>
+            <button type="button" data-char="ū">ū</button>
+          </div>
+          <button class="btn-primary" id="btn-check-answer" style="width:100%;">Check Answer</button>
+
+          <div id="check-result-area" style="display:none;">
+            <div class="check-result" id="check-result-msg"></div>
+            <div class="example-text" id="type-example" style="display:none;"></div>
+            <div class="answer-buttons" style="margin-top:12px;">
+              <button class="btn-wrong" id="type-btn-wrong">Mark as wrong</button>
+              <button class="btn-right" id="type-btn-right">Mark as right</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MANAGE TAB -->
+  <section id="tab-manage" class="panel" style="display:none;">
+    <h2>Add a card</h2>
+    <div class="card-form">
+      <div class="card-form-row">
+        <div>
+          <div class="field-label">ʻŌlelo Hawaiʻi</div>
+          <input type="text" id="input-hawaiian" placeholder="e.g. Aloha kakahiaka">
+        </div>
+        <div>
+          <div class="field-label">English</div>
+          <input type="text" id="input-english" placeholder="e.g. Good morning">
+        </div>
+      </div>
+      <div class="card-form-row">
+        <div>
+          <div class="field-label">Category</div>
+          <input type="text" id="input-category" placeholder="e.g. Greetings" list="category-datalist">
+          <datalist id="category-datalist"></datalist>
+        </div>
+      </div>
+      <div>
+        <div class="field-label">Example sentence (ʻōlelo)</div>
+        <input type="text" id="input-example-haw" placeholder="e.g. Aloha kakahiaka, pehea ʻoe?">
+      </div>
+      <div>
+        <div class="field-label">Example sentence (English)</div>
+        <input type="text" id="input-example-eng" placeholder="e.g. Good morning, how are you?">
+      </div>
+      <div>
+        <div class="field-label">Pronunciation notes / hints</div>
+        <textarea id="input-notes" placeholder="e.g. ʻokina = catch in the throat, like 'uh-oh'. Stress on 'ka'." rows="2"></textarea>
+      </div>
+      <div>
+        <button class="btn-primary" id="btn-add-card">Add Card</button>
+        <button class="btn-secondary" id="btn-cancel-edit" style="display:none;">Cancel Edit</button>
+      </div>
+    </div>
+
+    <h2>Bulk add</h2>
+    <div class="bulk-box">
+      <p class="small-note">One card per line: <code>ʻōlelo | english | category | notes | example ʻōlelo | example english</code><br>Only the first two fields are required — leave the rest blank if you don't need them.</p>
+      <textarea id="bulk-input" placeholder="Mahalo | Thank you | Greetings&#10;E komo mai | Welcome, come in | Greetings | | E komo mai i koʻu hale | Welcome to my house"></textarea>
+      <button class="btn-primary" id="btn-bulk-add" style="margin-top:8px;">Add All Lines</button>
+    </div>
+
+    <h2>Your cards (<span id="card-count">0</span>)</h2>
+    <table id="card-table">
+      <thead>
+        <tr><th>ʻŌlelo</th><th>English</th><th>Category</th><th>Wrong</th><th></th></tr>
+      </thead>
+      <tbody id="card-table-body"></tbody>
+    </table>
+    <div id="manage-empty" class="empty-msg" style="display:none;">No cards yet. Add your first one above.</div>
+  </section>
+
+  <!-- STATS TAB -->
+  <section id="tab-stats" class="panel" style="display:none;">
+    <h2>Trouble spots</h2>
+    <p class="small-note">Sorted by how often you've missed each one. Anything with a red badge needs more reps.</p>
+    <table>
+      <thead>
+        <tr><th>ʻŌlelo</th><th>English</th><th>Category</th><th>Wrong</th><th>Right</th><th>Last try</th></tr>
+      </thead>
+      <tbody id="stats-table-body"></tbody>
+    </table>
+    <div id="stats-empty" class="empty-msg" style="display:none;">No study history yet — go study a few cards first.</div>
+  </section>
+
+  <!-- DATA TAB -->
+  <section id="tab-data" class="panel" style="display:none;">
+    <h2>Save your progress</h2>
+    <p class="small-note">
+      This app intentionally does <strong>not</strong> auto-save to your browser, so your word list and miss-counts
+      won't quietly vanish if your browser clears its storage. Instead, export a small file when you're done studying,
+      and import it next time you open this page.
+    </p>
+    <div class="data-actions">
+      <button class="btn-primary" id="btn-export">⬇ Export progress (.json)</button>
+      <button class="btn-secondary" id="btn-import-trigger">⬆ Import progress</button>
+      <input type="file" id="btn-import" accept=".json" style="display:none;">
+    </div>
+    <p class="small-note" style="margin-top:14px;">
+      Tip: keep the exported file in the same folder as this HTML file, and re-import it each time you reopen the app.
+    </p>
+    <h2 style="margin-top:24px;">Danger zone</h2>
+    <button class="btn-secondary" id="btn-reset-stats">Reset all wrong/right counts (keep cards)</button>
+    <button class="btn-secondary" id="btn-clear-all" style="background:#f3c9c0;">Delete all cards</button>
+  </section>
+
+</main>
+
+<div class="toast" id="toast"></div>
 
 <script>
-    const dictionary = [
-        {h: "‘Ōhi‘a Lehua", s: "‘Ō-hi-‘a Le-hu-a", e: "Endemic Canopy Tree", c: "LĀ‘AU", m: "Break it down: 'Ō (long) - hi (short) - 'a (stop). The 'a' is a crisp breath at the back of the throat.", ref: "https://wehewehe.org/gsdl2.85/cgi-bin/optsid?a=d&d=d14603"},
-        {h: "‘Io", s: "‘I-o", e: "Hawaiian Hawk", c: "MANU", m: "Two clear sounds. The 'I' is like the 'ee' in 'see'. The 'o' is like 'oh'. Don't blend them; let the 'okina separate them.", ref: "https://wehewehe.org/gsdl2.85/cgi-bin/optsid?a=d&d=d4957"},
-        {h: "Kama‘āina", s: "Ka-ma-‘āi-na", e: "Child of the Land", c: "PILI", m: "The 'āi' is a diphthong. It sounds like 'eye' but elongated because of the kahakō over the 'ā'.", ref: "https://wehewehe.org/gsdl2.85/cgi-bin/optsid?a=d&d=d6538"},
-        {h: "Mālama", s: "Mā-la-ma", e: "To Care For", c: "PILI", m: "Mā (long) - la (short) - ma (short). Hold that first 'Mā' for two beats. It changes the word from 'light' to 'care'.", ref: "https://wehewehe.org/gsdl2.85/cgi-bin/optsid?a=d&d=d11743"}
-    ];
+(function () {
+  "use strict";
 
-    function next() {
-        document.getElementById('card').classList.remove('revealed');
-        const item = dictionary[Math.floor(Math.random() * dictionary.length)];
-        document.getElementById('haw').innerText = item.h;
-        document.getElementById('syl').innerText = item.s;
-        document.getElementById('eng').innerText = item.e;
-        document.getElementById('cat').innerText = item.c;
-        document.getElementById('note').innerText = item.m;
-        document.getElementById('audio-ref').href = item.ref;
+  // ---------- State ----------
+  // deck: array of { id, haw, eng, notes, category, exHaw, exEng, wrong, right, lastResult }
+  let deck = [];
+  let currentCard = null;
+  let currentDirection = "haw-eng";
+  let editingId = null;
+  let studyQueue = [];
+  let frontHintShown = false;
+  let lastTypeCorrect = null;
+
+  const $ = (sel) => document.querySelector(sel);
+  const $all = (sel) => document.querySelectorAll(sel);
+
+  function uid() {
+    return "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  function showToast(msg) {
+    const t = $("#toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(showToast._timer);
+    showToast._timer = setTimeout(() => t.classList.remove("show"), 2200);
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str || "";
+    return div.innerHTML;
+  }
+
+  // Normalize for lenient answer-checking: lowercase, strip ʻokina/macrons, trim, collapse spaces
+  function normalize(str) {
+    if (!str) return "";
+    return str
+      .toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // strip combining diacritics (macrons)
+      .replace(/[ʻʼ'`]/g, "") // strip ʻokina variants
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  // ---------- Seed data ----------
+  function seedIfEmpty() {
+    if (deck.length > 0) return;
+    const starters = [
+      ["Aloha kakahiaka", "Good morning", "Greetings", "", "Aloha kakahiaka, pehea ʻoe?", "Good morning, how are you?"],
+      ["Mahalo nui loa", "Thank you very much", "Greetings", "", "", ""],
+      ["E komo mai", "Welcome, come in", "Greetings", "", "E komo mai i koʻu hale", "Welcome to my house"],
+      ["ʻAe", "Yes", "Basics", "ʻokina = glottal stop, like the catch in 'uh-oh'", "", ""],
+      ["ʻAʻole", "No", "Basics", "Two ʻokina — pause twice", "", ""]
+    ];
+    starters.forEach(([haw, eng, category, notes, exHaw, exEng]) => {
+      deck.push({ id: uid(), haw, eng, category, notes, exHaw, exEng, wrong: 0, right: 0, lastResult: null });
+    });
+  }
+
+  // ---------- Tabs ----------
+  $all(".tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      $all(".tab-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      ["study", "manage", "stats", "data"].forEach(name => {
+        $("#tab-" + name).style.display = (name === btn.dataset.tab) ? "block" : "none";
+      });
+      if (btn.dataset.tab === "manage") { renderManageTable(); renderCategoryDatalist(); }
+      if (btn.dataset.tab === "stats") renderStatsTable();
+      if (btn.dataset.tab === "study") {
+        renderCategoryOptions();
+        buildQueueIfNeeded(true);
+        renderStudyCard();
+      }
+    });
+  });
+
+  // ---------- Category helpers ----------
+  function getCategories() {
+    const set = new Set();
+    deck.forEach(c => { if (c.category) set.add(c.category); });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }
+
+  function renderCategoryOptions() {
+    const select = $("#category-select");
+    const prevValue = select.value || "all";
+    select.innerHTML = '<option value="all">All categories</option>';
+    getCategories().forEach(cat => {
+      const opt = document.createElement("option");
+      opt.value = cat;
+      opt.textContent = cat;
+      select.appendChild(opt);
+    });
+    // restore selection if it still exists
+    if ([...select.options].some(o => o.value === prevValue)) {
+      select.value = prevValue;
+    }
+  }
+
+  function renderCategoryDatalist() {
+    const dl = $("#category-datalist");
+    dl.innerHTML = "";
+    getCategories().forEach(cat => {
+      const opt = document.createElement("option");
+      opt.value = cat;
+      dl.appendChild(opt);
+    });
+  }
+
+  // ---------- Study logic ----------
+  function getFilteredCards() {
+    const reviewMode = $("#review-mode-select").value;
+    const category = $("#category-select").value;
+    let pool = deck.slice();
+    if (category !== "all") pool = pool.filter(c => c.category === category);
+    if (reviewMode === "missed") pool = pool.filter(c => c.wrong > 0);
+    return pool;
+  }
+
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function buildQueueIfNeeded(force) {
+    if (!force && studyQueue.length > 0) return;
+    studyQueue = shuffle(getFilteredCards());
+  }
+
+  function pickDirection() {
+    const sel = $("#direction-select").value;
+    if (sel === "haw-eng") return "haw-eng";
+    if (sel === "eng-haw") return "eng-haw";
+    return Math.random() < 0.5 ? "haw-eng" : "eng-haw";
+  }
+
+  function updateProgressLabel() {
+    const remaining = studyQueue.length;
+    const reviewMode = $("#review-mode-select").value;
+    const category = $("#category-select").value;
+    let label = remaining + " more in this round";
+    const tags = [];
+    if (reviewMode === "missed") tags.push("missed-only");
+    if (category !== "all") tags.push(category);
+    if (tags.length) label += " (" + tags.join(", ") + ")";
+    $("#deck-progress").textContent = label;
+  }
+
+  function noCardsMatchMessage() {
+    $("#deck-progress").textContent = "No cards match these filters. Try a different category or 'All cards'.";
+  }
+
+  function advanceCard() {
+    buildQueueIfNeeded(false);
+    if (studyQueue.length === 0) {
+      const pool = getFilteredCards();
+      if (pool.length === 0) {
+        currentCard = null;
+        noCardsMatchMessage();
+        return false;
+      }
+      studyQueue = shuffle(pool);
+    }
+    currentCard = studyQueue.shift();
+    currentDirection = pickDirection();
+    frontHintShown = false;
+    lastTypeCorrect = null;
+    updateProgressLabel();
+    return true;
+  }
+
+  function renderStudyCard() {
+    const empty = $("#study-empty");
+    const area = $("#study-area");
+    if (deck.length === 0) {
+      empty.style.display = "block";
+      area.style.display = "none";
+      return;
+    }
+    empty.style.display = "none";
+    area.style.display = "block";
+
+    const answerMode = $("#answer-mode-select").value;
+    $("#flip-mode-wrap").style.display = answerMode === "flip" ? "block" : "none";
+    $("#type-mode-wrap").style.display = answerMode === "type" ? "block" : "none";
+
+    const ok = advanceCard();
+    if (!ok) {
+      // clear both UIs
+      $("#front-text").textContent = "";
+      $("#back-text").textContent = "";
+      $("#back-notes").textContent = "";
+      $("#btn-right").disabled = true;
+      $("#btn-wrong").disabled = true;
+      $("#type-prompt-text").textContent = "";
+      return;
     }
 
-    function save() { alert("Saved to your personal collection!"); }
+    if (answerMode === "flip") {
+      renderFlipCard();
+    } else {
+      renderTypeCard();
+    }
+  }
 
-    next();
+  function renderFlipCard() {
+    const flashcard = $("#flashcard");
+    flashcard.classList.remove("flipped");
+    $("#btn-right").disabled = true;
+    $("#btn-wrong").disabled = true;
+
+    const frontIsHaw = currentDirection === "haw-eng";
+    $("#front-text").textContent = frontIsHaw ? currentCard.haw : currentCard.eng;
+    $("#back-text").textContent = frontIsHaw ? currentCard.eng : currentCard.haw;
+    $("#back-notes").textContent = currentCard.notes || "";
+
+    const exampleEl = $("#back-example");
+    if (currentCard.exHaw || currentCard.exEng) {
+      exampleEl.style.display = "block";
+      exampleEl.innerHTML = (currentCard.exHaw ? escapeHtml(currentCard.exHaw) + "<br>" : "") +
+        (currentCard.exEng ? '<span class="eng-example">' + escapeHtml(currentCard.exEng) + "</span>" : "");
+    } else {
+      exampleEl.style.display = "none";
+    }
+
+    const catBadge = $("#category-badge-front");
+    if (currentCard.category) {
+      catBadge.style.display = "inline-block";
+      catBadge.textContent = currentCard.category;
+    } else {
+      catBadge.style.display = "none";
+    }
+
+    const badge = $("#miss-badge-front");
+    if (currentCard.wrong > 0) {
+      badge.style.display = "inline-block";
+      badge.textContent = "missed " + currentCard.wrong + "x";
+    } else {
+      badge.style.display = "none";
+    }
+
+    const hintBtn = $("#hint-toggle-btn");
+    const hintText = $("#front-hint-text");
+    hintText.style.display = "none";
+    hintText.textContent = "";
+    if (currentCard.notes) {
+      hintBtn.style.display = "inline-block";
+      hintBtn.textContent = "💡 Hint";
+    } else {
+      hintBtn.style.display = "none";
+    }
+  }
+
+  $("#hint-toggle-btn").addEventListener("click", (e) => {
+    e.stopPropagation();
+    frontHintShown = !frontHintShown;
+    const hintText = $("#front-hint-text");
+    if (frontHintShown) {
+      hintText.textContent = currentCard.notes;
+      hintText.style.display = "block";
+      $("#hint-toggle-btn").textContent = "💡 Hide hint";
+    } else {
+      hintText.style.display = "none";
+      $("#hint-toggle-btn").textContent = "💡 Hint";
+    }
+  });
+
+  function renderTypeCard() {
+    const frontIsHaw = currentDirection === "haw-eng";
+    // Prompt shows the known side; user types the OTHER side.
+    $("#type-prompt-text").textContent = frontIsHaw ? currentCard.haw : currentCard.eng;
+    $("#type-answer-input").value = "";
+    $("#type-answer-input").disabled = false;
+    $("#check-result-area").style.display = "none";
+    $("#type-example").style.display = "none";
+
+    const catBadge = $("#category-badge-type");
+    if (currentCard.category) {
+      catBadge.style.display = "inline-block";
+      catBadge.textContent = currentCard.category;
+    } else {
+      catBadge.style.display = "none";
+    }
+
+    const hintBtn = $("#type-hint-toggle-btn");
+    const hintText = $("#type-hint-text");
+    hintText.style.display = "none";
+    hintText.textContent = "";
+    if (currentCard.notes) {
+      hintBtn.style.display = "inline-block";
+      hintBtn.textContent = "💡 Hint";
+    } else {
+      hintBtn.style.display = "none";
+    }
+
+    $("#type-answer-input").focus();
+  }
+
+  $("#type-hint-toggle-btn").addEventListener("click", () => {
+    const hintText = $("#type-hint-text");
+    const shown = hintText.style.display === "block";
+    if (shown) {
+      hintText.style.display = "none";
+      $("#type-hint-toggle-btn").textContent = "💡 Hint";
+    } else {
+      hintText.textContent = currentCard.notes;
+      hintText.style.display = "block";
+      $("#type-hint-toggle-btn").textContent = "💡 Hide hint";
+    }
+  });
+
+  $all(".special-chars button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const input = $("#type-answer-input");
+      const ch = btn.dataset.char;
+      const start = input.selectionStart ?? input.value.length;
+      const end = input.selectionEnd ?? input.value.length;
+      input.value = input.value.slice(0, start) + ch + input.value.slice(end);
+      input.focus();
+      input.setSelectionRange(start + ch.length, start + ch.length);
+    });
+  });
+
+  function checkTypedAnswer() {
+    if (!currentCard) return;
+    const frontIsHaw = currentDirection === "haw-eng";
+    const correctAnswer = frontIsHaw ? currentCard.eng : currentCard.haw;
+    const typed = $("#type-answer-input").value;
+    const isCorrect = normalize(typed) === normalize(correctAnswer) && normalize(typed).length > 0;
+    lastTypeCorrect = isCorrect;
+
+    const resultArea = $("#check-result-area");
+    const msg = $("#check-result-msg");
+    resultArea.style.display = "block";
+    if (isCorrect) {
+      msg.className = "check-result check-correct";
+      msg.innerHTML = "✅ Correct! <div class='correct-answer-reveal'>" + escapeHtml(correctAnswer) + "</div>";
+    } else {
+      msg.className = "check-result check-incorrect";
+      msg.innerHTML = "Not quite. <div class='correct-answer-reveal'>" + escapeHtml(correctAnswer) + "</div>";
+    }
+
+    const exampleEl = $("#type-example");
+    if (currentCard.exHaw || currentCard.exEng) {
+      exampleEl.style.display = "block";
+      exampleEl.innerHTML = (currentCard.exHaw ? escapeHtml(currentCard.exHaw) + "<br>" : "") +
+        (currentCard.exEng ? '<span class="eng-example">' + escapeHtml(currentCard.exEng) + "</span>" : "");
+    } else {
+      exampleEl.style.display = "none";
+    }
+
+    $("#type-answer-input").disabled = true;
+  }
+
+  $("#btn-check-answer").addEventListener("click", checkTypedAnswer);
+  $("#type-answer-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (!$("#type-answer-input").disabled) checkTypedAnswer();
+    }
+  });
+
+  $("#flashcard").addEventListener("click", () => {
+    if (!currentCard) return;
+    const fc = $("#flashcard");
+    const flipped = fc.classList.toggle("flipped");
+    if (flipped) {
+      $("#btn-right").disabled = false;
+      $("#btn-wrong").disabled = false;
+    }
+  });
+
+  function recordAnswer(correct) {
+    if (!currentCard) return;
+    if (correct) {
+      currentCard.right += 1;
+      currentCard.lastResult = "right";
+      showToast("Nice — got it!");
+    } else {
+      currentCard.wrong += 1;
+      currentCard.lastResult = "wrong";
+      showToast("Marked as missed — it'll come back around.");
+      const reinsertAt = Math.min(studyQueue.length, 3);
+      studyQueue.splice(reinsertAt, 0, currentCard);
+    }
+    renderStudyCard();
+  }
+
+  $("#btn-right").addEventListener("click", () => recordAnswer(true));
+  $("#btn-wrong").addEventListener("click", () => recordAnswer(false));
+  $("#type-btn-right").addEventListener("click", () => recordAnswer(true));
+  $("#type-btn-wrong").addEventListener("click", () => recordAnswer(false));
+
+  $("#direction-select").addEventListener("change", () => { buildQueueIfNeeded(true); renderStudyCard(); });
+  $("#review-mode-select").addEventListener("change", () => { buildQueueIfNeeded(true); renderStudyCard(); });
+  $("#category-select").addEventListener("change", () => { buildQueueIfNeeded(true); renderStudyCard(); });
+  $("#answer-mode-select").addEventListener("change", () => { renderStudyCard(); });
+
+  // ---------- Manage tab ----------
+  $("#btn-add-card").addEventListener("click", () => {
+    const haw = $("#input-hawaiian").value.trim();
+    const eng = $("#input-english").value.trim();
+    const category = $("#input-category").value.trim();
+    const exHaw = $("#input-example-haw").value.trim();
+    const exEng = $("#input-example-eng").value.trim();
+    const notes = $("#input-notes").value.trim();
+    if (!haw || !eng) {
+      showToast("Please fill in both the ʻōlelo and English fields.");
+      return;
+    }
+    if (editingId) {
+      const card = deck.find(c => c.id === editingId);
+      if (card) {
+        card.haw = haw; card.eng = eng; card.category = category;
+        card.exHaw = exHaw; card.exEng = exEng; card.notes = notes;
+      }
+      editingId = null;
+      $("#btn-add-card").textContent = "Add Card";
+      $("#btn-cancel-edit").style.display = "none";
+      showToast("Card updated.");
+    } else {
+      deck.push({ id: uid(), haw, eng, category, exHaw, exEng, notes, wrong: 0, right: 0, lastResult: null });
+      showToast("Card added.");
+    }
+    ["#input-hawaiian", "#input-english", "#input-category", "#input-example-haw", "#input-example-eng", "#input-notes"]
+      .forEach(sel => { $(sel).value = ""; });
+    renderManageTable();
+    renderCategoryDatalist();
+    buildQueueIfNeeded(true);
+  });
+
+  $("#btn-cancel-edit").addEventListener("click", () => {
+    editingId = null;
+    ["#input-hawaiian", "#input-english", "#input-category", "#input-example-haw", "#input-example-eng", "#input-notes"]
+      .forEach(sel => { $(sel).value = ""; });
+    $("#btn-add-card").textContent = "Add Card";
+    $("#btn-cancel-edit").style.display = "none";
+  });
+
+  $("#btn-bulk-add").addEventListener("click", () => {
+    const raw = $("#bulk-input").value;
+    const lines = raw.split("\n").map(l => l.trim()).filter(Boolean);
+    let added = 0;
+    lines.forEach(line => {
+      const parts = line.split("|").map(p => p.trim());
+      if (parts.length >= 2 && parts[0] && parts[1]) {
+        deck.push({
+          id: uid(),
+          haw: parts[0],
+          eng: parts[1],
+          category: parts[2] || "",
+          notes: parts[3] || "",
+          exHaw: parts[4] || "",
+          exEng: parts[5] || "",
+          wrong: 0, right: 0, lastResult: null
+        });
+        added++;
+      }
+    });
+    if (added > 0) {
+      $("#bulk-input").value = "";
+      showToast(`Added ${added} card${added === 1 ? "" : "s"}.`);
+      renderManageTable();
+      renderCategoryDatalist();
+      buildQueueIfNeeded(true);
+    } else {
+      showToast("No valid lines found. Use format: ʻōlelo | english");
+    }
+  });
+
+  function renderManageTable() {
+    const tbody = $("#card-table-body");
+    tbody.innerHTML = "";
+    $("#card-count").textContent = deck.length;
+    $("#manage-empty").style.display = deck.length === 0 ? "block" : "none";
+
+    deck.forEach(card => {
+      const tr = document.createElement("tr");
+      const wrongBadgeClass = card.wrong > 2 ? "stat-bad" : (card.wrong > 0 ? "stat-neutral" : "stat-good");
+      const catHtml = card.category ? '<span class="tag-chip">' + escapeHtml(card.category) + '</span>' : '';
+      tr.innerHTML = `
+        <td>${escapeHtml(card.haw)}</td>
+        <td>${escapeHtml(card.eng)}</td>
+        <td>${catHtml}</td>
+        <td><span class="stat-badge ${wrongBadgeClass}">${card.wrong}</span></td>
+        <td class="row-actions">
+          <button title="Edit" data-action="edit" data-id="${card.id}">✏️</button>
+          <button title="Delete" data-action="delete" data-id="${card.id}">🗑️</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  $("#card-table-body").addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-action]");
+    if (!btn) return;
+    const id = btn.dataset.id;
+    if (btn.dataset.action === "delete") {
+      deck = deck.filter(c => c.id !== id);
+      showToast("Card deleted.");
+      renderManageTable();
+      renderCategoryDatalist();
+      buildQueueIfNeeded(true);
+    } else if (btn.dataset.action === "edit") {
+      const card = deck.find(c => c.id === id);
+      if (!card) return;
+      editingId = id;
+      $("#input-hawaiian").value = card.haw;
+      $("#input-english").value = card.eng;
+      $("#input-category").value = card.category || "";
+      $("#input-example-haw").value = card.exHaw || "";
+      $("#input-example-eng").value = card.exEng || "";
+      $("#input-notes").value = card.notes || "";
+      $("#btn-add-card").textContent = "Save Changes";
+      $("#btn-cancel-edit").style.display = "inline-block";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  });
+
+  // ---------- Stats tab ----------
+  function renderStatsTable() {
+    const tbody = $("#stats-table-body");
+    tbody.innerHTML = "";
+    const withHistory = deck.filter(c => c.wrong > 0 || c.right > 0);
+    $("#stats-empty").style.display = withHistory.length === 0 ? "block" : "none";
+
+    const sorted = withHistory.slice().sort((a, b) => b.wrong - a.wrong || a.right - b.right);
+    sorted.forEach(card => {
+      const tr = document.createElement("tr");
+      const wrongClass = card.wrong > 2 ? "stat-bad" : (card.wrong > 0 ? "stat-neutral" : "stat-good");
+      const rightClass = "stat-good";
+      const lastLabel = card.lastResult === "right" ? "✅ right" : (card.lastResult === "wrong" ? "❌ missed" : "—");
+      const catHtml = card.category ? '<span class="tag-chip">' + escapeHtml(card.category) + '</span>' : '';
+      tr.innerHTML = `
+        <td>${escapeHtml(card.haw)}</td>
+        <td>${escapeHtml(card.eng)}</td>
+        <td>${catHtml}</td>
+        <td><span class="stat-badge ${wrongClass}">${card.wrong}</span></td>
+        <td><span class="stat-badge ${rightClass}">${card.right}</span></td>
+        <td>${lastLabel}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ---------- Save / Load ----------
+  $("#btn-export").addEventListener("click", () => {
+    const payload = { version: 2, exportedAt: new Date().toISOString(), deck };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "olelo-flashcards-progress.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("Progress exported.");
+  });
+
+  $("#btn-import-trigger").addEventListener("click", () => $("#btn-import").click());
+  $("#btn-import").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const payload = JSON.parse(reader.result);
+        if (!payload.deck || !Array.isArray(payload.deck)) throw new Error("bad format");
+        deck = payload.deck.map(c => ({
+          id: c.id || uid(),
+          haw: c.haw || "",
+          eng: c.eng || "",
+          category: c.category || "",
+          notes: c.notes || "",
+          exHaw: c.exHaw || "",
+          exEng: c.exEng || "",
+          wrong: Number(c.wrong) || 0,
+          right: Number(c.right) || 0,
+          lastResult: c.lastResult || null
+        }));
+        showToast(`Imported ${deck.length} cards.`);
+        renderManageTable();
+        renderCategoryDatalist();
+        renderCategoryOptions();
+        renderStatsTable();
+        buildQueueIfNeeded(true);
+        renderStudyCard();
+      } catch (err) {
+        showToast("Couldn't read that file — is it a valid export?");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  });
+
+  $("#btn-reset-stats").addEventListener("click", () => {
+    if (!confirm("Reset all wrong/right counts? Your cards will stay, just the history clears.")) return;
+    deck.forEach(c => { c.wrong = 0; c.right = 0; c.lastResult = null; });
+    showToast("Stats reset.");
+    renderManageTable();
+    renderStatsTable();
+    buildQueueIfNeeded(true);
+  });
+
+  $("#btn-clear-all").addEventListener("click", () => {
+    if (!confirm("Delete ALL cards? This cannot be undone (unless you have an exported file).")) return;
+    deck = [];
+    showToast("All cards deleted.");
+    renderManageTable();
+    renderCategoryDatalist();
+    renderCategoryOptions();
+    renderStatsTable();
+    buildQueueIfNeeded(true);
+    renderStudyCard();
+  });
+
+  // ---------- Init ----------
+  seedIfEmpty();
+  renderManageTable();
+  renderCategoryDatalist();
+  renderCategoryOptions();
+  buildQueueIfNeeded(true);
+  renderStudyCard();
+})();
 </script>
 
 </body>
