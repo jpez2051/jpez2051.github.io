@@ -3,6 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ʻŌlelo Flashcards">
+<meta name="theme-color" content="#0a5c66">
 <title>ʻŌlelo Hawaiʻi Flashcards</title>
 <style>
   :root {
@@ -280,15 +284,18 @@
   }
   .bulk-box textarea { width: 100%; height: 90px; }
 
-  table { width: 100%; min-width: 460px; border-collapse: collapse; margin-top: 10px; font-size: 0.88em; }
+  table { width: 100%; min-width: 520px; border-collapse: collapse; margin-top: 10px; font-size: 0.88em; table-layout: auto; }
   th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid #ddd; }
   th { color: var(--ocean-dark); }
+  .col-actions, .row-actions { width: 64px; white-space: nowrap; }
   .row-actions button {
     border: none;
     background: none;
     cursor: pointer;
-    font-size: 0.95em;
-    margin-right: 6px;
+    font-size: 1.1em;
+    line-height: 1;
+    padding: 4px 5px;
+    margin-right: 2px;
   }
   .empty-msg { color: #888; font-style: italic; text-align: center; padding: 20px 0; }
   .tag-chip {
@@ -343,6 +350,31 @@
     padding: 10px 16px 30px;
   }
 
+  /* ---------- Pull to refresh ---------- */
+  .ptr-indicator {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 70px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    padding-bottom: 8px;
+    background: var(--ocean-dark);
+    color: var(--sand);
+    transform: translateY(-70px);
+    z-index: 200;
+    transition: transform 0.25s ease;
+  }
+  .ptr-indicator.dragging { transition: none; }
+  .ptr-icon { font-size: 1.4em; }
+  .ptr-icon.spin { animation: ptr-spin 0.8s linear infinite; }
+  .ptr-label { font-size: 0.72em; margin-top: 2px; }
+  @keyframes ptr-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
   /* ---------- Responsive: tablets and phones ---------- */
   @media (max-width: 600px) {
     header { padding: 18px 12px 10px; }
@@ -380,6 +412,11 @@
 </style>
 </head>
 <body>
+
+<div id="ptr-indicator" class="ptr-indicator">
+  <div class="ptr-icon" id="ptr-icon">⟳</div>
+  <div class="ptr-label" id="ptr-label">Pull to refresh</div>
+</div>
 
 <header>
   <h1>ʻŌlelo Hawaiʻi Flashcards</h1>
@@ -543,7 +580,7 @@
     <div class="table-scroll">
       <table id="card-table">
         <thead>
-          <tr><th>ʻŌlelo</th><th>English</th><th>Category</th><th>Wrong</th><th></th></tr>
+          <tr><th>ʻŌlelo</th><th>English</th><th>Category</th><th>Wrong</th><th class="col-actions"></th></tr>
         </thead>
         <tbody id="card-table-body"></tbody>
       </table>
@@ -602,7 +639,9 @@
   // v1.0.0 - Initial flashcard app: flip cards, add/edit/delete, miss tracking, export/import
   // v2.0.0 - Added categories, example sentences, type-the-answer mode, pronunciation hints
   // v3.0.0 - Mobile-responsive layout fixes (label overlap, cut-off fields, scrollable tables), version footer
-  const APP_VERSION = "3.0.0";
+  // v3.1.0 - Fixed edit/delete icon buttons getting clipped in the Manage Cards table
+  // v3.2.0 - Added custom pull-to-refresh gesture (for home-screen/standalone mode) and home-screen meta tags
+  const APP_VERSION = "3.2.0";
   const APP_UPDATED = "2026-07-06";
 
   // ---------- State ----------
@@ -1234,8 +1273,84 @@
     }
   }
 
+  // ---------- Pull to refresh ----------
+  // Custom-built because once this page is added to the phone's home screen and opened
+  // in standalone mode, the browser's own pull-to-refresh gesture no longer applies.
+  // NOTE: this reloads the file from wherever it's currently saved on your device.
+  // It only shows a newer version if that same file gets overwritten with the update
+  // (same filename, same location) rather than saved as a separate copy.
+  function setupPullToRefresh() {
+    const indicator = document.getElementById("ptr-indicator");
+    const icon = document.getElementById("ptr-icon");
+    const label = document.getElementById("ptr-label");
+    if (!indicator || !icon || !label) return;
+
+    const THRESHOLD = 70;
+    const MAX_PULL = 100;
+    let startY = null;
+    let dragging = false;
+    let refreshing = false;
+
+    function scrollTop() {
+      return window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    }
+
+    function onStart(y) {
+      if (refreshing) return;
+      if (scrollTop() <= 0) {
+        startY = y;
+        dragging = true;
+        indicator.classList.add("dragging");
+      } else {
+        startY = null;
+        dragging = false;
+      }
+    }
+
+    function onMove(y) {
+      if (!dragging || startY === null || refreshing) return;
+      const delta = y - startY;
+      if (delta > 0 && scrollTop() <= 0) {
+        const pull = Math.min(delta / 1.8, MAX_PULL);
+        indicator.style.transform = `translateY(${pull - 70}px)`;
+        label.textContent = pull >= THRESHOLD ? "Release to refresh" : "Pull to refresh";
+      }
+    }
+
+    function onEnd() {
+      if (!dragging || refreshing) { dragging = false; startY = null; return; }
+      indicator.classList.remove("dragging");
+      const m = /translateY\((-?\d+(\.\d+)?)px\)/.exec(indicator.style.transform || "");
+      const currentTranslate = m ? parseFloat(m[1]) : -70;
+      const pullAmount = currentTranslate + 70;
+
+      if (pullAmount >= THRESHOLD) {
+        refreshing = true;
+        indicator.style.transform = "translateY(0px)";
+        icon.classList.add("spin");
+        label.textContent = "Refreshing…";
+        setTimeout(() => { location.reload(); }, 300);
+      } else {
+        indicator.style.transform = "translateY(-70px)";
+      }
+      dragging = false;
+      startY = null;
+    }
+
+    // Touch (phones/tablets)
+    window.addEventListener("touchstart", (e) => onStart(e.touches[0].clientY), { passive: true });
+    window.addEventListener("touchmove", (e) => onMove(e.touches[0].clientY), { passive: true });
+    window.addEventListener("touchend", onEnd, { passive: true });
+
+    // Mouse (for testing on desktop by clicking and dragging down from the top)
+    window.addEventListener("mousedown", (e) => onStart(e.clientY));
+    window.addEventListener("mousemove", (e) => { if (dragging) onMove(e.clientY); });
+    window.addEventListener("mouseup", onEnd);
+  }
+
   // ---------- Init ----------
   renderFooter();
+  setupPullToRefresh();
   seedIfEmpty();
   renderManageTable();
   renderCategoryDatalist();
