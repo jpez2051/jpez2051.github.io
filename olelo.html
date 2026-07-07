@@ -86,7 +86,8 @@
     gap: 3px;
   }
   .study-controls select {
-    font-size: 0.9em;
+    font-size: 16px;
+    max-width: 100%;
   }
   .deck-progress {
     font-size: 0.85em;
@@ -248,17 +249,18 @@
   .correct-answer-reveal { font-weight: 700; margin-top: 4px; }
 
   /* MANAGE TAB */
-  .card-form { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .card-form { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
   .card-form input, .card-form textarea {
+    width: 100%;
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 8px;
-    font-size: 0.95em;
+    font-size: 16px; /* keep >=16px: prevents iOS Safari from auto-zooming on focus */
     font-family: inherit;
   }
-  .card-form-row { display: flex; gap: 8px; flex-wrap: wrap; }
-  .card-form-row > * { flex: 1; min-width: 140px; }
-  .field-label { font-size: 0.78em; color: var(--ocean-dark); font-weight: 600; margin-bottom: -4px; }
+  .card-form-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .card-form-row > * { flex: 1 1 200px; min-width: 0; }
+  .field-label { font-size: 0.78em; color: var(--ocean-dark); font-weight: 600; margin-bottom: 4px; }
   .btn-primary {
     background: var(--ocean);
     color: white;
@@ -278,7 +280,7 @@
   }
   .bulk-box textarea { width: 100%; height: 90px; }
 
-  table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.88em; }
+  table { width: 100%; min-width: 460px; border-collapse: collapse; margin-top: 10px; font-size: 0.88em; }
   th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid #ddd; }
   th { color: var(--ocean-dark); }
   .row-actions button {
@@ -329,8 +331,52 @@
   }
   .toast.show { opacity: 1; }
   .small-note { font-size: 0.8em; color: #666; margin-top: 6px; }
-  select { padding: 6px 8px; border-radius: 6px; border: 1px solid #ccc; }
+  select { padding: 6px 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 16px; }
+  .bulk-box textarea { font-size: 16px; }
+  .table-scroll { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
   datalist {}
+
+  footer {
+    text-align: center;
+    color: rgba(245,239,224,0.55);
+    font-size: 0.75em;
+    padding: 10px 16px 30px;
+  }
+
+  /* ---------- Responsive: tablets and phones ---------- */
+  @media (max-width: 600px) {
+    header { padding: 18px 12px 10px; }
+    header h1 { font-size: 1.3em; }
+    header p { font-size: 0.82em; }
+
+    nav { gap: 6px; padding: 0 8px 12px; }
+    nav button { padding: 7px 12px; font-size: 0.82em; }
+
+    main { padding: 0 8px 48px; }
+    .panel { padding: 14px; border-radius: 12px; }
+    .panel h2 { font-size: 1.05em; }
+
+    .study-controls { gap: 10px; justify-content: flex-start; }
+    .study-controls .control-group { flex: 1 1 45%; }
+    .study-controls select { width: 100%; }
+
+    .flashcard-wrap { height: 300px; }
+    .face .main-text { font-size: 1.25em; }
+
+    .type-answer-box { padding: 14px; min-height: 300px; }
+    .special-chars button { padding: 6px 12px; font-size: 1.05em; }
+
+    .card-form-row { flex-direction: column; }
+    .card-form-row > * { flex: 1 1 100%; }
+
+    table { font-size: 0.8em; min-width: 420px; }
+    th, td { padding: 6px 5px; }
+  }
+
+  @media (max-width: 380px) {
+    header h1 { font-size: 1.15em; }
+    .flashcard-wrap { height: 330px; }
+  }
 </style>
 </head>
 <body>
@@ -494,12 +540,14 @@
     </div>
 
     <h2>Your cards (<span id="card-count">0</span>)</h2>
-    <table id="card-table">
-      <thead>
-        <tr><th>ʻŌlelo</th><th>English</th><th>Category</th><th>Wrong</th><th></th></tr>
-      </thead>
-      <tbody id="card-table-body"></tbody>
-    </table>
+    <div class="table-scroll">
+      <table id="card-table">
+        <thead>
+          <tr><th>ʻŌlelo</th><th>English</th><th>Category</th><th>Wrong</th><th></th></tr>
+        </thead>
+        <tbody id="card-table-body"></tbody>
+      </table>
+    </div>
     <div id="manage-empty" class="empty-msg" style="display:none;">No cards yet. Add your first one above.</div>
   </section>
 
@@ -507,12 +555,14 @@
   <section id="tab-stats" class="panel" style="display:none;">
     <h2>Trouble spots</h2>
     <p class="small-note">Sorted by how often you've missed each one. Anything with a red badge needs more reps.</p>
-    <table>
-      <thead>
-        <tr><th>ʻŌlelo</th><th>English</th><th>Category</th><th>Wrong</th><th>Right</th><th>Last try</th></tr>
-      </thead>
-      <tbody id="stats-table-body"></tbody>
-    </table>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>ʻŌlelo</th><th>English</th><th>Category</th><th>Wrong</th><th>Right</th><th>Last try</th></tr>
+        </thead>
+        <tbody id="stats-table-body"></tbody>
+      </table>
+    </div>
     <div id="stats-empty" class="empty-msg" style="display:none;">No study history yet — go study a few cards first.</div>
   </section>
 
@@ -539,11 +589,21 @@
 
 </main>
 
+<footer id="app-footer"></footer>
+
 <div class="toast" id="toast"></div>
 
 <script>
 (function () {
   "use strict";
+
+  // ---------- Version ----------
+  // Bump APP_VERSION and add a line here whenever the code changes.
+  // v1.0.0 - Initial flashcard app: flip cards, add/edit/delete, miss tracking, export/import
+  // v2.0.0 - Added categories, example sentences, type-the-answer mode, pronunciation hints
+  // v3.0.0 - Mobile-responsive layout fixes (label overlap, cut-off fields, scrollable tables), version footer
+  const APP_VERSION = "3.0.0";
+  const APP_UPDATED = "2026-07-06";
 
   // ---------- State ----------
   // deck: array of { id, haw, eng, notes, category, exHaw, exEng, wrong, right, lastResult }
@@ -1166,7 +1226,16 @@
     renderStudyCard();
   });
 
+  // ---------- Footer ----------
+  function renderFooter() {
+    const footer = document.getElementById("app-footer");
+    if (footer) {
+      footer.textContent = `ʻŌlelo Hawaiʻi Flashcards • v${APP_VERSION} • updated ${APP_UPDATED}`;
+    }
+  }
+
   // ---------- Init ----------
+  renderFooter();
   seedIfEmpty();
   renderManageTable();
   renderCategoryDatalist();
