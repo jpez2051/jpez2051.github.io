@@ -2,133 +2,224 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Tracker v2.6.0</title>
+    <title>Debt Tracker v3.0.0</title>
     <style>
-        :root { --bg: #1e272e; --primary: #2ecc71; --accent: #3498db; --danger: #ff4757; --text: #f4f7f6; --card-bg: #2f3640; }
+        :root {
+            --bg: #1e272e; --primary: #2ecc71; --accent: #3498db; --danger: #ff4757;
+            --text: #f4f7f6; --card-bg: #2f3640; --muted: #a4b0be;
+            --input-bg: rgba(0,0,0,0.2); --border: rgba(255,255,255,0.08);
+            --footer-bg: rgba(0,0,0,0.95); --chart-grid: rgba(255,255,255,0.05);
+        }
+        body.light-theme {
+            --bg: #eef1f5; --text: #1e272e; --card-bg: #ffffff; --muted: #636e72;
+            --input-bg: rgba(0,0,0,0.04); --border: rgba(0,0,0,0.08);
+            --footer-bg: rgba(255,255,255,0.95); --chart-grid: rgba(0,0,0,0.05);
+        }
         html, body { background: var(--bg); overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 10px; padding-bottom: 120px; color: var(--text); overflow-x: hidden; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 10px; padding-bottom: 140px; color: var(--text); overflow-x: hidden; transition: background 0.3s; }
         * { box-sizing: border-box; }
 
+        /* Pull to refresh */
+        #pull-indicator { position: fixed; top: 0; left: 0; right: 0; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: var(--primary); opacity: 0; transform: translateY(0); transition: opacity 0.2s; z-index: 50; pointer-events: none; }
+
+        /* Reminder banner */
+        #reminder-banner { background: rgba(255,71,87,0.15); border: 1px solid var(--danger); border-radius: 12px; padding: 10px 14px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--danger); }
+        #reminder-banner .dismiss { cursor: pointer; font-size: 16px; }
+
+        /* Dashboard */
         .dashboard { background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(30,39,46,0) 100%); padding: 25px 12px 15px 12px; text-align: center; }
+        body.light-theme .dashboard { background: linear-gradient(180deg, rgba(0,0,0,0.03) 0%, rgba(255,255,255,0) 100%); }
         .main-total-container { display: flex; align-items: baseline; justify-content: center; gap: 8px; flex-wrap: wrap; }
         .main-total { font-size: 32px; font-weight: 800; }
         .delta-badge { font-size: 14px; font-weight: 800; padding: 2px 8px; border-radius: 6px; background: rgba(0,0,0,0.2); }
+        body.light-theme .delta-badge { background: rgba(0,0,0,0.06); }
         .delta-down { color: var(--primary); }
         .delta-up { color: var(--danger); }
+        .main-freedom { background: rgba(46,204,113,0.1); color: var(--primary); font-size: 11px; font-weight: 800; padding: 5px 12px; border-radius: 20px; display: inline-block; margin-top: 8px; text-transform: uppercase; }
 
-        .main-freedom { background: rgba(46, 204, 113, 0.1); color: var(--primary); font-size: 11px; font-weight: 800; padding: 5px 12px; border-radius: 20px; display: inline-block; margin-top: 8px; text-transform: uppercase; }
+        /* Toggle controls */
+        .toggle-row { display: flex; justify-content: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+        .seg-toggle { display: inline-flex; background: var(--input-bg); border-radius: 10px; padding: 3px; gap: 2px; }
+        .seg-btn { background: none; border: none; color: var(--muted); font-size: 10px; font-weight: 800; padding: 6px 14px; border-radius: 8px; cursor: pointer; text-transform: uppercase; }
+        .seg-btn.active { background: var(--primary); color: #fff; }
+        .icon-btn { background: var(--input-bg); border: none; color: var(--text); width: 34px; height: 34px; border-radius: 10px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+
+        /* Charts */
+        .chart-section { margin-top: 15px; }
+        .chart-title { font-size: 8px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; text-align: left; }
+        canvas.chart-canvas { width: 100%; border-radius: 10px; background: var(--input-bg); }
         .stack-chart { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: rgba(255,255,255,0.05); margin: 15px 0; width: 100%; }
         .stack-segment { height: 100%; transition: width 0.5s ease; }
         .debt-free { margin: 15px 0; font-size: 18px; font-weight: 900; color: var(--primary); letter-spacing: 2px; }
 
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; }
+        /* Stats */
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-top: 15px; border-top: 1px solid var(--border); padding-top: 12px; }
         .stat-val { font-size: 15px; font-weight: 800; display: block; }
-        .stat-lab { font-size: 7px; font-weight: 800; color: #a4b0be; text-transform: uppercase; letter-spacing: 0.5px;}
+        .stat-lab { font-size: 7px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;}
 
-        .card-container { margin-bottom: 15px; border-radius: 20px; padding: 18px 18px 18px 12px; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08); position: relative; display: flex; flex-direction: column; gap: 12px; }
-        .card-target { border: 1px solid var(--accent) !important; box-shadow: 0 0 20px rgba(52, 152, 219, 0.15); }
-        .target-tag { background: var(--accent); color: white; font-size: 8px; font-weight: 900; padding: 3px 8px; border-radius: 5px; text-transform: uppercase;}
+        /* Milestones */
+        .milestones { display: flex; justify-content: center; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+        .milestone { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .milestone-badge { font-size: 20px; filter: grayscale(1); opacity: 0.3; transition: all 0.3s; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--input-bg); }
+        .milestone.unlocked .milestone-badge { filter: none; opacity: 1; background: rgba(46,204,113,0.15); }
+        .milestone-lab { font-size: 7px; font-weight: 800; color: var(--muted); text-transform: uppercase; }
+        .milestone.unlocked .milestone-lab { color: var(--primary); }
+
+        /* What-if button */
+        .whatif-btn { background: var(--accent); color: #fff; border: none; padding: 10px 20px; border-radius: 10px; font-weight: 800; font-size: 11px; cursor: pointer; margin-top: 12px; text-transform: uppercase; }
+
+        /* Card flip */
+        .card-container { margin-bottom: 15px; border-radius: 20px; padding: 0; background: transparent; position: relative; }
+        .card-flipper { position: relative; width: 100%; transition: transform 0.6s; transform-style: preserve-3d; }
+        .card-container.flipped .card-flipper { transform: rotateY(180deg); }
+        .card-face { backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 20px; }
+        .card-front { background: var(--card-bg); border: 1px solid var(--border); padding: 18px 18px 18px 12px; display: flex; flex-direction: column; gap: 12px; position: relative; }
+        .card-back { position: absolute; top: 0; left: 0; right: 0; background: var(--card-bg); border: 1px solid var(--border); padding: 18px; transform: rotateY(180deg); display: flex; flex-direction: column; gap: 10px; }
+        .card-target { border: 1px solid var(--accent) !important; box-shadow: 0 0 20px rgba(52,152,219,0.15); }
+        .target-tag { background: var(--accent); color: #fff; font-size: 8px; font-weight: 900; padding: 3px 8px; border-radius: 5px; text-transform: uppercase; }
         .completed-tag { font-size: 8px; font-weight: 900; color: var(--primary); }
         .card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
         .card-top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-
         .progress-ring { position: relative; width: 54px; height: 54px; flex-shrink: 0; }
         .progress-ring svg { transform: rotate(-90deg); }
         .ring-circle { fill: none; stroke-width: 6; stroke-linecap: round; }
         .ring-bg { stroke: rgba(255,255,255,0.05); }
         .ring-bar { stroke-dasharray: 151; transition: stroke-dashoffset 0.6s ease; }
         .prog-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; }
-
-        .paid-btn { background: #353b48; color: #a4b0be; font-size: 9px; padding: 6px 12px; border-radius: 8px; font-weight: 800; border: none; text-transform: uppercase; cursor: pointer; }
-        .paid-btn.active { background: var(--primary); color: white; }
-
-        .name-input { font-weight: 800; border: none; background: none; font-size: 16px; width: 100%; color: #fff; padding: 0; outline: none; }
+        .paid-btn { background: #353b48; color: var(--muted); font-size: 9px; padding: 6px 12px; border-radius: 8px; font-weight: 800; border: none; text-transform: uppercase; cursor: pointer; }
+        .paid-btn.active { background: var(--primary); color: #fff; }
+        .name-input { font-weight: 800; border: none; background: none; font-size: 16px; width: 100%; color: var(--text); padding: 0; outline: none; }
         .due-label { font-size: 9px; font-weight: 800; margin-top: 4px; }
-
         .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .input-grid label { font-size: 8px; font-weight: 800; color: #a4b0be; text-transform: uppercase; margin-bottom: 4px; display: block; }
-        .input-grid input { width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; font-size: 13px; background: rgba(0,0,0,0.2); color: #fff; outline: none; }
+        .input-grid label { font-size: 8px; font-weight: 800; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; display: block; }
+        .input-grid input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 10px; font-size: 13px; background: var(--input-bg); color: var(--text); outline: none; }
         .input-grid input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
-
+        body.light-theme .input-grid input[type="date"]::-webkit-calendar-picker-indicator { filter: none; }
         .card-actions { display: flex; justify-content: space-between; align-items: center; }
-        .reset-link { font-size: 9px; color: var(--danger); opacity: 0.4; font-weight: 700; cursor: pointer; }
-        .reset-link:hover { opacity: 1; }
-        .delete-link { font-size: 9px; color: var(--danger); opacity: 0.4; font-weight: 700; cursor: pointer; }
-        .delete-link:hover { opacity: 1; }
+        .reset-link, .delete-link, .flip-link { font-size: 9px; font-weight: 700; cursor: pointer; opacity: 0.4; }
+        .reset-link, .delete-link { color: var(--danger); }
+        .flip-link { color: var(--accent); }
+        .reset-link:hover, .delete-link:hover, .flip-link:hover { opacity: 1; }
+        .tap-hint { text-align: center; font-size: 7px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
 
-        .toggle-completed { background: rgba(255,255,255,0.08); color: #a4b0be; font-size: 9px; padding: 8px 16px; border-radius: 8px; font-weight: 800; border: none; text-transform: uppercase; cursor: pointer; display: block; margin: 10px auto; width: 100%; }
+        /* Card back content */
+        .back-title { font-size: 10px; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+        .back-row { display: flex; justify-content: space-between; font-size: 11px; padding: 4px 0; border-bottom: 1px solid var(--border); }
+        .back-row .lab { color: var(--muted); font-weight: 700; }
+        .back-row .val { font-weight: 800; }
+        .history-item { display: flex; justify-content: space-between; font-size: 10px; padding: 3px 0; color: var(--muted); }
+        .history-item .amt { color: var(--primary); font-weight: 700; }
 
-        .add-btn { background: var(--primary); color: white; padding: 16px; border-radius: 14px; width: 100%; margin-top: 10px; font-weight: 800; border: none; cursor: pointer; font-size: 14px; }
-
+        /* Buttons */
+        .toggle-completed { background: var(--input-bg); color: var(--muted); font-size: 9px; padding: 8px 16px; border-radius: 8px; font-weight: 800; border: none; text-transform: uppercase; cursor: pointer; display: block; margin: 10px auto; width: 100%; }
+        .add-btn { background: var(--primary); color: #fff; padding: 16px; border-radius: 14px; width: 100%; margin-top: 10px; font-weight: 800; border: none; cursor: pointer; font-size: 14px; }
+        .secondary-btns { display: flex; gap: 6px; margin-top: 8px; }
+        .sec-btn { flex: 1; background: var(--input-bg); color: var(--accent); border: none; padding: 10px; border-radius: 10px; font-size: 9px; font-weight: 800; cursor: pointer; text-transform: uppercase; }
         .version-tag { text-align: center; font-size: 8px; color: #57606f; margin-top: 30px; letter-spacing: 2px; text-transform: uppercase; }
 
-        .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.95); padding: 18px 0; font-size: 11px; display: flex; justify-content: space-around; z-index: 100; border-top: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
+        /* Footer */
+        .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--footer-bg); padding: 18px 0; font-size: 11px; display: flex; justify-content: space-around; z-index: 100; border-top: 1px solid var(--border); backdrop-filter: blur(10px); }
         .footer span { font-weight: 800; cursor: pointer; }
         .footer-reset { color: var(--primary); }
         .footer-export { color: var(--accent); }
         .footer-wipe { color: var(--danger); }
+
+        /* Modal */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: var(--card-bg); border-radius: 20px; padding: 24px; width: 100%; max-width: 360px; border: 1px solid var(--border); }
+        .modal h3 { margin: 0 0 16px; font-size: 16px; font-weight: 800; color: var(--text); }
+        .modal label { font-size: 8px; font-weight: 800; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 4px; }
+        .modal input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 16px; background: var(--input-bg); color: var(--text); outline: none; margin-bottom: 16px; }
+        .modal-result { background: var(--input-bg); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
+        .modal-result-row { display: flex; justify-content: space-between; font-size: 12px; padding: 4px 0; }
+        .modal-result-row .lab { color: var(--muted); font-weight: 700; }
+        .modal-result-row .val { font-weight: 800; }
+        .modal-result-row.highlight .val { color: var(--primary); }
+        .modal-close { background: var(--input-bg); color: var(--text); border: none; padding: 12px; border-radius: 10px; width: 100%; font-weight: 800; cursor: pointer; font-size: 13px; }
     </style>
 </head>
 <body>
 
+<div id="pull-indicator">↓ Pull to refresh</div>
 <div id="app-root"></div>
+<div class="modal-overlay" id="whatif-modal" onclick="if(event.target===this)closeWhatIf()">
+    <div class="modal">
+        <h3>🎯 What If Calculator</h3>
+        <label>Extra Monthly Payment ($)</label>
+        <input type="number" id="whatif-extra" value="100" min="0" step="10" oninput="calculateWhatIf()">
+        <div class="modal-result" id="whatif-result"></div>
+        <button class="modal-close" onclick="closeWhatIf()">Close</button>
+    </div>
+</div>
+<input type="file" id="json-import" accept=".json" style="display:none">
 
 <script>
 const KEY = 'debt_v126';
 const BASE_KEY = 'debt_global_baseline';
+const HISTORY_KEY = 'debt_history_v3';
+const THEME_KEY = 'debt_theme';
+const STRATEGY_KEY = 'debt_strategy';
 const COLORS = ['#2ecc71', '#3498db', '#9b59b6', '#f1c40f', '#e67e22', '#1abc9c', '#e74c3c'];
 let cards = [];
 let baseline = 0;
+let history = [];
 let hideCompleted = false;
+let flippedCards = new Set();
+let theme = 'dark';
+let strategy = 'snowball';
 let idCounter = 0;
+let reminderDismissed = false;
 
 function generateId() { return 'card_' + Date.now() + '_' + (idCounter++); }
-
-function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str || '';
-    return div.innerHTML;
-}
-
-function formatCurrency(val, opts) {
-    const decimals = (opts && opts.decimals !== undefined) ? opts.decimals : 2;
-    return '$' + (val || 0).toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-}
-
+function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; }
+function formatCurrency(val, opts) { const dec = (opts && opts.decimals !== undefined) ? opts.decimals : 2; return '$' + (val || 0).toLocaleString(undefined, { minimumFractionDigits: dec, maximumFractionDigits: dec }); }
 function getMonthKey() { return (new Date().getMonth() + 1) + '-' + new Date().getFullYear(); }
-
-function daysUntilDue(dueDate) {
-    if (!dueDate) return null;
-    const today = new Date(); today.setHours(0,0,0,0);
-    const due = new Date(dueDate); due.setHours(0,0,0,0);
-    return Math.round((due - today) / (1000 * 60 * 60 * 24));
-}
+function daysUntilDue(dueDate) { if (!dueDate) return null; const t = new Date(); t.setHours(0,0,0,0); const d = new Date(dueDate); d.setHours(0,0,0,0); return Math.round((d - t) / 86400000); }
+function getCssVar(name) { return getComputedStyle(document.body).getPropertyValue(name).trim(); }
 
 function loadCards() {
     try {
         const raw = localStorage.getItem(KEY);
         const loaded = raw ? JSON.parse(raw) : [];
-        return loaded.map(c => ({ ...c, id: c.id || generateId(), highestBal: c.highestBal !== undefined ? c.highestBal : (parseFloat(c.bal) || 0) }));
+        return loaded.map(c => ({ ...c, id: c.id || generateId(), highestBal: c.highestBal !== undefined ? c.highestBal : (parseFloat(c.bal) || 0), history: c.history || [] }));
     } catch (e) { return []; }
 }
+function loadBaseline(fallbackTotal) { if (localStorage.getItem(BASE_KEY) === null) localStorage.setItem(BASE_KEY, String(fallbackTotal)); return parseFloat(localStorage.getItem(BASE_KEY)) || fallbackTotal; }
+function loadHistory() { try { const raw = localStorage.getItem(HISTORY_KEY); return raw ? JSON.parse(raw) : []; } catch { return []; } }
+function saveCards() { localStorage.setItem(KEY, JSON.stringify(cards)); }
+function saveHistory() { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); }
 
-function loadBaseline(fallbackTotal) {
-    if (localStorage.getItem(BASE_KEY) === null) localStorage.setItem(BASE_KEY, String(fallbackTotal));
-    return parseFloat(localStorage.getItem(BASE_KEY)) || fallbackTotal;
+function recordGlobalSnapshot() {
+    const total = cards.reduce((s, c) => s + (parseFloat(c.bal) || 0), 0);
+    const today = new Date().toISOString().split('T')[0];
+    history = history.filter(h => !h.date.startsWith(today));
+    history.push({ date: today, total: total });
+    if (history.length > 365) history = history.slice(-365);
+    saveHistory();
 }
 
-function saveCards() { localStorage.setItem(KEY, JSON.stringify(cards)); }
+function recordPayment(cardId, amount, type) {
+    const card = cards.find(c => c.id === cardId);
+    if (!card) return;
+    const prevBal = parseFloat(card.bal) || 0;
+    const newBal = parseFloat(card.bal) || 0;
+    card.history = card.history || [];
+    card.history.push({ date: new Date().toISOString().split('T')[0], amount: Math.round(amount * 100) / 100, type, prevBal, newBal });
+    if (card.history.length > 50) card.history = card.history.slice(-50);
+}
 
 function sortCards(arr) {
+    const strat = strategy;
     return arr.slice().sort((a, b) => {
-        const balA = parseFloat(a.bal) || 0;
-        const balB = parseFloat(b.bal) || 0;
+        const balA = parseFloat(a.bal) || 0, balB = parseFloat(b.bal) || 0;
         if (balA > 0 && balB <= 0) return -1;
         if (balA <= 0 && balB > 0) return 1;
         if (balA === 0 && balB === 0) return 0;
+        if (strat === 'avalanche') { const aprA = parseFloat(a.apr) || 0, aprB = parseFloat(b.apr) || 0; if (aprA !== aprB) return aprB - aprA; }
         return balA - balB;
     });
 }
@@ -136,71 +227,234 @@ function sortCards(arr) {
 function calculateStats(cards) {
     let currentTotal = 0, totalMin = 0, aprSum = 0, count = 0, monthlyInterest = 0;
     cards.forEach(c => {
-        const b = parseFloat(c.bal) || 0;
-        const r = parseFloat(c.apr) || 0;
+        const b = parseFloat(c.bal) || 0, r = parseFloat(c.apr) || 0;
         currentTotal += b;
-        if (b > 0) {
-            totalMin += parseFloat(c.min) || 0;
-            aprSum += r;
-            monthlyInterest += (b * (r / 100) / 12);
-            count++;
-        }
+        if (b > 0) { totalMin += parseFloat(c.min) || 0; aprSum += r; monthlyInterest += (b * (r / 100) / 12); count++; }
     });
-    const delta = currentTotal - baseline;
-    return { currentTotal, totalMin, monthlyInterest, avgApr: count > 0 ? Math.round(aprSum / count) : 0, delta };
+    return { currentTotal, totalMin, monthlyInterest, avgApr: count > 0 ? Math.round(aprSum / count) : 0, delta: currentTotal - baseline };
 }
 
-function projectTimeline(cards) {
-    let temp = cards.filter(c => (parseFloat(c.bal) || 0) > 0).map(c => ({
-        bal: parseFloat(c.bal) || 0, apr: parseFloat(c.apr) || 0, min: parseFloat(c.min) || 0
-    })).sort((a, b) => a.bal - b.bal);
-    if (temp.length === 0) return 0;
+function calculateAmortization(bal, apr, min) {
+    const mir = apr / 100 / 12;
+    const monthlyInterest = bal * mir;
+    if (min <= 0) return { monthlyInterest, monthlyPrincipal: 0, monthsToPayoff: -1, totalInterest: 0, interestPct: 100 };
+    const monthlyPrincipal = Math.max(0, min - monthlyInterest);
+    if (monthlyPrincipal <= 0) return { monthlyInterest, monthlyPrincipal: 0, monthsToPayoff: -1, totalInterest: -1, interestPct: 100 };
+    let balance = bal, totalInterest = 0, months = 0;
+    while (balance > 0 && months < 600) {
+        const interest = balance * mir;
+        const principal = Math.min(min - interest, balance);
+        balance -= principal; totalInterest += interest; months++;
+    }
+    return { monthlyInterest, monthlyPrincipal, monthsToPayoff: months, totalInterest, interestPct: Math.round((monthlyInterest / min) * 100) };
+}
+
+function projectTimelineAdvanced(sortedCards, extraMonthly) {
+    let temp = sortedCards.filter(c => (parseFloat(c.bal) || 0) > 0)
+        .map(c => ({ bal: parseFloat(c.bal) || 0, apr: parseFloat(c.apr) || 0, min: parseFloat(c.min) || 0 }))
+        .sort((a, b) => strategy === 'avalanche' ? b.apr - a.apr : a.bal - b.bal);
+    if (temp.length === 0) return { months: 0, totalInterest: 0 };
     const totalMin = temp.reduce((s, c) => s + c.min, 0);
-    if (totalMin <= 0) return 0;
-    let months = 0, freedMinPool = 0, prevTotal = temp.reduce((s, c) => s + c.bal, 0), stagnantCount = 0;
-    while (months < 360) {
+    if (totalMin <= 0) return { months: 0, totalInterest: 0 };
+    let months = 0, freedPool = 0, totalInterest = 0;
+    let prevTotal = temp.reduce((s, c) => s + c.bal, 0), stagnantCount = 0;
+    while (months < 600) {
         months++;
-        let availableExtra = freedMinPool;
+        let snowballExtra = (extraMonthly || 0) + freedPool;
+        freedPool = 0;
         for (let i = 0; i < temp.length; i++) {
             const c = temp[i];
-            c.bal += c.bal * ((c.apr / 100) / 12);
-            const payment = c.min + availableExtra;
-            availableExtra = 0;
-            if (c.bal <= payment) {
-                const surplus = payment - c.bal;
-                freedMinPool += c.min;
-                availableExtra = surplus;
-                temp.splice(i, 1); i--;
-            } else { c.bal -= payment; }
+            const interest = c.bal * ((c.apr / 100) / 12);
+            totalInterest += interest; c.bal += interest;
+            const payment = c.min + snowballExtra;
+            snowballExtra = 0;
+            if (c.bal <= payment) { snowballExtra = payment - c.bal; freedPool += c.min; temp.splice(i, 1); i--; }
+            else { c.bal -= payment; }
         }
         if (temp.length === 0) break;
-        const currentTotal = temp.reduce((s, c) => s + c.bal, 0);
-        if (currentTotal >= prevTotal) { stagnantCount++; if (stagnantCount >= 3) return -1; } else stagnantCount = 0;
-        prevTotal = currentTotal;
+        const curTotal = temp.reduce((s, c) => s + c.bal, 0);
+        if (curTotal >= prevTotal) { stagnantCount++; if (stagnantCount >= 3) return { months: -1, totalInterest: -1 }; }
+        else stagnantCount = 0;
+        prevTotal = curTotal;
     }
-    return months >= 360 ? -1 : months;
+    return { months: months >= 600 ? -1 : months, totalInterest };
 }
 
 function exportCSV() {
     const headers = ['Name', 'Balance', 'APR %', 'Min Payment', 'Due Date', 'Paid This Month'];
-    const rows = cards.map(c => [
-        '"' + (c.name || '').replace(/"/g, '""') + '"',
-        parseFloat(c.bal) || 0, parseFloat(c.apr) || 0, parseFloat(c.min) || 0,
-        c.due || '', c.lastPaidMonth || ''
-    ].join(','));
-    const csv = [headers.join(','), ...rows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const rows = cards.map(c => ['"' + (c.name || '').replace(/"/g, '""') + '"', parseFloat(c.bal) || 0, parseFloat(c.apr) || 0, parseFloat(c.min) || 0, c.due || '', c.lastPaidMonth || ''].join(','));
+    downloadFile([headers.join(','), ...rows].join('\n'), 'debt-export.csv', 'text/csv');
+}
+function exportJSON() {
+    const data = { cards, baseline, history, exportDate: new Date().toISOString(), version: '3.0.0' };
+    downloadFile(JSON.stringify(data, null, 2), 'debt-backup.json', 'application/json');
+}
+function downloadFile(content, filename, type) {
+    const blob = new Blob([content], { type });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'debt-tracker-export.csv'; a.click();
+    const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
     URL.revokeObjectURL(url);
+}
+function importJSON(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (!data.cards) throw new Error('Invalid file');
+            cards = data.cards.map(c => ({ ...c, id: c.id || generateId(), history: c.history || [] }));
+            baseline = data.baseline || cards.reduce((s, c) => s + (parseFloat(c.bal) || 0), 0);
+            history = data.history || [];
+            saveCards(); saveHistory(); localStorage.setItem(BASE_KEY, String(baseline));
+            recordGlobalSnapshot(); renderUI(); alert('Data restored successfully!');
+        } catch (err) { alert('Invalid backup file: ' + err.message); }
+    };
+    reader.readAsText(file);
+}
+
+function shareCard() {
+    const stats = calculateStats(cards);
+    const sorted = sortCards(cards);
+    const proj = projectTimelineAdvanced(sorted, 0);
+    const progress = baseline > 0 ? Math.max(0, Math.min(100, Math.round((1 - stats.currentTotal / baseline) * 100))) : 0;
+    const canvas = document.createElement('canvas');
+    canvas.width = 600; canvas.height = 400;
+    const ctx = canvas.getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 0, 400);
+    grad.addColorStop(0, '#1e272e'); grad.addColorStop(1, '#2f3640');
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, 600, 400);
+    ctx.fillStyle = '#a4b0be'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('DEBT TRACKER', 300, 50);
+    ctx.fillStyle = '#f4f7f6'; ctx.font = 'bold 44px sans-serif';
+    ctx.fillText(formatCurrency(stats.currentTotal), 300, 110);
+    ctx.fillStyle = '#2ecc71'; ctx.font = 'bold 22px sans-serif';
+    ctx.fillText(progress + '% Debt Free', 300, 155);
+    if (proj.months > 0) {
+        const d = new Date(); d.setMonth(d.getMonth() + proj.months);
+        ctx.fillStyle = '#3498db'; ctx.font = 'bold 18px sans-serif';
+        ctx.fillText('Freedom: ' + d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }), 300, 195);
+    }
+    ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(50, 230, 500, 24);
+    ctx.fillStyle = '#2ecc71'; ctx.fillRect(50, 230, 500 * (progress / 100), 24);
+    ctx.fillStyle = '#57606f'; ctx.font = '12px sans-serif';
+    ctx.fillText('Tracked with Debt Tracker v3.0.0', 300, 290);
+    ctx.fillText(new Date().toLocaleDateString(), 300, 310);
+    ctx.fillStyle = '#a4b0be'; ctx.font = 'bold 13px sans-serif';
+    ctx.fillText('Total Min: ' + formatCurrency(stats.totalMin, { decimals: 0 }) + '  |  Interest/mo: ' + formatCurrency(stats.monthlyInterest, { decimals: 0 }), 300, 345);
+    const a = document.createElement('a'); a.download = 'debt-progress.png'; a.href = canvas.toDataURL(); a.click();
+}
+
+function triggerConfetti() {
+    const canvas = document.createElement('canvas');
+    canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;';
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+    const particles = [];
+    for (let i = 0; i < 150; i++) {
+        particles.push({ x: Math.random() * canvas.width, y: -20 - Math.random() * 200, vx: (Math.random() - 0.5) * 6, vy: Math.random() * 3 + 2, size: Math.random() * 8 + 4, color: COLORS[Math.floor(Math.random() * COLORS.length)], rotation: Math.random() * 360, vr: (Math.random() - 0.5) * 12 });
+    }
+    let frame = 0;
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+            p.x += p.vx; p.y += p.vy; p.vy += 0.12; p.rotation += p.vr;
+            ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rotation * Math.PI / 180);
+            ctx.fillStyle = p.color; ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size); ctx.restore();
+        });
+        frame++;
+        if (frame < 200) requestAnimationFrame(animate);
+        else canvas.remove();
+    }
+    animate();
+}
+
+function drawLineChart(canvas, dataPoints) {
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.offsetWidth, h = canvas.offsetHeight || 120;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
+    const textColor = getCssVar('--muted'), gridColor = getCssVar('--chart-grid');
+    if (dataPoints.length < 2) {
+        ctx.fillStyle = textColor; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('Make payments to see your progress', w / 2, h / 2);
+        return;
+    }
+    const pad = 28;
+    const cw = w - pad * 2, ch = h - pad * 2;
+    const values = dataPoints.map(d => d.total);
+    const minVal = Math.min(...values, 0), maxVal = Math.max(...values, 1), range = maxVal - minVal || 1;
+    ctx.strokeStyle = gridColor; ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) { const y = pad + (ch / 4) * i; ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(w - pad, y); ctx.stroke(); }
+    ctx.fillStyle = textColor; ctx.font = '8px sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText('$' + Math.round(maxVal), pad - 3, pad + 3); ctx.fillText('$' + Math.round(minVal), pad - 3, h - pad + 3);
+    ctx.strokeStyle = '#2ecc71'; ctx.lineWidth = 2; ctx.beginPath();
+    dataPoints.forEach((d, i) => { const x = pad + (cw / (dataPoints.length - 1 || 1)) * i; const y = pad + ch - ((d.total - minVal) / range) * ch; if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); });
+    ctx.stroke();
+    ctx.lineTo(pad + cw, pad + ch); ctx.lineTo(pad, pad + ch); ctx.closePath();
+    ctx.fillStyle = 'rgba(46,204,113,0.1)'; ctx.fill();
+    ctx.fillStyle = '#2ecc71';
+    dataPoints.forEach((d, i) => { const x = pad + (cw / (dataPoints.length - 1 || 1)) * i; const y = pad + ch - ((d.total - minVal) / range) * ch; ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill(); });
+}
+
+function drawDonutChart(canvas, segments, centerText) {
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    const size = canvas.offsetWidth || 140;
+    canvas.width = size * dpr; canvas.height = size * dpr;
+    const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
+    const cx = size / 2, cy = size / 2, r = size / 2 - 8, ir = r * 0.62;
+    if (segments.length === 0 || centerText === 0) {
+        ctx.fillStyle = getCssVar('--chart-grid'); ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.arc(cx, cy, ir, 0, Math.PI * 2, true); ctx.fill();
+        ctx.fillStyle = getCssVar('--muted'); ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('No Debt', cx, cy);
+        return;
+    }
+    let startAngle = -Math.PI / 2;
+    segments.forEach(seg => {
+        const angle = (seg.value / centerText) * Math.PI * 2;
+        ctx.beginPath(); ctx.arc(cx, cy, r, startAngle, startAngle + angle); ctx.arc(cx, cy, ir, startAngle + angle, startAngle, true); ctx.closePath();
+        ctx.fillStyle = seg.color; ctx.fill(); startAngle += angle;
+    });
+    ctx.fillStyle = getCssVar('--text'); ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(formatCurrency(centerText, { decimals: 0 }), cx, cy);
+}
+
+function drawMiniChart(canvas, cardHistory, color) {
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.offsetWidth || 200, h = 50;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
+    if (!cardHistory || cardHistory.length < 2) {
+        ctx.fillStyle = getCssVar('--muted'); ctx.font = '8px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('No history yet', w / 2, h / 2); return;
+    }
+    const points = [{ total: cardHistory[0].prevBal }, ...cardHistory.map(h => ({ total: h.newBal }))];
+    const values = points.map(p => p.total);
+    const minVal = Math.min(...values, 0), maxVal = Math.max(...values, 1), range = maxVal - minVal || 1;
+    const pad = 4;
+    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath();
+    points.forEach((p, i) => { const x = pad + ((w - pad * 2) / (points.length - 1 || 1)) * i; const y = pad + (h - pad * 2) - ((p.total - minVal) / range) * (h - pad * 2); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); });
+    ctx.stroke();
+    ctx.lineTo(w - pad, h - pad); ctx.lineTo(pad, h - pad); ctx.closePath();
+    ctx.fillStyle = color + '20'; ctx.fill();
 }
 
 function loadData() {
     cards = loadCards();
     const total = cards.reduce((s, c) => s + (parseFloat(c.bal) || 0), 0);
     baseline = loadBaseline(total);
+    history = loadHistory();
+    theme = localStorage.getItem(THEME_KEY) || 'dark';
+    strategy = localStorage.getItem(STRATEGY_KEY) || 'snowball';
+    if (history.length === 0) recordGlobalSnapshot();
+    applyTheme();
     renderUI();
+}
+
+function applyTheme() {
+    document.body.className = theme === 'light' ? 'light-theme' : '';
 }
 
 function renderUI() {
@@ -208,56 +462,92 @@ function renderUI() {
     const sorted = sortCards(cards);
     const targetIdx = sorted.findIndex(c => (parseFloat(c.bal) || 0) > 0);
     const stats = calculateStats(cards);
-    const freedomMonths = projectTimeline(sorted);
+    const proj = projectTimelineAdvanced(sorted, 0);
 
-    const displayCards = hideCompleted ? sorted.filter(c => (parseFloat(c.bal) || 0) !== 0) : sorted;
-    const hasCompleted = sorted.some(c => (parseFloat(c.bal) || 0) === 0);
-
+    // Freedom label
     let freedomLabel;
-    if (freedomMonths > 0) {
-        const d = new Date(); d.setMonth(d.getMonth() + freedomMonths);
-        freedomLabel = 'Freedom: ' + d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-    } else if (freedomMonths === -1) {
-        freedomLabel = '\u26A0 Interest Exceeds Payments';
-    } else {
-        freedomLabel = stats.currentTotal > 0 ? 'Add Min Payments' : 'Debt Free!';
-    }
+    if (proj.months > 0) { const d = new Date(); d.setMonth(d.getMonth() + proj.months); freedomLabel = 'Freedom: ' + d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); }
+    else if (proj.months === -1) freedomLabel = '\u26A0 Interest Exceeds Payments';
+    else freedomLabel = stats.currentTotal > 0 ? 'Add Min Payments' : 'Debt Free!';
 
+    // Delta
     const showDelta = Math.abs(stats.delta) > 0.01;
     const deltaArrow = stats.delta > 0 ? '\u2191' : '\u2193';
     const deltaLabel = showDelta ? deltaArrow + ' ' + formatCurrency(Math.abs(stats.delta)) : '$0.00';
     const deltaClass = showDelta ? (stats.delta > 0 ? 'delta-up' : 'delta-down') : '';
 
-    let html = '<div class="dashboard">';
+    // Progress & milestones
+    const progress = baseline > 0 ? Math.max(0, Math.min(100, Math.round((1 - stats.currentTotal / baseline) * 100))) : 0;
+    const milestones = [
+        { emoji: '\uD83C\uDF31', label: '25%', threshold: 25 },
+        { emoji: '\u26A1', label: '50%', threshold: 50 },
+        { emoji: '\uD83D\uDE80', label: '75%', threshold: 75 },
+        { emoji: '\uD83C\uDFC6', label: '100%', threshold: 100 },
+    ];
+
+    // Reminder banner
+    let reminderHtml = '';
+    if (!reminderDismissed) {
+        const dueSoon = cards.filter(c => { const bal = parseFloat(c.bal) || 0; if (bal <= 0) return false; const d = daysUntilDue(c.due); return d !== null && d <= 3; });
+        if (dueSoon.length > 0) {
+            const overdue = dueSoon.filter(c => daysUntilDue(c.due) < 0).length;
+            reminderHtml = '<div id="reminder-banner"><span>\u26A0 ' + dueSoon.length + ' payment' + (dueSoon.length > 1 ? 's' : '') + ' due soon' + (overdue > 0 ? ' (' + overdue + ' overdue)' : '') + '</span><span class="dismiss" onclick="dismissReminder()">\u2715</span></div>';
+        }
+    }
+
+    let html = reminderHtml;
+    html += '<div class="dashboard">';
     html += '<div class="main-total-container"><div class="main-total">' + formatCurrency(stats.currentTotal) + '</div><div class="delta-badge ' + deltaClass + '">' + deltaLabel + '</div></div>';
     html += '<div class="main-freedom">' + escapeHtml(freedomLabel) + '</div>';
+
+    // Toggle row
+    html += '<div class="toggle-row">';
+    html += '<div class="seg-toggle"><button class="seg-btn ' + (strategy === 'snowball' ? 'active' : '') + '" onclick="setStrategy(\'snowball\')">\u2744 Snowball</button><button class="seg-btn ' + (strategy === 'avalanche' ? 'active' : '') + '" onclick="setStrategy(\'avalanche\')">\u26A0 Avalanche</button></div>';
+    html += '<button class="icon-btn" onclick="toggleTheme()">' + (theme === 'dark' ? '\u2600' : '\uD83C\uDF19') + '</button>';
+    html += '</div>';
+
+    // Stack chart or debt free
     if (stats.currentTotal > 0) {
         html += '<div class="stack-chart">';
-        sorted.forEach((c, i) => {
-            const bal = parseFloat(c.bal) || 0;
-            if (bal > 0) {
-                const width = (bal / stats.currentTotal) * 100;
-                html += '<div class="stack-segment" style="width:' + width + '%; background:' + COLORS[i % COLORS.length] + '"></div>';
-            }
-        });
+        sorted.forEach((c, i) => { const bal = parseFloat(c.bal) || 0; if (bal > 0) { const width = (bal / stats.currentTotal) * 100; html += '<div class="stack-segment" style="width:' + width + '%; background:' + COLORS[i % COLORS.length] + '"></div>'; } });
         html += '</div>';
     } else {
         html += '<div class="debt-free">\uD83C\uDF89 DEBT FREE \uD83C\uDF89</div>';
     }
+
+    // Donut chart
+    html += '<div class="chart-section"><div class="chart-title">Debt Distribution</div><canvas class="chart-canvas" id="donut-chart" style="height:140px;"></canvas></div>';
+
+    // Balance over time chart
+    html += '<div class="chart-section"><div class="chart-title">Total Debt Over Time</div><canvas class="chart-canvas" id="balance-chart" style="height:120px;"></canvas></div>';
+
+    // Stats
     html += '<div class="stat-grid">';
-    html += '<div class="stat-item"><span class="stat-val">' + formatCurrency(stats.totalMin, { decimals: 0 }) + '</span><span class="stat-lab">Total Min</span></div>';
-    html += '<div class="stat-item"><span class="stat-val" style="color:var(--danger)">' + formatCurrency(stats.monthlyInterest, { decimals: 0 }) + '</span><span class="stat-lab">Int. Leakage/mo</span></div>';
-    html += '<div class="stat-item"><span class="stat-val">' + stats.avgApr + '%</span><span class="stat-lab">Avg APR</span></div>';
-    html += '</div></div>';
+    html += '<div><span class="stat-val">' + formatCurrency(stats.totalMin, { decimals: 0 }) + '</span><span class="stat-lab">Total Min</span></div>';
+    html += '<div><span class="stat-val" style="color:var(--danger)">' + formatCurrency(stats.monthlyInterest, { decimals: 0 }) + '</span><span class="stat-lab">Int. Leakage/mo</span></div>';
+    html += '<div><span class="stat-val">' + stats.avgApr + '%</span><span class="stat-lab">Avg APR</span></div>';
+    html += '</div>';
 
+    // Milestones
+    html += '<div class="milestones">';
+    milestones.forEach(m => {
+        const unlocked = progress >= m.threshold;
+        html += '<div class="milestone ' + (unlocked ? 'unlocked' : '') + '"><div class="milestone-badge">' + m.emoji + '</div><div class="milestone-lab">' + m.label + '</div></div>';
+    });
+    html += '</div>';
+
+    // What if button
+    if (stats.currentTotal > 0) html += '<button class="whatif-btn" onclick="openWhatIf()">\uD83C\uDFAF What If I Pay More?</button>';
+
+    html += '</div>';
+
+    // Cards
+    const indexMap = {}; sorted.forEach((c, i) => { indexMap[c.id] = i; });
+    const displayCards = hideCompleted ? sorted.filter(c => (parseFloat(c.bal) || 0) !== 0) : sorted;
     html += '<div style="margin-top:20px;">';
-    const indexMap = {};
-    sorted.forEach((c, i) => { indexMap[c.id] = i; });
-
     displayCards.forEach(c => {
         const i = indexMap[c.id];
-        const bal = parseFloat(c.bal) || 0;
-        const min = parseFloat(c.min) || 0;
+        const bal = parseFloat(c.bal) || 0, min = parseFloat(c.min) || 0, apr = parseFloat(c.apr) || 0;
         const isPaid = c.lastPaidMonth === getMonthKey();
         const highest = parseFloat(c.highestBal) || bal;
         const isTarget = (i === targetIdx && bal > 0);
@@ -266,7 +556,7 @@ function renderUI() {
         const syncColor = COLORS[i % COLORS.length];
 
         const daysToDue = daysUntilDue(c.due);
-        let dueLabel = '', dueColor = '#a4b0be';
+        let dueLabel = '', dueColor = 'var(--muted)';
         if (daysToDue !== null) {
             if (daysToDue < 0) { dueLabel = Math.abs(daysToDue) + 'd overdue'; dueColor = 'var(--danger)'; }
             else if (daysToDue <= 3) { dueLabel = daysToDue + 'd left'; dueColor = 'var(--danger)'; }
@@ -274,48 +564,93 @@ function renderUI() {
             else dueLabel = daysToDue + 'd left';
         }
 
-        let cardStyle = 'opacity:' + (bal === 0 ? 0.3 : (isPaid ? 0.6 : 1)) + '; border-left:6px solid ' + syncColor + ';';
-        if (isTarget) cardStyle = 'opacity:1; border:1px solid var(--accent); border-left:6px solid ' + syncColor + '; box-shadow:0 0 20px rgba(52,152,219,0.15);';
+        const isFlipped = flippedCards.has(c.id);
+        const frontOpacity = bal === 0 ? 0.3 : (isPaid ? 0.6 : 1);
+        let frontStyle = 'opacity:' + frontOpacity + '; border-left:6px solid ' + syncColor + ';';
+        if (isTarget) frontStyle = 'opacity:1; border-left:6px solid ' + syncColor + '; box-shadow:0 0 20px rgba(52,152,219,0.15);';
 
-        html += '<div class="card-container ' + (isTarget ? 'card-target' : '') + '" style="' + cardStyle + '">';
+        // Amortization for back
+        const amort = calculateAmortization(bal, apr, min);
+        let payoffDate = 'N/A';
+        if (amort.monthsToPayoff > 0) { const d = new Date(); d.setMonth(d.getMonth() + amort.monthsToPayoff); payoffDate = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); }
+        else if (amort.monthsToPayoff === -1) payoffDate = '\u26A0 Interest > Min';
+
+        html += '<div class="card-container ' + (isFlipped ? 'flipped' : '') + '" data-card-id="' + c.id + '" onclick="flipCard(\'' + c.id + '\')">';
+        html += '<div class="card-flipper">';
+
+        // FRONT
+        html += '<div class="card-face card-front ' + (isTarget ? 'card-target' : '') + '" style="' + frontStyle + '">';
         html += '<div class="card-header"><div style="flex:1">';
         html += '<div class="card-top-row">';
-        if (isTarget) html += '<span class="target-tag">SNOWBALL TARGET</span>';
+        if (isTarget) html += '<span class="target-tag">' + (strategy === 'avalanche' ? 'AVALANCHE TARGET' : 'SNOWBALL TARGET') + '</span>';
         else if (bal === 0) html += '<span class="completed-tag">COMPLETED \u2713</span>';
         else html += '<span></span>';
         if (bal > 0) {
-            html += '<div style="display:flex; gap:5px;">';
+            html += '<div style="display:flex; gap:5px;" onclick="event.stopPropagation()">';
             html += '<button class="paid-btn" onclick="payMin(\'' + c.id + '\')" style="opacity:' + (min > 0 ? 1 : 0.3) + '; pointer-events:' + (min > 0 ? 'auto' : 'none') + ';">MIN PAID</button>';
             html += '<button class="paid-btn ' + (isPaid ? 'active' : '') + '" onclick="markPaid(\'' + c.id + '\')">' + (isPaid ? 'PAID \u2713' : 'MARK PAID') + '</button>';
             html += '</div>';
         }
         html += '</div>';
-        html += '<input type="text" value="' + escapeHtml(c.name || '') + '" placeholder="Debt Name" onfocus="this.select()" onchange="update(\'' + c.id + '\', \'name\', this.value)" class="name-input">';
+        html += '<input type="text" value="' + escapeHtml(c.name || '') + '" placeholder="Debt Name" onfocus="this.select()" onchange="update(\'' + c.id + '\', \'name\', this.value)" class="name-input" onclick="event.stopPropagation()">';
         if (dueLabel) html += '<div class="due-label" style="color:' + dueColor + ';">' + escapeHtml(dueLabel) + '</div>';
         html += '</div>';
         html += '<div class="progress-ring"><svg width="54" height="54"><circle class="ring-circle ring-bg" cx="27" cy="27" r="24"></circle><circle class="ring-circle ring-bar" cx="27" cy="27" r="24" style="stroke-dashoffset:' + offset + '; stroke:' + syncColor + ';"></circle></svg><div class="prog-text">' + progPercent + '%</div></div>';
         html += '</div>';
-
-        html += '<div class="input-grid">';
+        html += '<div class="input-grid" onclick="event.stopPropagation()">';
         html += '<div><label>Balance</label><input type="number" step="0.01" min="0" value="' + bal + '" onfocus="this.select()" onchange="update(\'' + c.id + '\', \'bal\', this.value)"></div>';
         html += '<div><label>APR %</label><input type="number" step="0.1" min="0" max="100" value="' + (c.apr || 0) + '" onfocus="this.select()" onchange="update(\'' + c.id + '\', \'apr\', this.value)"></div>';
         html += '</div>';
-        html += '<div class="input-grid">';
+        html += '<div class="input-grid" onclick="event.stopPropagation()">';
         html += '<div><label>Min Pay</label><input type="number" min="0" value="' + (c.min || 0) + '" onfocus="this.select()" onchange="update(\'' + c.id + '\', \'min\', this.value)"></div>';
         html += '<div><label>Due Date</label><input type="date" value="' + (c.due || '') + '" onfocus="this.select()" onchange="update(\'' + c.id + '\', \'due\', this.value)"></div>';
         html += '</div>';
-        html += '<div class="card-actions"><span class="reset-link" onclick="resetHighest(\'' + c.id + '\')">RESET CARD START</span><span class="delete-link" onclick="deleteCard(\'' + c.id + '\')">DELETE</span></div>';
+        html += '<div class="card-actions" onclick="event.stopPropagation()"><span class="reset-link" onclick="resetHighest(\'' + c.id + '\')">RESET START</span><span class="flip-link" onclick="flipCard(\'' + c.id + '\')">DETAILS \u21C4</span><span class="delete-link" onclick="deleteCard(\'' + c.id + '\')">DELETE</span></div>';
+        html += '<div class="tap-hint">Tap card for details</div>';
         html += '</div>';
+
+        // BACK
+        html += '<div class="card-face card-back">';
+        html += '<div class="back-title">' + escapeHtml(c.name || 'Debt') + ' \u2014 Details</div>';
+        html += '<div class="back-row"><span class="lab">Current Balance</span><span class="val">' + formatCurrency(bal) + '</span></div>';
+        html += '<div class="back-row"><span class="lab">Monthly Interest</span><span class="val" style="color:var(--danger)">' + formatCurrency(amort.monthlyInterest) + '</span></div>';
+        html += '<div class="back-row"><span class="lab">Monthly Principal</span><span class="val" style="color:var(--primary)">' + formatCurrency(amort.monthlyPrincipal) + '</span></div>';
+        html += '<div class="back-row"><span class="lab">Interest % of Payment</span><span class="val">' + amort.interestPct + '%</span></div>';
+        html += '<div class="back-row"><span class="lab">Payoff at Min Only</span><span class="val">' + payoffDate + '</span></div>';
+        html += '<div class="back-row"><span class="lab">Total Interest at Min</span><span class="val" style="color:var(--danger)">' + (amort.totalInterest >= 0 ? formatCurrency(amort.totalInterest) : 'N/A') + '</span></div>';
+        // Mini chart
+        if (c.history && c.history.length >= 1) {
+            html += '<div class="chart-title" style="margin-top:8px;">Balance History</div>';
+            html += '<canvas class="chart-canvas" id="mini-chart-' + c.id + '" style="height:50px;"></canvas>';
+        }
+        // Payment history
+        if (c.history && c.history.length > 0) {
+            html += '<div class="chart-title" style="margin-top:8px;">Recent Payments</div>';
+            c.history.slice(-4).reverse().forEach(h => {
+                html += '<div class="history-item"><span>' + h.date + ' (' + h.type + ')</span><span class="amt">-$' + h.amount + ' \u2192 ' + formatCurrency(h.newBal, { decimals: 0 }) + '</span></div>';
+            });
+        }
+        html += '<div class="card-actions" onclick="event.stopPropagation()"><span class="flip-link" onclick="flipCard(\'' + c.id + '\')">\u21C4 Back</span></div>';
+        html += '</div>';
+
+        html += '</div>'; // flipper
+        html += '</div>'; // container
     });
     html += '</div>';
 
-    if (hasCompleted) {
+    // Bottom buttons
+    if (sorted.some(c => (parseFloat(c.bal) || 0) === 0)) {
         html += '<button class="toggle-completed" onclick="toggleCompleted()">' + (hideCompleted ? 'SHOW' : 'HIDE') + ' COMPLETED</button>';
     }
     html += '<button class="add-btn" onclick="addCard()">+ ADD NEW DEBT</button>';
-    html += '<div class="version-tag">Build v2.6.0 \u2022 Snowball Protocol</div>';
+    html += '<div class="secondary-btns">';
+    html += '<button class="sec-btn" onclick="exportJSON()">Backup JSON</button>';
+    html += '<button class="sec-btn" onclick="document.getElementById(\'json-import\').click()">Restore JSON</button>';
+    html += '<button class="sec-btn" onclick="shareCard()">Share Card</button>';
     html += '</div>';
+    html += '<div class="version-tag">Build v3.0.0 \u2022 Snowball + Avalanche Protocol</div>';
 
+    // Footer
     html += '<div class="footer">';
     html += '<span class="footer-reset" onclick="resetBaseline()">RESET BASELINE</span>';
     html += '<span class="footer-export" onclick="exportCSV()">EXPORT CSV</span>';
@@ -323,15 +658,38 @@ function renderUI() {
     html += '</div>';
 
     root.innerHTML = html;
+
+    // Draw charts after DOM update
+    setTimeout(() => {
+        drawLineChart(document.getElementById('balance-chart'), history);
+        const donutSegments = sorted.filter(c => (parseFloat(c.bal) || 0) > 0).map((c, i) => ({ value: parseFloat(c.bal) || 0, color: COLORS[i % COLORS.length] }));
+        drawDonutChart(document.getElementById('donut-chart'), donutSegments, stats.currentTotal);
+        // Mini charts
+        displayCards.forEach(c => {
+            if (c.history && c.history.length >= 1) {
+                const miniCanvas = document.getElementById('mini-chart-' + c.id);
+                if (miniCanvas) drawMiniChart(miniCanvas, c.history, COLORS[indexMap[c.id] % COLORS.length]);
+            }
+        });
+    }, 0);
 }
 
 function update(id, field, val) {
     const card = cards.find(c => c.id === id);
     if (!card) return;
+    const oldBal = parseFloat(card.bal) || 0;
     card[field] = (field === 'name' || field === 'due') ? val : (parseFloat(val) || 0);
-    if (field === 'bal' && card.bal > (parseFloat(card.highestBal) || 0)) card.highestBal = card.bal;
-    saveCards();
-    renderUI();
+    if (field === 'bal') {
+        const newBal = card.bal;
+        if (newBal > (parseFloat(card.highestBal) || 0)) card.highestBal = newBal;
+        if (Math.abs(newBal - oldBal) > 0.01) {
+            recordPayment(id, Math.abs(newBal - oldBal), 'manual');
+            recordGlobalSnapshot();
+            // Confetti if balance hit 0
+            if (newBal === 0 && oldBal > 0) triggerConfetti();
+        }
+    }
+    saveCards(); renderUI();
 }
 
 function markPaid(id) {
@@ -339,61 +697,98 @@ function markPaid(id) {
     const card = cards.find(c => c.id === id);
     if (!card) return;
     card.lastPaidMonth = (card.lastPaidMonth === key) ? '' : key;
-    saveCards();
-    renderUI();
+    saveCards(); renderUI();
 }
 
 function payMin(id) {
     const card = cards.find(c => c.id === id);
     if (!card) return;
-    const bal = parseFloat(card.bal) || 0;
-    const min = parseFloat(card.min) || 0;
+    const bal = parseFloat(card.bal) || 0, min = parseFloat(card.min) || 0;
     if (min <= 0) return;
-    card.bal = Math.max(0, Math.round((bal - min) * 100) / 100);
-    saveCards();
-    renderUI();
+    const newBal = Math.max(0, Math.round((bal - min) * 100) / 100);
+    card.bal = newBal;
+    recordPayment(id, min, 'min');
+    recordGlobalSnapshot();
+    if (newBal === 0 && bal > 0) triggerConfetti();
+    saveCards(); renderUI();
 }
 
-function resetHighest(id) {
-    const card = cards.find(c => c.id === id);
-    if (!card) return;
-    card.highestBal = parseFloat(card.bal) || 0;
-    saveCards();
-    renderUI();
-}
-
-function deleteCard(id) {
-    if (!confirm('Delete this debt? This cannot be undone.')) return;
-    cards = cards.filter(c => c.id !== id);
-    saveCards();
-    renderUI();
-}
-
-function addCard() {
-    cards.push({ id: generateId(), name: 'New Debt', bal: 0, apr: 0, min: 0, highestBal: 0, due: '', lastPaidMonth: '' });
-    saveCards();
-    renderUI();
-}
-
+function resetHighest(id) { const card = cards.find(c => c.id === id); if (card) { card.highestBal = parseFloat(card.bal) || 0; saveCards(); renderUI(); } }
+function deleteCard(id) { if (!confirm('Delete this debt? This cannot be undone.')) return; cards = cards.filter(c => c.id !== id); flippedCards.delete(id); saveCards(); renderUI(); }
+function addCard() { cards.push({ id: generateId(), name: 'New Debt', bal: 0, apr: 0, min: 0, highestBal: 0, due: '', lastPaidMonth: '', history: [] }); saveCards(); renderUI(); }
 function toggleCompleted() { hideCompleted = !hideCompleted; renderUI(); }
+function flipCard(id) { if (flippedCards.has(id)) flippedCards.delete(id); else flippedCards.add(id); renderUI(); }
+function dismissReminder() { reminderDismissed = true; renderUI(); }
+
+function setStrategy(s) { strategy = s; localStorage.setItem(STRATEGY_KEY, s); renderUI(); }
+function toggleTheme() { theme = theme === 'dark' ? 'light' : 'dark'; localStorage.setItem(THEME_KEY, theme); applyTheme(); renderUI(); }
 
 function resetBaseline() {
     if (!confirm('Reset snowball baseline to current total?')) return;
     const total = cards.reduce((s, c) => s + (parseFloat(c.bal) || 0), 0);
-    localStorage.setItem(BASE_KEY, String(total));
-    baseline = total;
-    alert('Snowball baseline set: $' + total.toLocaleString());
-    renderUI();
+    localStorage.setItem(BASE_KEY, String(total)); baseline = total; recordGlobalSnapshot();
+    alert('Snowball baseline set: $' + total.toLocaleString()); renderUI();
 }
 
 function wipeAll() {
     if (!confirm('Wipe all debt data? This cannot be undone.')) return;
-    localStorage.removeItem(KEY);
-    localStorage.removeItem(BASE_KEY);
-    cards = [];
-    baseline = 0;
-    renderUI();
+    localStorage.removeItem(KEY); localStorage.removeItem(BASE_KEY); localStorage.removeItem(HISTORY_KEY);
+    cards = []; baseline = 0; history = []; flippedCards.clear(); renderUI();
 }
+
+function openWhatIf() { document.getElementById('whatif-modal').classList.add('show'); calculateWhatIf(); }
+function closeWhatIf() { document.getElementById('whatif-modal').classList.remove('show'); }
+function calculateWhatIf() {
+    const extra = parseFloat(document.getElementById('whatif-extra').value) || 0;
+    const sorted = sortCards(cards);
+    const current = projectTimelineAdvanced(sorted, 0);
+    const withExtra = projectTimelineAdvanced(sorted, extra);
+    const el = document.getElementById('whatif-result');
+    let html = '';
+    function fmt(months) {
+        if (months > 0) { const d = new Date(); d.setMonth(d.getMonth() + months); return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) + ' (' + months + ' mo)'; }
+        if (months === -1) return '\u26A0 Never (interest > payments)';
+        return 'Add payments';
+    }
+    html += '<div class="modal-result-row"><span class="lab">Current Freedom</span><span class="val">' + fmt(current.months) + '</span></div>';
+    html += '<div class="modal-result-row"><span class="lab">Current Total Interest</span><span class="val">' + (current.totalInterest >= 0 ? formatCurrency(current.totalInterest) : 'N/A') + '</span></div>';
+    html += '<div class="modal-result-row" style="border-top:1px solid var(--border); margin-top:8px; padding-top:8px;"><span class="lab">With +$' + extra + '/mo</span><span class="val">' + fmt(withExtra.months) + '</span></div>';
+    html += '<div class="modal-result-row"><span class="lab">New Total Interest</span><span class="val">' + (withExtra.totalInterest >= 0 ? formatCurrency(withExtra.totalInterest) : 'N/A') + '</span></div>';
+    if (current.months > 0 && withExtra.months > 0) {
+        const monthsSaved = current.months - withExtra.months;
+        const interestSaved = (current.totalInterest >= 0 && withExtra.totalInterest >= 0) ? current.totalInterest - withExtra.totalInterest : 0;
+        html += '<div class="modal-result-row highlight" style="border-top:1px solid var(--border); margin-top:8px; padding-top:8px;"><span class="lab">Months Saved</span><span class="val">' + monthsSaved + ' months</span></div>';
+        if (interestSaved > 0) html += '<div class="modal-result-row highlight"><span class="lab">Interest Saved</span><span class="val">' + formatCurrency(interestSaved) + '</span></div>';
+    }
+    el.innerHTML = html;
+}
+
+// Pull to refresh
+let touchStartY = 0, pullDistance = 0, isPulling = false;
+const PULL_THRESHOLD = 80;
+document.addEventListener('touchstart', (e) => { if (window.scrollY === 0) { touchStartY = e.touches[0].clientY; isPulling = true; } }, { passive: true });
+document.addEventListener('touchmove', (e) => {
+    if (!isPulling) return;
+    pullDistance = e.touches[0].clientY - touchStartY;
+    if (pullDistance > 0) {
+        const ind = document.getElementById('pull-indicator');
+        ind.style.opacity = Math.min(pullDistance / PULL_THRESHOLD, 1);
+        ind.style.transform = 'translateY(' + Math.min(pullDistance, 100) + 'px)';
+        ind.innerHTML = pullDistance > PULL_THRESHOLD ? '\u2705 Release to refresh' : '\u2193 Pull to refresh';
+    }
+}, { passive: true });
+document.addEventListener('touchend', () => {
+    if (!isPulling) return;
+    const ind = document.getElementById('pull-indicator');
+    if (pullDistance > PULL_THRESHOLD) {
+        ind.innerHTML = '\uD83D\uDD04 Refreshing...';
+        setTimeout(() => { loadData(); ind.style.opacity = '0'; ind.style.transform = 'translateY(0)'; }, 500);
+    } else { ind.style.opacity = '0'; ind.style.transform = 'translateY(0)'; }
+    isPulling = false; pullDistance = 0;
+});
+
+// JSON import handler
+document.getElementById('json-import').addEventListener('change', (e) => { if (e.target.files[0]) importJSON(e.target.files[0]); e.target.value = ''; });
 
 loadData();
 </script>
