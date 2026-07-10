@@ -286,7 +286,7 @@ function exportCSV() {
     downloadFile([headers.join(','), ...rows].join('\n'), 'debt-export.csv', 'text/csv');
 }
 function exportJSON() {
-    const data = { cards, baseline, history, exportDate: new Date().toISOString(), version: '3.0.0' };
+    const data = { cards, baseline, history,     exportDate: new Date().toISOString(), version: '3.0.1' };
     downloadFile(JSON.stringify(data, null, 2), 'debt-backup.json', 'application/json');
 }
 function downloadFile(content, filename, type) {
@@ -649,7 +649,7 @@ function renderUI() {
     html += '<button class="sec-btn" onclick="document.getElementById(\'json-import\').click()">Restore JSON</button>';
     html += '<button class="sec-btn" onclick="shareCard()">Share Card</button>';
     html += '</div>';
-    html += '<div class="version-tag">Build v3.0.0 \u2022 Snowball + Avalanche Protocol</div>';
+    html += '<div class="version-tag">Build v3.0.1 \u2022 Snowball + Avalanche Protocol</div>';
 
     // Footer
     html += '<div class="footer">';
