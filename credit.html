@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Tracker v3.0.0</title>
+    <title>Debt Tracker v3.0.1</title>
     <style>
         :root {
             --bg: #1e272e; --primary: #2ecc71; --accent: #3498db; --danger: #ff4757;
@@ -488,7 +488,8 @@ function renderUI() {
     // Reminder banner
     let reminderHtml = '';
     if (!reminderDismissed) {
-        const dueSoon = cards.filter(c => { const bal = parseFloat(c.bal) || 0; if (bal <= 0) return false; const d = daysUntilDue(c.due); return d !== null && d <= 3; });
+        const currentMonthKey = getMonthKey();
+        const dueSoon = cards.filter(c => { const bal = parseFloat(c.bal) || 0; if (bal <= 0) return false; if (c.lastPaidMonth === currentMonthKey) return false; const d = daysUntilDue(c.due); return d !== null && d <= 3; });
         if (dueSoon.length > 0) {
             const overdue = dueSoon.filter(c => daysUntilDue(c.due) < 0).length;
             reminderHtml = '<div id="reminder-banner"><span>\u26A0 ' + dueSoon.length + ' payment' + (dueSoon.length > 1 ? 's' : '') + ' due soon' + (overdue > 0 ? ' (' + overdue + ' overdue)' : '') + '</span><span class="dismiss" onclick="dismissReminder()">\u2715</span></div>';
@@ -516,7 +517,7 @@ function renderUI() {
     }
 
     // Donut chart
-    html += '<div class="chart-section"><div class="chart-title">Debt Distribution</div><canvas class="chart-canvas" id="donut-chart" style="height:140px;"></canvas></div>';
+    html += '<div class="chart-section"><div class="chart-title">Debt Distribution</div><canvas class="chart-canvas" id="donut-chart" style="height:160px; max-width:180px; margin:0 auto;"></canvas></div>';
 
     // Balance over time chart
     html += '<div class="chart-section"><div class="chart-title">Total Debt Over Time</div><canvas class="chart-canvas" id="balance-chart" style="height:120px;"></canvas></div>';
