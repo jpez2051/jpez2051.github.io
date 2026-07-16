@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Tracker v3.0.3</title>
+    <title>Debt Tracker v3.0.4</title>
     <style>
         :root {
             --bg: #1e272e; --primary: #2ecc71; --accent: #3498db; --danger: #ff4757;
@@ -300,7 +300,7 @@ function exportCSV() {
     downloadFile([headers.join(','), ...rows].join('\n'), 'debt-export.csv', 'text/csv');
 }
 function exportJSON() {
-    const data = { cards, baseline, history,     exportDate: new Date().toISOString(), version: '3.0.3' };
+    const data = { cards, baseline, history,     exportDate: new Date().toISOString(), version: '3.0.4' };
     downloadFile(JSON.stringify(data, null, 2), 'debt-backup.json', 'application/json');
 }
 function downloadFile(content, filename, type) {
@@ -675,7 +675,7 @@ function renderUI() {
     html += '<button class="sec-btn" onclick="document.getElementById(\'json-import\').click()">Restore JSON</button>';
     html += '<button class="sec-btn" onclick="shareCard()">Share Card</button>';
     html += '</div>';
-    html += '<div class="version-tag">Build v3.0.3 \u2022 Snowball + Avalanche Protocol</div>';
+    html += '<div class="version-tag">Build v3.0.4 \u2022 Snowball + Avalanche Protocol</div>';
 
     // Footer
     html += '<div class="footer">';
@@ -696,6 +696,16 @@ function renderUI() {
             if (c.history && c.history.length >= 1) {
                 const miniCanvas = document.getElementById('mini-chart-' + c.id);
                 if (miniCanvas) drawMiniChart(miniCanvas, c.history, COLORS[indexMap[c.id] % COLORS.length]);
+            }
+        });
+        // Expand flipped cards to fit back content (prevents overlap with card below)
+        document.querySelectorAll('.card-container.flipped').forEach(container => {
+            const back = container.querySelector('.card-back');
+            const flipper = container.querySelector('.card-flipper');
+            if (back && flipper) {
+                const backH = back.offsetHeight;
+                const frontH = flipper.offsetHeight;
+                flipper.style.minHeight = (backH > frontH ? backH : frontH) + 'px';
             }
         });
     }, 0);
