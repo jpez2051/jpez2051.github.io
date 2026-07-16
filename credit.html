@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Tracker v3.0.2</title>
+    <title>Debt Tracker v3.0.3</title>
     <style>
         :root {
             --bg: #1e272e; --primary: #2ecc71; --accent: #3498db; --danger: #ff4757;
@@ -300,7 +300,7 @@ function exportCSV() {
     downloadFile([headers.join(','), ...rows].join('\n'), 'debt-export.csv', 'text/csv');
 }
 function exportJSON() {
-    const data = { cards, baseline, history,     exportDate: new Date().toISOString(), version: '3.0.2' };
+    const data = { cards, baseline, history,     exportDate: new Date().toISOString(), version: '3.0.3' };
     downloadFile(JSON.stringify(data, null, 2), 'debt-backup.json', 'application/json');
 }
 function downloadFile(content, filename, type) {
@@ -635,6 +635,16 @@ function renderUI() {
         html += '<div class="back-row"><span class="lab">Interest % of Payment</span><span class="val">' + amort.interestPct + '%</span></div>';
         html += '<div class="back-row"><span class="lab">Payoff at Min Only</span><span class="val">' + payoffDate + '</span></div>';
         html += '<div class="back-row"><span class="lab">Total Interest at Min</span><span class="val" style="color:var(--danger)">' + (amort.totalInterest >= 0 ? formatCurrency(amort.totalInterest) : 'N/A') + '</span></div>';
+        // Credit limit + utilization
+        const limit = parseFloat(c.limit) || 0;
+        const utilPct = limit > 0 ? Math.round((bal / limit) * 100) : 0;
+        let utilColor = 'var(--primary)';
+        if (limit > 0 && utilPct > 50) utilColor = 'var(--danger)';
+        else if (limit > 0 && utilPct > 30) utilColor = 'var(--accent)';
+        html += '<div class="input-grid" style="margin-top:8px;" onclick="event.stopPropagation()">';
+        html += '<div><label>Credit Limit</label><input type="number" step="0.01" min="0" value="' + (c.limit || 0) + '" onfocus="this.select()" onchange="update(\'' + c.id + '\', \'limit\', this.value)"></div>';
+        html += '<div><label>Utilization</label><div style="padding:10px 0; font-size:13px; font-weight:800; color:' + (limit > 0 ? utilColor : 'var(--muted)') + '">' + (limit > 0 ? utilPct + '%' : 'N/A') + '</div></div>';
+        html += '</div>';
         // Mini chart
         if (c.history && c.history.length >= 1) {
             html += '<div class="chart-title" style="margin-top:8px;">Balance History</div>';
@@ -665,7 +675,7 @@ function renderUI() {
     html += '<button class="sec-btn" onclick="document.getElementById(\'json-import\').click()">Restore JSON</button>';
     html += '<button class="sec-btn" onclick="shareCard()">Share Card</button>';
     html += '</div>';
-    html += '<div class="version-tag">Build v3.0.2 \u2022 Snowball + Avalanche Protocol</div>';
+    html += '<div class="version-tag">Build v3.0.3 \u2022 Snowball + Avalanche Protocol</div>';
 
     // Footer
     html += '<div class="footer">';
@@ -732,7 +742,7 @@ function payMin(id) {
 
 function resetHighest(id) { const card = cards.find(c => c.id === id); if (card) { card.highestBal = parseFloat(card.bal) || 0; saveCards(); renderUI(); } }
 function deleteCard(id) { if (!confirm('Delete this debt? This cannot be undone.')) return; cards = cards.filter(c => c.id !== id); flippedCards.delete(id); saveCards(); renderUI(); }
-function addCard() { cards.push({ id: generateId(), name: 'New Debt', bal: 0, apr: 0, min: 0, highestBal: 0, due: '', lastPaidMonth: '', history: [] }); saveCards(); renderUI(); }
+function addCard() { cards.push({ id: generateId(), name: 'New Debt', bal: 0, apr: 0, min: 0, highestBal: 0, due: '', lastPaidMonth: '', history: [], limit: 0 }); saveCards(); renderUI(); }
 function toggleCompleted() { hideCompleted = !hideCompleted; renderUI(); }
 function flipCard(id) { if (flippedCards.has(id)) flippedCards.delete(id); else flippedCards.add(id); renderUI(); }
 function dismissReminder() { reminderDismissed = true; renderUI(); }
