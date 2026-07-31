@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Debt Tracker v3.0.4</title>
+    <title>Debt Tracker v3.0.5</title>
     <style>
         :root {
             --bg: #1e272e; --primary: #2ecc71; --accent: #3498db; --danger: #ff4757;
@@ -140,9 +140,28 @@
         .modal-result-row .val { font-weight: 800; }
         .modal-result-row.highlight .val { color: var(--primary); }
         .modal-close { background: var(--input-bg); color: var(--text); border: none; padding: 12px; border-radius: 10px; width: 100%; font-weight: 800; cursor: pointer; font-size: 13px; }
+
+        /* Splash screen */
+        #splash { position: fixed; inset: 0; z-index: 9999; background: linear-gradient(135deg, #1e272e 0%, #2f3640 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; transition: opacity 0.6s ease; }
+        #splash.hide { opacity: 0; pointer-events: none; }
+        .splash-logo { width: 80px; height: 80px; border-radius: 20px; background: linear-gradient(135deg, var(--primary) 0%, #27ae60 100%); display: flex; align-items: center; justify-content: center; font-size: 40px; box-shadow: 0 10px 30px rgba(46,204,113,0.3); animation: splash-pop 0.6s ease; }
+        .splash-title { font-size: 24px; font-weight: 900; letter-spacing: 3px; color: #fff; text-transform: uppercase; }
+        .splash-sub { font-size: 10px; font-weight: 800; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+        .splash-spinner { width: 28px; height: 28px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--primary); border-radius: 50%; animation: splash-spin 0.8s linear infinite; margin-top: 8px; }
+        .splash-version { position: absolute; bottom: 30px; font-size: 8px; font-weight: 800; letter-spacing: 2px; color: #57606f; text-transform: uppercase; }
+        @keyframes splash-pop { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes splash-spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
+
+<div id="splash">
+    <div class="splash-logo">❄️</div>
+    <div class="splash-title">Debt Tracker</div>
+    <div class="splash-sub">Snowball Protocol</div>
+    <div class="splash-spinner"></div>
+    <div class="splash-version">Build v3.0.5</div>
+</div>
 
 <div id="pull-indicator">↓ Pull to refresh</div>
 <div id="app-root"></div>
@@ -225,6 +244,11 @@ function recordPayment(cardId, amount, type) {
     card.history.push({ date: new Date().toISOString().split('T')[0], amount: Math.round(amount * 100) / 100, type, prevBal, newBal });
     if (card.history.length > 50) card.history = card.history.slice(-50);
 }
+function recordBalanceChange(cardId, oldBal, newBal) {
+    const card = cards.find(c => c.id === cardId);
+    if (!card) return;
+    card.lastBalanceChange = { date: new Date().toISOString().split('T')[0], delta: Math.round((newBal - oldBal) * 100) / 100 };
+}
 
 function sortCards(arr) {
     const strat = strategy;
@@ -300,7 +324,7 @@ function exportCSV() {
     downloadFile([headers.join(','), ...rows].join('\n'), 'debt-export.csv', 'text/csv');
 }
 function exportJSON() {
-    const data = { cards, baseline, history,     exportDate: new Date().toISOString(), version: '3.0.4' };
+    const data = { cards, baseline, history,     exportDate: new Date().toISOString(), version: '3.0.5' };
     downloadFile(JSON.stringify(data, null, 2), 'debt-backup.json', 'application/json');
 }
 function downloadFile(content, filename, type) {
@@ -350,7 +374,7 @@ function shareCard() {
     ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(50, 230, 500, 24);
     ctx.fillStyle = '#2ecc71'; ctx.fillRect(50, 230, 500 * (progress / 100), 24);
     ctx.fillStyle = '#57606f'; ctx.font = '12px sans-serif';
-    ctx.fillText('Tracked with Debt Tracker v3.0.0', 300, 290);
+    ctx.fillText('Tracked with Debt Tracker v3.0.5', 300, 290);
     ctx.fillText(new Date().toLocaleDateString(), 300, 310);
     ctx.fillStyle = '#a4b0be'; ctx.font = 'bold 13px sans-serif';
     ctx.fillText('Total Min: ' + formatCurrency(stats.totalMin, { decimals: 0 }) + '  |  Interest/mo: ' + formatCurrency(stats.monthlyInterest, { decimals: 0 }), 300, 345);
@@ -635,6 +659,13 @@ function renderUI() {
         html += '<div class="back-row"><span class="lab">Interest % of Payment</span><span class="val">' + amort.interestPct + '%</span></div>';
         html += '<div class="back-row"><span class="lab">Payoff at Min Only</span><span class="val">' + payoffDate + '</span></div>';
         html += '<div class="back-row"><span class="lab">Total Interest at Min</span><span class="val" style="color:var(--danger)">' + (amort.totalInterest >= 0 ? formatCurrency(amort.totalInterest) : 'N/A') + '</span></div>';
+        // Last manual balance change
+        const lastChange = c.lastBalanceChange;
+        if (lastChange) {
+            const changeSign = lastChange.delta > 0 ? '+' : '';
+            const changeColor = lastChange.delta > 0 ? 'var(--danger)' : 'var(--primary)';
+            html += '<div class="back-row"><span class="lab">Balance Change</span><span class="val" style="color:' + changeColor + '">' + changeSign + formatCurrency(lastChange.delta) + ' <span style="color:var(--muted); font-weight:700; font-size:9px;">' + lastChange.date + '</span></span></div>';
+        }
         // Credit limit + utilization
         const limit = parseFloat(c.limit) || 0;
         const utilPct = limit > 0 ? Math.round((bal / limit) * 100) : 0;
@@ -653,7 +684,7 @@ function renderUI() {
         // Payment history
         if (c.history && c.history.length > 0) {
             html += '<div class="chart-title" style="margin-top:8px;">Recent Payments</div>';
-            c.history.slice(-4).reverse().forEach(h => {
+            c.history.filter(h => h.type !== 'manual').slice(-4).reverse().forEach(h => {
                 html += '<div class="history-item"><span>' + h.date + ' (' + h.type + ')</span><span class="amt">-$' + h.amount + ' \u2192 ' + formatCurrency(h.newBal, { decimals: 0 }) + '</span></div>';
             });
         }
@@ -675,7 +706,7 @@ function renderUI() {
     html += '<button class="sec-btn" onclick="document.getElementById(\'json-import\').click()">Restore JSON</button>';
     html += '<button class="sec-btn" onclick="shareCard()">Share Card</button>';
     html += '</div>';
-    html += '<div class="version-tag">Build v3.0.4 \u2022 Snowball + Avalanche Protocol</div>';
+    html += '<div class="version-tag">Build v3.0.5 \u2022 Snowball + Avalanche Protocol</div>';
 
     // Footer
     html += '<div class="footer">';
@@ -720,7 +751,7 @@ function update(id, field, val) {
         const newBal = card.bal;
         if (newBal > (parseFloat(card.highestBal) || 0)) card.highestBal = newBal;
         if (Math.abs(newBal - oldBal) > 0.01) {
-            recordPayment(id, Math.abs(newBal - oldBal), 'manual');
+            recordBalanceChange(id, oldBal, newBal);
             recordGlobalSnapshot();
             // Confetti if balance hit 0
             if (newBal === 0 && oldBal > 0) triggerConfetti();
@@ -873,6 +904,7 @@ document.addEventListener('touchend', () => {
 document.getElementById('json-import').addEventListener('change', (e) => { if (e.target.files[0]) importJSON(e.target.files[0]); e.target.value = ''; });
 
 loadData();
+setTimeout(() => { const s = document.getElementById('splash'); if (s) s.classList.add('hide'); setTimeout(() => { if (s && s.parentNode) s.parentNode.removeChild(s); }, 700); }, 1500);
 </script>
 </body>
 </html>
