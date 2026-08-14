@@ -8,8 +8,8 @@ function loadRaw(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'nul
 function migrate(raw){
  const s=raw&&Array.isArray(raw.kittens)&&Array.isArray(raw.events)?raw:{version:4,kittens:[],events:[],litters:[],settings:{fosterName:'Foster Home'}};
  s.version=4;s.settings=s.settings||{fosterName:'Foster Home'};s.events=s.events||[];s.litters=Array.isArray(s.litters)?s.litters:[];
- const byName=new Map(s.litters.map(l=>[(l.name||'').trim().toLowerCase(),l]));
- s.kittens=(s.kittens||[]).map(k=>{k.medications=Array.isArray(k.medications)?k.medications:[];k.photo=k.photo||null;k.status=k.status||'In foster';k.carePlan={feedingEnabled:k.carePlan?.feedingEnabled??true,dailyWeight:k.carePlan?.dailyWeight??true,bottleBaby:k.carePlan?.bottleBaby??false,...(k.carePlan||{})};
+ const byName=new Map(s.litters.map(l=>[(l.name||'').trim().toLowerCase(),l])),legacyInactive=['Adopted','Transferred','Returned to A4A','Deceased'];
+ s.kittens=(s.kittens||[]).map(k=>{k.medications=Array.isArray(k.medications)?k.medications:[];k.photo=k.photo||null;k.status=k.status||'In foster';if(typeof k.inFosterCare!=='boolean')k.inFosterCare=!legacyInactive.includes(k.status);k.carePlan={feedingEnabled:k.carePlan?.feedingEnabled??true,dailyWeight:k.carePlan?.dailyWeight??true,bottleBaby:k.carePlan?.bottleBaby??false,...(k.carePlan||{})};
    if(!k.litterId&&k.litter){const key=String(k.litter).trim().toLowerCase();if(key){let l=byName.get(key);if(!l){l={id:uid('litter'),name:String(k.litter).trim(),dob:'',intakeDate:'',foster:'',notes:''};s.litters.push(l);byName.set(key,l)}k.litterId=l.id}}
    k.medications=k.medications.map(m=>normalizeMed(m));return k});
  return s;
@@ -18,6 +18,7 @@ function normalizeMed(m){const out={...m};out.id=out.id||uid('med');out.schedule
 function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}
 function kitten(id){return state.kittens.find(k=>k.id===id)}
 function litter(id){return state.litters.find(l=>l.id===id)}
+function isCurrentFoster(k){return !!k&&k.inFosterCare!==false}
 function events(id,type){return state.events.filter(e=>e.kittenId===id&&(!type||e.type===type)&&!e.deletedAt).sort((a,b)=>new Date(b.ts)-new Date(a.ts))}
 function last(id,type){return events(id,type)[0]||null}
 function sameDay(a,b){return new Date(a).toDateString()===new Date(b).toDateString()}
@@ -53,6 +54,7 @@ function doseCalculation(k,m){
 }
 function medStatus(k,m){const due=nextMedDue(k,m);return{due,overdue:!!due&&new Date(due)<=new Date(),calc:doseCalculation(k,m)}}
 function alertsFor(k){
+ if(!isCurrentFoster(k))return[];
  const out=[],nf=nextFeeding(k);if(nf&&new Date(nf)<=new Date())out.push({kind:'feeding',level:'warn',text:'Feeding '+timeUntil(nf)});
  if(weightDue(k))out.push({kind:'weight',level:'neutral',text:'Daily weight not logged'});
  const w=latestWeight(k),p=previousWeight(k);if(w!=null&&p!=null&&w<p)out.push({kind:'weight',level:'danger',text:`Weight down ${p-w}g from prior entry`});
