@@ -26,7 +26,7 @@ export function App({ repository }: { repository: CareRepository }) {
       {view === 'handoff' && <Handoff state={state} />}
     </main>
     <nav className="bottom-nav">
-      <Nav active={view === 'today'} icon="🏠" label="Today" onClick={() => setView('today')} />
+      <Nav active={view === 'today'} icon="🏠" label="Care Now" onClick={() => setView('today')} />
       <Nav active={view === 'kittens'} icon="🐱" label="Kittens" onClick={() => setView('kittens')} />
       <button className="feed-fab" aria-label="Log a feeding" title="Log a feeding" onClick={() => setModal({ kind: 'log', eventType: 'feeding' })}>🍼</button>
       <Nav active={view === 'alerts'} icon="🔔" label="Alerts" onClick={() => setView('alerts')} />
