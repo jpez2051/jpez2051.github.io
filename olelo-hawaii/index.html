@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0a5c66">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="ʻŌlelo Hawaiʻi">
-  <base href="https://cdn.jsdelivr.net/gh/jpez2051/olelo-hawaii@0bd84c97b9f78ecac651563b742f85f781c07099/">
+  <base href="https://cdn.jsdelivr.net/gh/jpez2051/olelo-hawaii@560c33b8124f232bea2b6211b620565a9ec85c02/">
   <title>ʻŌlelo Hawaiʻi — Learn to use the language</title>
   <link rel="stylesheet" href="./css/app.css">
 </head>
@@ -18,11 +18,13 @@
       <p class="subtitle">Build understanding, listening, memory, and real language production.</p>
     </div>
   </header>
+
   <nav class="main-nav" aria-label="Main navigation">
     <button class="nav-btn active" data-view="learn">Learn</button>
     <button class="nav-btn" data-view="practice">Practice</button>
     <button class="nav-btn" data-view="progress">Progress</button>
   </nav>
+
   <main class="app-shell">
     <section id="view-learn" class="view active" aria-labelledby="learn-title">
       <div class="hero-card">
@@ -33,9 +35,11 @@
         </div>
         <button id="start-due-btn" class="primary-btn">Practice what’s due</button>
       </div>
+
       <div id="curriculum-status" class="status-line" role="status">Loading curriculum…</div>
       <div id="unit-list" class="unit-list"></div>
     </section>
+
     <section id="view-practice" class="view" aria-labelledby="practice-title">
       <div class="practice-header">
         <div>
@@ -44,45 +48,81 @@
         </div>
         <div id="practice-count" class="pill">0 due</div>
       </div>
+
       <article id="practice-card" class="practice-card">
         <div id="practice-empty" class="empty-state">Choose a lesson from Learn, or practice material that is due for review.</div>
+
         <div id="practice-content" hidden>
-          <div class="practice-meta"><span id="activity-type" class="tag"></span><span id="activity-focus" class="muted"></span></div>
+          <div class="practice-meta">
+            <span id="activity-type" class="tag"></span>
+            <span id="activity-focus" class="muted"></span>
+          </div>
+
           <p id="instruction" class="instruction"></p>
           <div id="prompt" class="prompt"></div>
           <p id="support" class="support-text"></p>
+
           <div id="study-panel" class="study-panel" hidden>
-            <p class="study-label">Study this carefully</p>
+            <p class="study-label">Study the word</p>
             <div id="study-word" class="study-word" lang="haw"></div>
+            <p class="study-label">What to notice</p>
             <ul id="study-notes" class="study-notes"></ul>
             <button id="hide-and-recall-btn" class="primary-btn" type="button">I’m ready — hide it</button>
           </div>
+
           <div id="paper-panel" class="paper-panel" hidden>
             <p class="paper-title">Use your paper</p>
             <p id="paper-instruction"></p>
             <button id="paper-done-btn" class="primary-btn" type="button">Done writing</button>
           </div>
+
           <div id="answer-area">
             <label for="answer-input" class="answer-label">Your answer</label>
             <input id="answer-input" class="answer-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" readonly>
+
             <div class="hawaiian-keyboard" aria-label="Hawaiian characters">
-              <button type="button" data-char="ʻ">ʻ</button><button type="button" data-char="ā">ā</button><button type="button" data-char="ē">ē</button><button type="button" data-char="ī">ī</button><button type="button" data-char="ō">ō</button><button type="button" data-char="ū">ū</button>
+              <button type="button" data-char="ʻ">ʻ</button>
+              <button type="button" data-char="ā">ā</button>
+              <button type="button" data-char="ē">ē</button>
+              <button type="button" data-char="ī">ī</button>
+              <button type="button" data-char="ō">ō</button>
+              <button type="button" data-char="ū">ū</button>
             </div>
-            <div class="practice-actions"><button id="check-btn" class="primary-btn">Check from memory</button><button id="next-btn" class="secondary-btn" hidden>Next</button></div>
+
+            <div class="practice-actions">
+              <button id="check-btn" class="primary-btn">Check from memory</button>
+              <button id="next-btn" class="secondary-btn" hidden>Next</button>
+            </div>
           </div>
+
           <div id="feedback" class="feedback" hidden aria-live="polite"></div>
         </div>
       </article>
     </section>
+
     <section id="view-progress" class="view" aria-labelledby="progress-title">
-      <div class="panel"><p class="section-kicker">What is sticking</p><h2 id="progress-title">Progress</h2><div id="progress-summary" class="progress-grid"></div></div>
-      <div class="panel"><h3>Mastery means retrieval</h3><p>The app tracks what you can retrieve after support is removed and when material needs to come back—not XP, leagues, or easy recognition scores.</p><div class="data-actions"><button id="export-btn" class="secondary-btn">Export progress</button><button id="reset-btn" class="danger-btn">Reset local progress</button></div></div>
+      <div class="panel">
+        <p class="section-kicker">What is sticking</p>
+        <h2 id="progress-title">Progress</h2>
+        <div id="progress-summary" class="progress-grid"></div>
+      </div>
+
+      <div class="panel">
+        <h3>Mastery means retrieval</h3>
+        <p>The app tracks what you can retrieve after support is removed and when material needs to come back—not XP, leagues, or easy recognition scores.</p>
+        <div class="data-actions">
+          <button id="export-btn" class="secondary-btn">Export progress</button>
+          <button id="reset-btn" class="danger-btn">Reset local progress</button>
+        </div>
+      </div>
     </section>
   </main>
+
   <footer class="site-footer">
     <span lang="haw">E hoʻomau i ke aʻo ʻana.</span> Keep learning.
-    <span class="site-version">Version 4.1.4</span>
+    <span class="site-version">Version 4.1.5</span>
   </footer>
+
   <script>
     (() => {
       const input = document.getElementById('answer-input');
