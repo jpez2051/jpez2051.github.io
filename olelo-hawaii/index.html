@@ -9,9 +9,9 @@
   <meta http-equiv="Expires" content="0">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="ʻŌlelo Hawaiʻi">
-  <base href="https://cdn.jsdelivr.net/gh/jpez2051/olelo-hawaii@244f77d14c9d2ea799ea5b58a6c2fafa87cdf017/">
+  <base href="https://cdn.jsdelivr.net/gh/jpez2051/olelo-hawaii@5c7722ee6adb868cb296156fedd866e288f724ca/">
   <title>ʻŌlelo Hawaiʻi — Learn to use the language</title>
-  <link rel="stylesheet" href="./css/app.css?v=4.7.0">
+  <link rel="stylesheet" href="./css/app.css?v=4.8.0">
 </head>
 <body>
   <header class="site-header">
@@ -157,6 +157,10 @@
           </div>
 
           <div id="feedback" class="feedback" hidden aria-live="polite"></div>
+          <div id="retry-actions" class="retry-actions" hidden>
+            <p>Use the correction, hide it, and try once more. The miss still stays in later review.</p>
+            <button id="retry-btn" class="primary-btn" type="button">Retry from memory</button>
+          </div>
         </div>
       </article>
     </section>
@@ -200,7 +204,7 @@
 
   <footer class="site-footer">
     <span lang="haw">E hoʻomau i ke aʻo ʻana.</span> Keep learning.
-    <span class="site-version">Version 4.7.0</span>
+    <span class="site-version">Version 4.8.0</span>
   </footer>
 
   <script>
@@ -216,6 +220,6 @@
       }, true);
     })();
   </script>
-  <script type="module" src="./js/app.js?v=4.7.0"></script>
+  <script type="module" src="./js/app.js?v=4.8.0"></script>
 </body>
 </html>
