@@ -29,5 +29,16 @@ export function useCareState(repository: CareRepository) {
     return operation;
   }, [repository]);
 
-  return { state, update, ready, saveError, clearSaveError: () => setSaveError('') };
+  const recover = useCallback((replacement: CareState) => {
+    const operation=writeQueue.current.then(async()=>{
+      try {
+        await repository.save(replacement);
+        loadFailed.current=false;currentRef.current=replacement;setState(replacement);setSaveError('');return true;
+      }catch(error){setSaveError(String(error instanceof Error ? error.message : error));return false}
+    });
+    writeQueue.current=operation.catch(()=>false);
+    return operation;
+  },[repository]);
+
+  return { state, update, recover, ready, saveError, clearSaveError: () => setSaveError('') };
 }

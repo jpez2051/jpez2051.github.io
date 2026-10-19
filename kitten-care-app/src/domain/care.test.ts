@@ -10,7 +10,8 @@ describe('care domain',()=>{
   it('filters active kittens',()=>expect(activeKittens(state).map(k=>k.id)).toEqual(['k1']));
   it('returns the latest weight',()=>expect(latestWeight(state,'k1')).toBe(400));
   it('calculates the next feeding',()=>expect(nextFeedingAt(state,kitten)?.toISOString()).toBe('2026-08-28T13:00:00.000Z'));
-  it('counts events on the requested local day',()=>expect(todayCount(state,'feeding')).toBeGreaterThanOrEqual(0));
+  it('counts only successful feeds on the requested local day',()=>{const day=new Date('2026-08-28T09:00:00Z');expect(todayCount(state,'feeding',day)).toBe(1);expect(todayCount(state,'feeding',new Date('2026-08-30T09:00:00Z'))).toBe(0);const attempted={...state,events:[...state.events,{...state.events[1],id:'attempt',data:{outcome:'refused',note:'refused'}}]};expect(todayCount(attempted,'feeding',day)).toBe(1)});
+  it('counts given doses without counting skipped or unsuccessful doses',()=>{const doses={...state,events:['given','skipped','unable'].map((status)=>({id:status,kittenId:'k1',type:'medication' as const,ts:'2026-08-28T09:00:00Z',createdAt:'2026-08-28T09:00:00Z',data:{status}}))};expect(todayCount(doses,'medication',new Date('2026-08-28T09:00:00Z'))).toBe(1)});
   it('does not reset feeding due time for refused attempts',()=>{const refused={...state,events:[...state.events,{id:'f2',kittenId:'k1',type:'feeding' as const,ts:'2026-08-28T12:00:00Z',createdAt:'2026-08-28T12:00:00Z',data:{outcome:'refused',note:'would not latch'}}]};expect(nextFeedingAt(refused,kitten)?.toISOString()).toBe('2026-08-28T13:00:00.000Z')});
   it('formats calendar dates from local fields rather than UTC',()=>expect(localDateKey(new Date(2026,7,28,23,30))).toBe('2026-08-28'));
 });

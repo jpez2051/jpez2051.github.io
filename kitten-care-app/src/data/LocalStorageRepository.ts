@@ -1,6 +1,6 @@
 import type { CareRepository } from './CareRepository';
 import type { CareState } from '../domain/models';
-import { emptyState, migrateState } from './migrate';
+import { emptyState, migrateState, restoreBackup } from './migrate';
 
 const CURRENT_KEY = 'a4a-kitten-care-app';
 const LEGACY_KEY = 'a4a-kitten-care-v3';
@@ -14,7 +14,7 @@ export class LocalStorageRepository implements CareRepository {
 
   async load(): Promise<CareState> {
     const current = this.read(CURRENT_KEY);
-    if (current) return migrateState(current);
+    if (current !== null) return restoreBackup(current);
     const legacy = this.read(LEGACY_KEY);
     if (legacy) {
       const migrated = migrateState(legacy);

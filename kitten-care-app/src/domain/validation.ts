@@ -27,10 +27,12 @@ export function validateCareDraft(state: CareState, draft: CareDraft, now = new 
     const outcome = String(draft.data.outcome || '');
     if (!['fed', 'refused', 'unable'].includes(outcome)) errors.push('Choose what happened during the feeding.');
     if (outcome === 'fed' && !positive(draft.data.amount)) errors.push('Enter the positive amount the kitten ate.');
+    if (outcome === 'fed' && !['mL','g','oz'].includes(String(draft.data.unit))) errors.push('Choose a valid feeding unit.');
     if (outcome !== 'fed' && !String(draft.data.note || '').trim()) errors.push('Add a note explaining the refused or unsuccessful feeding.');
   }
 
   if (draft.type === 'weight' && !positive(draft.data.grams)) errors.push('Enter a weight greater than zero grams.');
+  if (draft.type === 'weight' && Number(draft.data.grams)>12000) errors.push('Recheck the weight and enter a value at or below 12,000 grams.');
 
   if (draft.type === 'medication' && kitten) {
     const medication = kitten.medications.find((item) => item.id === draft.data.medId);

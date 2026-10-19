@@ -17,4 +17,5 @@ describe('verified browser storage',()=>{
     vi.stubGlobal('localStorage',{getItem:()=>'{broken',setItem:vi.fn()});
     await expect(new LocalStorageRepository().load()).rejects.toThrow('could not be read');
   });
+  it('rejects valid JSON with a broken storage schema',async()=>{vi.stubGlobal('localStorage',{getItem:()=>'{"unexpected":true}',setItem:vi.fn()});await expect(new LocalStorageRepository().load()).rejects.toThrow()});
 });

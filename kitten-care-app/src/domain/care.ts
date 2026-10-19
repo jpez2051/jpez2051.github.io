@@ -13,16 +13,16 @@ export function kittenEvents(state: CareState, kittenId: string, type?: CareEven
 export function latestWeight(state: CareState, kittenId: string): number | null {
   const event = kittenEvents(state, kittenId, 'weight')[0];
   const grams = Number(event?.data.grams);
-  return Number.isFinite(grams) ? grams : null;
+  return Number.isFinite(grams) && grams > 0 ? grams : null;
 }
 
 export function isSameLocalDay(value: string, now = new Date()): boolean {
   return new Date(value).toDateString() === now.toDateString();
 }
 
-export function todayCount(state: CareState, type: CareEvent['type']): number {
+export function todayCount(state: CareState, type: CareEvent['type'], now=new Date()): number {
   const active = new Set(activeKittens(state).map((kitten) => kitten.id));
-  return state.events.filter((event) => !event.deletedAt && event.type === type && active.has(event.kittenId) && isSameLocalDay(event.ts)).length;
+  return state.events.filter((event) => !event.deletedAt && event.type === type && active.has(event.kittenId) && isSameLocalDay(event.ts,now) && (type !== 'medication' || event.data.status === 'given') && (type !== 'feeding' || (event.data.outcome === 'fed' && Number(event.data.amount)>0))).length;
 }
 
 export function nextFeedingAt(state: CareState, kitten: Kitten): Date | null {

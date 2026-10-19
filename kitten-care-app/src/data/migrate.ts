@@ -1,4 +1,4 @@
-import type { CareState, Kitten, Litter } from '../domain/models';
+import type { CareState, Kitten, Litter, Medication } from '../domain/models';
 
 export const APP_SCHEMA_VERSION = 6;
 
@@ -9,12 +9,13 @@ export function emptyState(): CareState {
 export function restoreBackup(value: unknown): CareState {
   if (!value || typeof value !== 'object') throw new Error('Invalid backup');
   const raw=value as Partial<CareState>;
+  if(typeof raw.version==='number'&&raw.version>APP_SCHEMA_VERSION) throw new Error('This backup requires a newer application version');
   if (!Array.isArray(raw.kittens)||!Array.isArray(raw.events)||!Array.isArray(raw.litters)) throw new Error('Invalid backup');
   for (const list of [raw.kittens,raw.events,raw.litters]) {
     if(list.some((item)=>!item||typeof item!=='object'||typeof item.id!=='string'||!item.id)) throw new Error('Invalid record');
     if(new Set(list.map((item)=>item.id)).size!==list.length) throw new Error('Duplicate records');
   }
-  if(raw.events.some((event)=>!event.data||typeof event.data!=='object'||!Number.isFinite(Date.parse(event.ts))||!raw.kittens!.some((kitten)=>kitten.id===event.kittenId))) throw new Error('Invalid care history');
+  if(raw.events.some((event)=>!event.data||typeof event.data!=='object'||Array.isArray(event.data)||!Number.isFinite(Date.parse(event.ts))||!raw.kittens!.some((kitten)=>kitten.id===event.kittenId))) throw new Error('Invalid care history');
   return migrateState(raw);
 }
 
@@ -36,13 +37,13 @@ export function migrateState(value: unknown): CareState {
     id: String(kitten.id),
     name: String(kitten.name || 'Unnamed kitten'),
     litterId: kitten.litterId ? String(kitten.litterId) : null,
-    inFosterCare: kitten.inFosterCare !== false,
+    inFosterCare: typeof kitten.inFosterCare==='boolean'?kitten.inFosterCare:!['Adopted','Transferred','Returned to A4A','Deceased'].includes(String((kitten as Kitten & {status?:string}).status)),
     dob: String(kitten.dob || ''),
     sex: String(kitten.sex || ''),
     markings: String(kitten.markings || ''),
     specialNeeds: String(kitten.specialNeeds || ''),
     feedingIntervalHours: Number(kitten.feedingIntervalHours) || 4,
-    medications: Array.isArray(kitten.medications) ? kitten.medications : [],
+    medications: Array.isArray(kitten.medications) ? kitten.medications.map((medication)=>({ ...medication, doseCalc:medication.doseCalc||{mode:'manual'}, schedule:medication.schedule||{type:'daily',times:['08:00']} } as Medication)) : [],
     photo: kitten.photo || null,
     carePlan: {
       feedingEnabled: kitten.carePlan?.feedingEnabled ?? true,
