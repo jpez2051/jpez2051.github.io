@@ -1,16 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { activeKittens, latestWeight, nextFeedingAt, todayCount } from './care';
+import { activeKittens, latestWeight, localDateKey, nextFeedingAt, todayCount } from './care';
 import { calculateDose } from './medication';
 import type { CareState, Kitten, Medication } from './models';
 
 const kitten: Kitten = { id:'k1',name:'Mochi',litterId:'l1',inFosterCare:true,dob:'',sex:'',markings:'',specialNeeds:'',feedingIntervalHours:4,medications:[],photo:null,carePlan:{feedingEnabled:true,dailyWeight:true,bottleBaby:false} };
-const state: CareState = { version:5,kittens:[kitten,{...kitten,id:'k2',inFosterCare:false}],litters:[],settings:{},events:[{id:'w1',kittenId:'k1',type:'weight',ts:'2026-08-28T08:00:00Z',createdAt:'2026-08-28T08:00:00Z',data:{grams:400}},{id:'f1',kittenId:'k1',type:'feeding',ts:'2026-08-28T09:00:00Z',createdAt:'2026-08-28T09:00:00Z',data:{amount:'10'}}] };
+const state: CareState = { version:6,kittens:[kitten,{...kitten,id:'k2',inFosterCare:false}],litters:[],settings:{},events:[{id:'w1',kittenId:'k1',type:'weight',ts:'2026-08-28T08:00:00Z',createdAt:'2026-08-28T08:00:00Z',data:{grams:400}},{id:'f1',kittenId:'k1',type:'feeding',ts:'2026-08-28T09:00:00Z',createdAt:'2026-08-28T09:00:00Z',data:{amount:'10',outcome:'fed'}}] };
 
 describe('care domain',()=>{
   it('filters active kittens',()=>expect(activeKittens(state).map(k=>k.id)).toEqual(['k1']));
   it('returns the latest weight',()=>expect(latestWeight(state,'k1')).toBe(400));
   it('calculates the next feeding',()=>expect(nextFeedingAt(state,kitten)?.toISOString()).toBe('2026-08-28T13:00:00.000Z'));
   it('counts events on the requested local day',()=>expect(todayCount(state,'feeding')).toBeGreaterThanOrEqual(0));
+  it('does not reset feeding due time for refused attempts',()=>{const refused={...state,events:[...state.events,{id:'f2',kittenId:'k1',type:'feeding' as const,ts:'2026-08-28T12:00:00Z',createdAt:'2026-08-28T12:00:00Z',data:{outcome:'refused',note:'would not latch'}}]};expect(nextFeedingAt(refused,kitten)?.toISOString()).toBe('2026-08-28T13:00:00.000Z')});
+  it('formats calendar dates from local fields rather than UTC',()=>expect(localDateKey(new Date(2026,7,28,23,30))).toBe('2026-08-28'));
 });
 
 describe('weight-based medication arithmetic',()=>{

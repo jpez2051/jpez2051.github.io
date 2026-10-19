@@ -27,7 +27,22 @@ export function todayCount(state: CareState, type: CareEvent['type']): number {
 
 export function nextFeedingAt(state: CareState, kitten: Kitten): Date | null {
   if (!kitten.carePlan.feedingEnabled) return null;
-  const last = kittenEvents(state, kitten.id, 'feeding')[0];
+  const last = kittenEvents(state, kitten.id, 'feeding').find((event) =>
+    event.data.outcome === 'fed' && Number(event.data.amount) > 0,
+  );
   if (!last) return new Date(0);
   return new Date(Date.parse(last.ts) + (kitten.feedingIntervalHours || 4) * 3_600_000);
+}
+
+export function localDateKey(date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export function localDateTimeValue(date = new Date()): string {
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${localDateKey(date)}T${hours}:${minutes}`;
 }

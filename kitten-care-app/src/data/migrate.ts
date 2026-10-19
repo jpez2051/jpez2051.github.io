@@ -1,6 +1,6 @@
 import type { CareState, Kitten, Litter } from '../domain/models';
 
-export const APP_SCHEMA_VERSION = 5;
+export const APP_SCHEMA_VERSION = 6;
 
 export function emptyState(): CareState {
   return { version: APP_SCHEMA_VERSION, kittens: [], litters: [], events: [], settings: {} };
@@ -43,7 +43,13 @@ export function migrateState(value: unknown): CareState {
     version: APP_SCHEMA_VERSION,
     kittens,
     litters,
-    events: raw.events,
-    settings: raw.settings || {},
+    events: raw.events.map((event) => event.type === 'feeding' && !event.data?.outcome
+      ? { ...event, data: { ...event.data, outcome: Number(event.data?.amount) > 0 ? 'fed' : 'unable' } }
+      : event),
+    settings: {
+      textSize: raw.settings?.largeText ? 'large' : 'standard',
+      onboardingComplete: Boolean(raw.settings?.dismissedFirstRun || raw.kittens.length),
+      ...(raw.settings || {}),
+    },
   };
 }

@@ -5,6 +5,10 @@ import { emptyState, migrateState } from './migrate';
 const CURRENT_KEY = 'a4a-kitten-care-app';
 const LEGACY_KEY = 'a4a-kitten-care-v3';
 
+export class CareStorageError extends Error {
+  constructor(message: string, options?: ErrorOptions) { super(message, options); this.name = 'CareStorageError'; }
+}
+
 export class LocalStorageRepository implements CareRepository {
   private listeners = new Set<(state: CareState) => void>();
 
@@ -21,8 +25,14 @@ export class LocalStorageRepository implements CareRepository {
   }
 
   async save(state: CareState): Promise<void> {
-    localStorage.setItem(CURRENT_KEY, JSON.stringify(state));
-    this.listeners.forEach((listener) => listener(state));
+    try {
+      const serialized = JSON.stringify(state);
+      localStorage.setItem(CURRENT_KEY, serialized);
+      if (localStorage.getItem(CURRENT_KEY) !== serialized) throw new Error('Save verification failed');
+      this.listeners.forEach((listener) => listener(state));
+    } catch (error) {
+      throw new CareStorageError('Your care entry was not saved. Browser storage may be full or unavailable. Make a backup before continuing.', { cause: error });
+    }
   }
 
   subscribe(listener: (state: CareState) => void): () => void {
@@ -34,8 +44,8 @@ export class LocalStorageRepository implements CareRepository {
     try {
       const value = localStorage.getItem(key);
       return value ? JSON.parse(value) : null;
-    } catch {
-      return null;
+    } catch (error) {
+      throw new CareStorageError('Saved foster data could not be read safely. Restore a known-good backup before entering new care.', { cause: error });
     }
   }
 }

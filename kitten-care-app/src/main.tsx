@@ -6,3 +6,7 @@ import './styles.css';
 
 const repository = new LocalStorageRepository();
 createRoot(document.getElementById('root')!).render(<StrictMode><App repository={repository} /></StrictMode>);
+
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => void navigator.serviceWorker.register('./sw.js'));
+}

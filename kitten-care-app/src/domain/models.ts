@@ -73,6 +73,11 @@ export interface FosterSettings {
   largeText?: boolean;
   dismissedFirstRun?: boolean;
   lastBackupAt?: string;
+  textSize?: 'standard' | 'large';
+  onboardingComplete?: boolean;
+  rescueName?: string;
+  rescuePhone?: string;
+  emergencyInstructions?: string;
 }
 
 export interface CareState {
