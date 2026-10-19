@@ -10,12 +10,12 @@ export interface DoseResult {
 }
 
 export function calculateDose(state: CareState, kitten: Kitten, medication: Medication, now = new Date()): DoseResult | null {
-  if (medication.doseCalc.mode !== 'weightBased' || !medication.doseCalc.rate) return null;
+  if (medication.doseCalc.mode !== 'weightBased' || !Number.isFinite(medication.doseCalc.rate) || Number(medication.doseCalc.rate) <= 0) return null;
   const weight = kittenEvents(state, kitten.id, 'weight')[0];
   const weightG = Number(weight?.data.grams);
-  if (!weight || !Number.isFinite(weightG) || weightG <= 0) return null;
+  if (!weight || !Number.isFinite(weightG) || weightG <= 0 || !Number.isFinite(Date.parse(weight.ts)) || Date.parse(weight.ts) > now.getTime()) return null;
   const kg = weightG / 1000;
-  const mg = medication.doseCalc.rateUnit === 'mcg/kg' ? medication.doseCalc.rate * kg / 1000 : medication.doseCalc.rate * kg;
+  const mg = medication.doseCalc.rateUnit === 'mcg/kg' ? Number(medication.doseCalc.rate) * kg / 1000 : Number(medication.doseCalc.rate) * kg;
   const concentration = Number(medication.doseCalc.concentration);
   return {
     weightG,

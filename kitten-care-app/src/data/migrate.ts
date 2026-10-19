@@ -6,6 +6,18 @@ export function emptyState(): CareState {
   return { version: APP_SCHEMA_VERSION, kittens: [], litters: [], events: [], settings: {} };
 }
 
+export function restoreBackup(value: unknown): CareState {
+  if (!value || typeof value !== 'object') throw new Error('Invalid backup');
+  const raw=value as Partial<CareState>;
+  if (!Array.isArray(raw.kittens)||!Array.isArray(raw.events)||!Array.isArray(raw.litters)) throw new Error('Invalid backup');
+  for (const list of [raw.kittens,raw.events,raw.litters]) {
+    if(list.some((item)=>!item||typeof item!=='object'||typeof item.id!=='string'||!item.id)) throw new Error('Invalid record');
+    if(new Set(list.map((item)=>item.id)).size!==list.length) throw new Error('Duplicate records');
+  }
+  if(raw.events.some((event)=>!event.data||typeof event.data!=='object'||!Number.isFinite(Date.parse(event.ts))||!raw.kittens!.some((kitten)=>kitten.id===event.kittenId))) throw new Error('Invalid care history');
+  return migrateState(raw);
+}
+
 export function migrateState(value: unknown): CareState {
   if (!value || typeof value !== 'object') return emptyState();
   const raw = value as Partial<CareState>;
