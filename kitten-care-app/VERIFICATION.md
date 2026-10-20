@@ -1,5 +1,17 @@
 # Application verification — October 19, 2026
 
+## v0.3.0 preview-preparation follow-up
+
+Build 2026.10.19.2 adds fixed-time daily/multiple-daily, hourly, calendar-day interval, selected-weekday, one-time and PRN schedule entry. The due engine uses local calendar dates, explicit first-dose anchors for interval prescriptions, and given-dose logs; skipped/unable doses do not silently advance the schedule. Missing imported interval anchors are flagged for review. The care queue now includes medication, daily weight, weight-decrease and recorded-health review items.
+
+43 domain/storage tests pass in five files, including 18 new schedule/queue cases and a health-observation validation case. Browser regression checks additionally cover weekday selection validation, hourly prescription persistence in UTC, and clearing actual amount/confirmation when the selected prescription changes. Prior layout, backup, storage failure, keyboard and offline cases remain covered.
+
+Hosting-only Firebase preview configuration and an inspection/deployment runbook are prepared in `deployment/firebase-preview`. The official Firebase plugin is available but not yet installed or connected. Project/site inspection, backend migration, cloud auth/sync, and preview publication remain pending. The service worker bypasses Firebase's reserved `/__/` routes and authenticated requests.
+
+The previous verification record below is retained for history; medication schedule entry/due logic and the daily-weight/health queues listed there as missing are now implemented. Shared litter medication overrides, remaining V3 parity, and Firebase authorization/data migration tests still prevent production replacement.
+
+## v0.2.2 verification record
+
 Target: migrated `/kitten-care/`, version 0.2.2, build 2026.10.19.1. GitHub main was fetched before changes. The existing V2 and V3 files were not changed.
 
 ## Results

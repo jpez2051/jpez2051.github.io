@@ -13,6 +13,7 @@ export interface MedicationSchedule {
   intervalDays?: number;
   days?: string[];
   oneTimeAt?: string;
+  firstDoseAt?: string;
 }
 
 export interface Medication {

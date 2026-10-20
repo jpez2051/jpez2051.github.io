@@ -52,10 +52,15 @@ export function validateCareDraft(state: CareState, draft: CareDraft, now = new 
   }
 
   if (draft.type === 'note' && !String(draft.data.note || '').trim()) errors.push('Enter a care note.');
+  if(draft.type==='health'){
+    if(!['Normal','Monitor','Concern'].includes(String(draft.data.status)))errors.push('Choose an observed health status.');
+    if(['Monitor','Concern'].includes(String(draft.data.status))&&!String(draft.data.note||'').trim())errors.push('Describe the health concern you observed.');
+  }
+  if(draft.type==='potty'&&draft.data.urine==='unknown'&&draft.data.stool==='Not observed'&&!String(draft.data.note||'').trim())errors.push('Record an observation or add a note before saving.');
   return { valid: errors.length === 0, errors };
 }
 
 export function medicationSummary(kitten: Kitten, medication: Medication): string {
-  const manual = `${medication.manualDose || 'amount not set'} ${medication.unit || ''}`.trim();
+  const manual = medication.doseCalc.mode==='weightBased'?'Weight-based prescription':`${medication.manualDose || 'amount not set'} ${medication.unit || ''}`.trim();
   return `${kitten.name} — ${medication.name} — ${manual} — ${medication.route || 'route not set'}`;
 }

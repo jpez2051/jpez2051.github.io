@@ -17,12 +17,16 @@ This release is a tested migration preview. It is not a feature-complete replace
 
 ## Required before replacing V3
 
-- Finish shared litter medication plans with individual overrides and every schedule type.
+- Finish shared litter medication plans with individual overrides. Fixed-time, interval, weekday, one-time and PRN schedule entry/due logic are now implemented.
 - Bring feeding sessions, bulk weighing, photos/cropper, weight insights, editable care history, and archived profiles to parity.
 - Complete onboarding through starting weights, prescription review, contacts and backup.
-- Implement medication due scheduling, daily-weight and concern queues, including timezone boundary tests.
+- Expand tests for device time-zone changes and clock-time intervals across daylight-saving transitions. Medication, daily-weight, weight-decrease and health-observation queues are implemented.
 - Complete screen-reader, 200% zoom, large-text and contrast audits across populated screens.
 - Verify backup restore and offline update recovery with realistic multi-litter records.
+
+## Firebase preview status
+
+Hosting-only preview configuration is prepared in `deployment/firebase-preview`. Authenticated project/site inspection is pending installation and connection of the official Firebase plugin. No Firebase deployment or backend resource has changed.
 
 ## Firebase integration prerequisites
 
