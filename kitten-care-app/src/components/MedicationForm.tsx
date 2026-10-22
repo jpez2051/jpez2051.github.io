@@ -12,7 +12,7 @@ const scheduleOptions: [MedicationSchedule['type'],string][]=[['daily','Once dai
 
 export function MedicationForm({state,kitten,onClose,onSave}:{state:CareState;kitten:Kitten;onClose:()=>void;onSave:(medication:Medication)=>Promise<boolean>}) {
   const [selected,setSelected]=useState('custom');
-  const selector=<label>Choose a medication<select value={selected} onChange={(event)=>setSelected(event.target.value)}><option value="custom">Other medication — enter instructions</option>{RESCUE_MEDICATIONS.map((template)=><option key={template.id} value={template.id}>{template.name} — rescue chart</option>)}</select></label>;
+  const selector=<label>Choose a medication<select value={selected} onChange={(event)=>setSelected(event.target.value)}><option value="custom">Other medication — enter instructions</option>{RESCUE_MEDICATIONS.map((template)=><option key={template.id} value={template.id}>{template.name}</option>)}</select></label>;
   const template=rescueTemplate(selected);
   return template?<RescueMedicationForm key={selected} template={template} state={state} kitten={kitten} selector={selector} onClose={onClose} onSave={onSave}/>:<CustomMedicationForm kitten={kitten} selector={selector} onClose={onClose} onSave={onSave}/>;
 }

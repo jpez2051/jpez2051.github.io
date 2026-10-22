@@ -64,3 +64,11 @@ Firebase project `a4a-kitten-tracker` is recorded. Its existing configuration, a
 ## Albon update 0.4.1 / 2026.10.22.2
 
 Confirmed once daily for 14 total days: day 1 at 0.5 mL/lb; days 2–14 at 0.25 mL/lb. Tests cover day 14/15, fresh weight, first-day history and duplicate daily administration. All 59 automated tests and the production build passed. Browser checks cover live day-1 calculation and plan review preserving IDs. Existing preview limitations above still apply.
+
+## Medication clarity and completed-day correction: 0.4.2 / 2026.10.22.3
+
+The calculated per-dose amount has a separate prominent label, distinct from the mL/lb rate and recorded weight. User-facing rescue-chart references were replaced with medication instructions. Stored records keep their internal field names for compatibility.
+
+Completing day 1 outside the app does not invent a start date or advance the calendar. If the actual first date is today, the calculator and given-dose validation block another dose, while the plan can still be saved. The next scheduled dose moves to day 2. If the actual date is yesterday, today's calculation uses 0.25 mL/lb. Tests cover both cases and an early daily dose not reappearing at its later scheduled time. No external administration event is fabricated.
+
+All 61 automated tests, the production build, and the browser regression checks passed.

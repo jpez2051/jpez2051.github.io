@@ -12,16 +12,17 @@ export interface RescueMedicationTemplate {
 // Source: chart text supplied by the rescue owner on 2026-10-22.
 // No product strength, dosing frequency, or spelling correction is inferred.
 export const RESCUE_MEDICATIONS:RescueMedicationTemplate[]=[
-  {id:'albon',name:'Albon',revision:'2026-10-22.2',indication:'Rescue chart: “icky poo, possibly coccidia.”',instructions:'Once daily: 0.5 mL/lb on treatment day 1, then 0.25 mL/lb on days 2–14 (13 more days).',notes:'No storage or expiration information supplied.',firstDayMlPerLb:0.5,laterMlPerLb:0.25,minDays:14,maxDays:14,preparationReference:'Rescue-supplied Albon liquid covered by this mL/lb chart; confirm the bottle matches rescue instructions.',frequencyConfirmed:true,nameConfirmed:true,requiresVetTech:false},
-  {id:'azithromycin',name:'Azithromycin',revision:'2026-10-22.1',indication:'Rescue chart: antibiotic for upper respiratory infections when others have not worked.',instructions:'0.1 mL/lb for 10 days. Any extension requires new rescue/veterinary instructions.',notes:'Chart says to dissolve a pill in 5 mL water. Pill strength and final preparation must be confirmed before this is used as a mixing instruction.',firstDayMlPerLb:0.1,laterMlPerLb:0.1,minDays:10,maxDays:10,preparationReference:null,frequencyConfirmed:false,nameConfirmed:true,requiresVetTech:false},
-  {id:'baytril',name:'Baytril (enrofloxacin)',revision:'2026-10-22.1',indication:'Rescue chart: powerful oral medication for bacterial infections.',instructions:'0.022 mL/lb for a rescue-approved course of 5–10 days. Use only for the approved duration.',notes:'Must be approved by the rescue vet tech. The rescue liquid formulation needs confirmation.',firstDayMlPerLb:0.022,laterMlPerLb:0.022,minDays:5,maxDays:10,preparationReference:null,frequencyConfirmed:false,nameConfirmed:true,requiresVetTech:true},
+  {id:'albon',name:'Albon',revision:'2026-10-22.2',indication:'“icky poo, possibly coccidia.”',instructions:'Once daily: 0.5 mL/lb on treatment day 1, then 0.25 mL/lb on days 2–14 (13 more days).',notes:'No storage or expiration information supplied.',firstDayMlPerLb:0.5,laterMlPerLb:0.25,minDays:14,maxDays:14,preparationReference:'Rescue-supplied Albon liquid covered by this mL/lb chart; confirm the bottle matches rescue instructions.',frequencyConfirmed:true,nameConfirmed:true,requiresVetTech:false},
+  {id:'azithromycin',name:'Azithromycin',revision:'2026-10-22.1',indication:'antibiotic for upper respiratory infections when others have not worked.',instructions:'0.1 mL/lb for 10 days. Any extension requires new rescue/veterinary instructions.',notes:'Supplied instructions say to dissolve a pill in 5 mL water. Pill strength and final preparation must be confirmed before this is used as a mixing instruction.',firstDayMlPerLb:0.1,laterMlPerLb:0.1,minDays:10,maxDays:10,preparationReference:null,frequencyConfirmed:false,nameConfirmed:true,requiresVetTech:false},
+  {id:'baytril',name:'Baytril (enrofloxacin)',revision:'2026-10-22.1',indication:'powerful oral medication for bacterial infections.',instructions:'0.022 mL/lb for a rescue-approved course of 5–10 days. Use only for the approved duration.',notes:'Must be approved by the rescue vet tech. The rescue liquid formulation needs confirmation.',firstDayMlPerLb:0.022,laterMlPerLb:0.022,minDays:5,maxDays:10,preparationReference:null,frequencyConfirmed:false,nameConfirmed:true,requiresVetTech:true},
 ];
 
 export function rescueTemplate(id:string){return RESCUE_MEDICATIONS.find((template)=>template.id===id)}
+export const FIRST_DAY_COMPLETED = 'Day 1 was already completed today. Do not give another dose today. The day-2 amount starts tomorrow. If day 1 was completed earlier, correct the actual first treatment date.';
 export function chartSetupIssues(template:RescueMedicationTemplate):string[]{
   const issues:string[]=[];
   if(!template.nameConfirmed)issues.push('Confirm the medication name with the rescue.');
-  if(!template.preparationReference)issues.push('The rescue must confirm the exact liquid strength/preparation for this chart.');
+  if(!template.preparationReference)issues.push('The rescue must confirm the exact liquid strength/preparation for these instructions.');
   if(!template.frequencyConfirmed)issues.push('The rescue must confirm how often each dose is given.');
   return issues;
 }
@@ -49,15 +50,16 @@ export function recentMedicationWeight(state:CareState,kittenId:string,now=new D
 }
 export function rescueDoseIssues(state:CareState,kitten:Kitten,medication:Medication,now=new Date()):string[]{
   const reference=medication.rescueChart,template=reference&&rescueTemplate(reference.templateId);
-  if(!template)return ['Choose a valid rescue-chart medication.'];
+  if(!template)return ['Choose a valid medication.'];
   const issues=chartSetupIssues(template);
-  if(reference!.revision!==template.revision)issues.push('The rescue chart changed. Review this plan before use.');
+  if(reference!.revision!==template.revision)issues.push('The medication instructions changed. Review this plan before use.');
   if(!reference!.productConfirmed)issues.push('Confirm the supplied product matches the rescue preparation.');
   if(template.requiresVetTech&&!reference!.vetTechApproval?.trim())issues.push('Record rescue vet-tech approval before use.');
   const weight=recentMedicationWeight(state,kitten.id,now);
   if(!weight)issues.push('Record a valid current weight before calculating this medication.');
   else if(!weight.fresh)issues.push('Record a weight from the last 24 hours before calculating this medication.');
   const day=treatmentDay(medication.startDate,now);
+  if(day===1&&reference!.courseStartedElsewhere)issues.push(FIRST_DAY_COMPLETED);
   if(day===null||day<1)issues.push('Confirm the actual first treatment date.');
   else if(day>template.maxDays||(medication.endDate&&localDateKey(now)>medication.endDate))issues.push('This course has ended. Obtain new instructions before extending it.');
   if(template.firstDayMlPerLb!==template.laterMlPerLb&&day!==null&&day>1&&!reference!.courseStartedElsewhere){

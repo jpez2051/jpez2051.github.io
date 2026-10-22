@@ -47,7 +47,7 @@ export function validateCareDraft(state: CareState, draft: CareDraft, now = new 
       if (!String(draft.data.adminUnit || '').trim()) errors.push('Choose the unit actually given.');
       if(medication?.doseCalc.mode==='rescueChart'){
         errors.push(...rescueDoseIssues(state,kitten,medication,now));
-        if(draft.data.adminUnit!=='mL')errors.push('Rescue-chart doses must be recorded in mL.');
+        if(draft.data.adminUnit!=='mL')errors.push('Calculated doses must be recorded in mL.');
         if(Number.isFinite(when.getTime())&&localDateKey(when)!==localDateKey(now))errors.push('Do not use today’s chart calculation to record a dose for a different treatment day. Confirm historical instructions with the rescue.');
         if(kittenEvents(state,kitten.id,'medication').some((event)=>event.data.medId===medication.id&&event.data.status==='given'&&localDateKey(new Date(event.ts))===localDateKey(when)))errors.push('A dose is already recorded for this treatment day. Review the care record before giving another.');
       }
@@ -69,6 +69,6 @@ export function validateCareDraft(state: CareState, draft: CareDraft, now = new 
 }
 
 export function medicationSummary(kitten: Kitten, medication: Medication): string {
-  const manual = medication.doseCalc.mode==='rescueChart'?'Rescue chart · weight-based':medication.doseCalc.mode==='weightBased'?'Weight-based prescription':`${medication.manualDose || 'amount not set'} ${medication.unit || ''}`.trim();
+  const manual = medication.doseCalc.mode==='rescueChart'?'Weight-based medication':medication.doseCalc.mode==='weightBased'?'Weight-based prescription':`${medication.manualDose || 'amount not set'} ${medication.unit || ''}`.trim();
   return `${kitten.name} — ${medication.name} — ${manual} — ${medication.route || 'route not set'}`;
 }

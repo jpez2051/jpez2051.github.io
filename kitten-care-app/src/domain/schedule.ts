@@ -28,10 +28,10 @@ export function scheduleErrors(schedule:MedicationSchedule):string[] {
 export function medicationScheduleIssue(state:CareState,kitten:Kitten,medication:Medication,now=new Date()):string|null {
   if(medication.doseCalc.mode==='rescueChart'){
     const template=medication.rescueChart&&rescueTemplate(medication.rescueChart.templateId);
-    if(!template)return 'Rescue chart entry unavailable. Review the plan.';
+    if(!template)return 'Medication entry unavailable. Review the plan.';
     const issues=chartSetupIssues(template);
     if(issues.length)return issues.join(' ');
-    if(!medication.rescueChart?.productConfirmed)return 'Confirm the product matches the rescue chart.';
+    if(!medication.rescueChart?.productConfirmed)return 'Confirm the product matches the prescribed preparation.';
     if(template.requiresVetTech&&!medication.rescueChart?.vetTechApproval?.trim())return 'Rescue vet-tech approval required.';
   }
   const errors=scheduleErrors(medication.schedule);
@@ -55,7 +55,9 @@ export function nextMedicationDue(state:CareState,kitten:Kitten,medication:Medic
   if(medication.endDate&&!end)return null;
   if(end&&localDateKey(now)>medication.endDate)return null;
   const given=kittenEvents(state,kitten.id,'medication').find((event)=>event.data.medId===medication.id&&event.data.status==='given'&&Number.isFinite(Date.parse(event.ts))&&Date.parse(event.ts)<=now.getTime());
-  const last=given?new Date(given.ts):null,schedule=medication.schedule;
+  let last=given?new Date(given.ts):null;
+  const schedule=medication.schedule;
+  if(medication.doseCalc.mode==='rescueChart'&&medication.rescueChart?.courseStartedElsewhere&&start<=now){const completed=new Date(start);completed.setHours(23,59,59,999);if(!last||last<completed)last=completed;}
   const allowed=(date:Date)=>Number.isFinite(date.getTime())&&date>=start&&(!end||localDateKey(date)<=medication.endDate);
   if(schedule.type==='oneTime'){
     if(last||!schedule.oneTimeAt)return null;
@@ -73,7 +75,7 @@ export function nextMedicationDue(state:CareState,kitten:Kitten,medication:Medic
   for(let day=0;day<8;day++){
     const date=new Date(firstDay);date.setDate(firstDay.getDate()+day);
     if(schedule.type==='specificDays'&&!schedule.days?.includes(weekdays[date.getDay()]))continue;
-    for(const time of times){const [hours,minutes]=time.split(':').map(Number);const candidate=new Date(date);candidate.setHours(hours,minutes,0,0);if(allowed(candidate)&&(!last||candidate>last))return candidate;}
+    for(const time of times){const [hours,minutes]=time.split(':').map(Number);const candidate=new Date(date);candidate.setHours(hours,minutes,0,0);const alreadyGiven=medication.doseCalc.mode==='rescueChart'&&given&&localDateKey(candidate)===localDateKey(new Date(given.ts));if(allowed(candidate)&&(!last||candidate>last)&&!alreadyGiven)return candidate;}
   }
   return null;
 }
