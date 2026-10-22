@@ -19,6 +19,26 @@ export const RESCUE_MEDICATIONS:RescueMedicationTemplate[]=[
 ];
 
 export function rescueTemplate(id:string){return RESCUE_MEDICATIONS.find((template)=>template.id===id)}
+// Exact previous built-in lines only: never guess which caregiver notes are disposable.
+const PREVIOUS_INSTRUCTIONS:Record<string,string[]>={
+  albon:['0.5 mL/lb on the first treatment day, then 0.25 mL/lb for 13 more days.'],
+  azithromycin:['0.1 mL/lb for 10 days. Any extension requires new rescue/veterinary instructions.','Chart says to dissolve a pill in 5 mL water. Pill strength and final preparation must be confirmed before this is used as a mixing instruction.','Supplied instructions say to dissolve a pill in 5 mL water. Pill strength and final preparation must be confirmed before this is used as a mixing instruction.'],
+  baytril:['0.022 mL/lb for a rescue-approved course of 5–10 days. Use only for the approved duration.','Must be approved by the rescue vet tech. The rescue liquid formulation needs confirmation.'],
+};
+const normalizedInstruction=(line:string)=>line.trim().replace(/\s+/g,' ').replace(/[–—]/g,'-');
+export function medicationAdditionalInstructions(medication:Medication):string {
+  const template=medication.rescueChart&&rescueTemplate(medication.rescueChart.templateId);
+  if(!template)return medication.instructions;
+  const builtIn=new Set([template.instructions,template.notes,...(PREVIOUS_INSTRUCTIONS[template.id]||[])].map(normalizedInstruction));
+  const seen=new Set<string>();
+  return medication.instructions.split(/\r?\n/).filter(line=>{const key=normalizedInstruction(line);if(!key||builtIn.has(key)||seen.has(key))return false;seen.add(key);return true}).join('\n');
+}
+export function medicationInstructions(medication:Medication):string {
+  const template=medication.rescueChart&&rescueTemplate(medication.rescueChart.templateId);
+  // A changed prescription must still be explicitly reviewed, not silently activated.
+  if(!template||medication.rescueChart?.revision!==template.revision)return medication.instructions;
+  return [template.instructions,template.notes,medicationAdditionalInstructions(medication)].filter(Boolean).join('\n');
+}
 export function medicationDosesPerDay(medication:Medication){return rescueTemplate(medication.rescueChart?.templateId||'')?.dosesPerDay||1}
 export function givenMedicationSlots(state:CareState,kittenId:string,medication:Medication,date:Date):Set<string>{
   const times=[...(medication.schedule.times||[])].sort(),slots=new Set<string>();

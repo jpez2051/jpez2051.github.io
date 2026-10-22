@@ -88,3 +88,13 @@ All four library entries calculate from recent weight after confirmation of the 
 Clavamox stores two scheduled times and the selected dose slot with each given event. Duplicate slots and a third daily administration are blocked; reminder calculations preserve the second dose after the first is given. Course duration, existing notes, and approval references are preserved during plan review.
 
 All 64 automated tests, the production build and browser regression checks passed. Browser checks include activated Azithromycin and approved Baytril calculations, Clavamox first/second dose logging and duplicate rejection, and unchanged Albon day-1 completion safeguards. V2 and legacy V3 assets were not modified. Existing preview limitations listed earlier remain.
+
+## Medication instruction and profile repair: 0.5.1 / 2026.10.22.6
+
+Exact known legacy built-in instruction lines are no longer retained as additional caregiver notes in current-template display or subsequent reviews. Custom instructions, distinct caregiver notes, old unreviewed instruction revisions and administration history are preserved. Repeated review is idempotent. The volume/rate disclaimer was replaced with the actual grams-to-pounds multiplied by mL/lb calculation.
+
+Profile medication actions now have distinct primary/secondary treatments, a 12-pixel gap and at least 48-pixel height. At narrow widths each card and its actions stack. Kitten-card secondary text is white on navy (approximately 12.49:1 for this specific pair).
+
+All 67 automated tests and the production build passed. Browser regression checks passed, including exact duplicate cleanup, note preservation, current dose equation, button gaps/heights and no document overflow at 320/390/1280 pixels. Phone close-up screenshots of medication buttons, dose calculations and kitten-card contrast were visually inspected. No dosing rates, schedule policies, medication logs, legacy V2 or V3 files were changed.
+
+See USABILITY-REVIEW-2026-10-22.md for the candid release assessment and remaining safety/usability priorities. Passing these tests is not clinical validation or an accessibility certification.

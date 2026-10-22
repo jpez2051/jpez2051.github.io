@@ -3,7 +3,7 @@ import { Dialog } from './Dialog';
 import { DateField } from './DateField';
 import { localDateKey } from '../domain/care';
 import { createId } from '../domain/ids';
-import { addCourseDays,chartSetupIssues,recentMedicationWeight,type RescueMedicationTemplate } from '../domain/rescueMedications';
+import { addCourseDays,medicationAdditionalInstructions,medicationInstructions,chartSetupIssues,recentMedicationWeight,type RescueMedicationTemplate } from '../domain/rescueMedications';
 import type { CareState,Kitten,Medication } from '../domain/models';
 import { calculateDose } from '../domain/medication';
 import { FIRST_DAY_COMPLETED,rescueDoseIssues,chartRateForDay,treatmentDay } from '../domain/rescueMedications';
@@ -25,7 +25,7 @@ export function RescueMedicationForm({template,state,kitten,selector,onClose,onS
     if(template.requiresVetTech&&!String(data.get('vetTechApproval')||'').trim()){setError('Enter the approving rescue vet tech before saving this plan.');return}
     if(!issues.length){const doseIssues=rescueDoseIssues(state,kitten,{...preview,rescueChart:{...preview.rescueChart!,vetTechApproval:String(data.get('vetTechApproval')||'').trim()}}).filter(issue=>issue!==FIRST_DAY_COMPLETED);if(doseIssues.length){setError(doseIssues.join(' '));return}}
     const medication:Medication={id:existing?.id||createId('med'),name:template.name,route:'Oral',source:'Medication instructions supplied 2026-10-22',manualDose:'',unit:'mL',doseCalc:{mode:'rescueChart'},rescueChart:{templateId:template.id,revision:template.revision,productConfirmed:data.get('productConfirmed')==='on',vetTechApproval:String(data.get('vetTechApproval')||'').trim(),courseStartedElsewhere:data.get('courseStartedElsewhere')==='on'},schedule,startDate:start,endDate:end,instructions:`${template.instructions}\n${template.notes}\n${String(data.get('notes')||'')}`};
-    setSaving(true);setError('');try{if(!await onSave(medication))setError('The plan was not saved. Check browser storage and try again.')}finally{setSaving(false)}
+    setSaving(true);setError('');try{if(!await onSave({...medication,instructions:medicationInstructions(medication)}))setError('The plan was not saved. Check browser storage and try again.')}finally{setSaving(false)}
   }}>
     {selector}
     <p className="info">Select a medication because the rescue prescribed it for this kitten; the app does not choose a treatment. The rate applies to the rescue-supplied product covered by these instructions.</p>
@@ -41,7 +41,7 @@ export function RescueMedicationForm({template,state,kitten,selector,onClose,onS
     <label className="check"><input name="productConfirmed" type="checkbox" disabled={issues.length>0} checked={productConfirmed} onChange={(event)=>setProductConfirmed(event.target.checked)}/> The product supplied matches the prescribed preparation (prepared liquid supplied or confirmed by the rescue, not an unconfirmed home mixture)</label>
     {template.firstDayMlPerLb!==template.laterMlPerLb&&<label className="check"><input name="courseStartedElsewhere" type="checkbox" checked={courseStartedElsewhere} onChange={(event)=>setCourseStartedElsewhere(event.target.checked)}/> Day 1 dose was already given outside this app</label>}
     {courseStartedElsewhere&&<p className="info">Enter the actual date day 1 was given above. If that was today, do not give another dose today. If it was yesterday, today is day 2. Checking this box does not change the date.</p>}{!issues.length&&<section className="dose-confirm" aria-live="polite"><h3>Today’s calculation</h3>{day&&rate&&dose?<p>Treatment day {day} of {days} · {rate} mL/lb</p>:<p>No dose amount is available right now.</p>}{dose&&dose.ml!==null?<><p className="calculated-amount">Calculated amount for this dose: <strong>{dose.ml.toFixed(3)} mL</strong></p><p>{dose.weightG} g ÷ 453.59237 g/lb × {dose.rateMlPerLb} mL/lb</p></>:<p>{rescueDoseIssues(state,kitten,preview).join(' ')}</p>}</section>}
-    <label>Additional rescue instructions<textarea name="notes" defaultValue={existing?.instructions?.split('\n').slice(2).join('\n')||''}/></label>
+    <label>Additional rescue instructions<textarea name="notes" defaultValue={existing?medicationAdditionalInstructions(existing):''}/></label>
     {error&&<div className="validation-summary" role="alert">{error}</div>}
     <div className="actions"><button type="button" className="secondary" onClick={onClose}>Cancel</button><button disabled={saving}>{saving?'Saving…':issues.length?'Save medication draft':'Save medication plan'}</button></div>
   </form></Dialog>;

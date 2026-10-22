@@ -161,17 +161,31 @@ const server = http.createServer((request,response)=>{
 
     const chartContext=await browser.newContext({viewport:{width:390,height:844},timezoneId:'Pacific/Honolulu'});
     await chartContext.addInitScript((data)=>localStorage.setItem('a4a-kitten-care-app',JSON.stringify(data)),fixture);
+    const reviewArtifacts=path.resolve(root,'../review-artifacts');fs.mkdirSync(reviewArtifacts,{recursive:true});
     const chartPage=await chartContext.newPage();chartPage.setDefaultTimeout(10000);
     await chartPage.goto(address,{waitUntil:'networkidle'});
     await chartPage.getByRole('button',{name:'Kittens',exact:true}).click();
+    const colors=await chartPage.locator('.kitten-card').first().evaluate(el=>({background:getComputedStyle(el).backgroundColor,text:getComputedStyle(el.querySelector('small')).color}));
+    assert.equal(colors.background,'rgb(16, 42, 131)');assert.equal(colors.text,'rgb(255, 255, 255)');
+    await chartPage.screenshot({path:path.join(reviewArtifacts,'kitten-cards-phone.png'),fullPage:true});
     await chartPage.getByRole('button',{name:/Mochi/}).click();
     await chartPage.getByRole('button',{name:'Add medication'}).click();
     await chartPage.getByRole('combobox',{name:/^Choose a medication/}).selectOption('albon');
     assert.match(await chartPage.getByRole('dialog').innerText(),/days 2–14/);
     await chartPage.getByRole('checkbox',{name:/product supplied/}).check();
     assert.match(await chartPage.getByRole('dialog').innerText(),/Treatment day 1 of 14/);
+    await chartPage.getByLabel('Additional rescue instructions').fill('0.5 mL/lb on the first treatment day, then 0.25 mL/lb for 13 more days.\nNo storage or expiration information supplied.\nCall the mentor before changing the dose.');
     await chartPage.getByRole('button',{name:'Save medication plan'}).click();
-    const beforeReview=await chartPage.evaluate(()=>JSON.parse(localStorage.getItem('a4a-kitten-care-app')).kittens.find(k=>k.id==='k1').medications.map(m=>m.id));
+    for(const width of [320,390,1280]){
+      await chartPage.setViewportSize({width,height:900});
+      const buttons=chartPage.locator('.medication-row').filter({hasText:'Albon'}).locator('.medication-actions button');
+      const first=await buttons.nth(0).boundingBox(),second=await buttons.nth(1).boundingBox();
+      assert.ok(second.y-(first.y+first.height)>=11.5,'Medication action buttons need a visible gap');
+      assert.ok(first.height>=48&&second.height>=48);
+      assert.equal(await chartPage.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    }
+    await chartPage.setViewportSize({width:390,height:844});
+    await chartPage.locator('.medication-row').filter({hasText:'Albon'}).screenshot({path:path.join(reviewArtifacts,'medication-actions-phone.png')});    const beforeReview=await chartPage.evaluate(()=>JSON.parse(localStorage.getItem('a4a-kitten-care-app')).kittens.find(k=>k.id==='k1').medications.map(m=>m.id));
     await chartPage.locator('.medication-row').filter({hasText:'Albon'}).getByRole('button',{name:'Review medication plan'}).click();
     await chartPage.getByRole('checkbox',{name:/product supplied/}).check();
     await chartPage.getByRole('button',{name:'Save medication plan'}).click();
@@ -200,6 +214,13 @@ const server = http.createServer((request,response)=>{
     assert.equal(await chartPage.locator('.dose-confirm > b').innerText(),'Weight-based medication — Oral');
     assert.doesNotMatch(await chartPage.locator('.dose-confirm').innerText(),/Mochi|Albon/);
     assert.match(await chartPage.locator('.administration-instructions').innerText(),/Once daily/);
+    const instructions=await chartPage.locator('.administration-instructions').innerText();
+    assert.equal((instructions.match(/No storage or expiration information supplied\./g)||[]).length,1);
+    assert.doesNotMatch(instructions,/on the first treatment day/);
+    assert.match(instructions,/Call the mentor/);
+    assert.doesNotMatch(await chartPage.locator('.dose-confirm').innerText(),/not the mL\/lb rate/);
+    assert.match(await chartPage.locator('.dose-equation').innerText(),/410 g ÷ 453.59237 g per lb × 0.25 mL\/lb/);
+    await chartPage.locator('.dose-confirm').screenshot({path:path.join(reviewArtifacts,'dose-calculation-phone.png')});
     await chartPage.getByRole('button',{name:'Close dialog'}).click();
     await chartPage.getByRole('button',{name:/Mochi/}).click();
     await chartPage.getByRole('button',{name:'Add medication'}).click();    await chartPage.getByRole('combobox',{name:/^Choose a medication/}).selectOption('baytril');

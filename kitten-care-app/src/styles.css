@@ -16,3 +16,14 @@ body{font-size:16px;line-height:1.45}.skip-link{position:fixed;left:12px;top:-60
 .chart-reference,.weight-check{border:1px solid var(--line);border-radius:14px;padding:12px;background:#f7f9ff}.chart-reference h3,.weight-check h3{margin-top:0}.chart-reference p,.weight-check p{font-size:16px}.validation-summary label{margin-top:10px}
 
 .calculated-amount{font-size:1.2em}.calculated-amount strong{display:block;font-size:1.5em;margin-top:4px}
+
+.card .kitten-card{background:var(--navy);color:#fff}
+.card .kitten-card small{color:#fff;font-weight:600}
+.medication-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(160px,210px);gap:16px;align-items:start;padding:14px}
+.medication-row>div{min-width:0;gap:8px;overflow-wrap:anywhere}
+.medication-row small{color:#344367;font-size:14px;line-height:1.5}
+.medication-row .medication-actions{display:grid;gap:12px}
+.medication-actions button{width:100%;min-height:48px;padding:12px;line-height:1.35;font-weight:800}
+.medication-actions .secondary{background:#fff;color:var(--navy);border:2px solid var(--navy)}
+.dose-equation{font-size:0.95em;overflow-wrap:anywhere}
+@media(max-width:540px){.medication-row{grid-template-columns:minmax(0,1fr)}.medication-row .medication-actions{grid-template-columns:minmax(0,1fr)}}
