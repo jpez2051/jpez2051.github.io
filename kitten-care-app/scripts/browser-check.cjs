@@ -158,5 +158,33 @@ const server = http.createServer((request,response)=>{
     assert.deepEqual(savedSchedule,{type:'intervalHours',intervalHours:6,firstDoseAt:'2026-10-19T19:00:00.000Z'});
     console.log('PASS: prescription-change confirmation reset, weekday validation and hourly prescription entry');
     await schedules.close();
+
+    const chartContext=await browser.newContext({viewport:{width:390,height:844},timezoneId:'Pacific/Honolulu'});
+    await chartContext.addInitScript((data)=>localStorage.setItem('a4a-kitten-care-app',JSON.stringify(data)),fixture);
+    const chartPage=await chartContext.newPage();chartPage.setDefaultTimeout(10000);
+    await chartPage.goto(address,{waitUntil:'networkidle'});
+    await chartPage.getByRole('button',{name:'Kittens',exact:true}).click();
+    await chartPage.getByRole('button',{name:/Mochi/}).click();
+    await chartPage.getByRole('button',{name:'Add medication'}).click();
+    await chartPage.getByRole('combobox',{name:/^Choose a medication/}).selectOption('albon');
+    assert.match(await chartPage.getByRole('dialog').innerText(),/0.5 mL\/lb on the first treatment day/);
+    assert.match(await chartPage.getByRole('dialog').innerText(),/strength\/preparation/);
+    assert.equal(await chartPage.getByRole('checkbox',{name:/product supplied/}).isDisabled(),true);
+    await chartPage.getByRole('button',{name:'Save chart draft'}).click();
+    await chartPage.locator('.medication-row').filter({hasText:'Albon'}).getByRole('button',{name:'Log dose'}).click();
+    assert.match(await chartPage.getByRole('dialog').innerText(),/Not ready to administer/);
+    assert.equal(await chartPage.getByRole('button',{name:'Review and save'}).isDisabled(),true);
+    await chartPage.getByRole('button',{name:'Close dialog'}).click();
+    await chartPage.getByRole('button',{name:/Mochi/}).click();
+    await chartPage.getByRole('button',{name:'Add medication'}).click();
+    await chartPage.getByRole('combobox',{name:/^Choose a medication/}).selectOption('baytril');
+    await chartPage.getByRole('button',{name:'Save chart draft'}).click();
+    assert.equal(await chartPage.getByLabel('Approving vet tech and approval reference *').isVisible(),true);
+    const baySaved=await chartPage.evaluate(()=>JSON.parse(localStorage.getItem('a4a-kitten-care-app')).kittens.find((k)=>k.id==='k1').medications.some((m)=>m.rescueChart?.templateId==='baytril'));
+    assert.equal(baySaved,false,'Vet-tech approval cannot be omitted');
+    await chartPage.getByRole('combobox',{name:/^Choose a medication/}).selectOption('custom');
+    assert.equal(await chartPage.getByLabel('Medication name *').isVisible(),true);
+    console.log('PASS: rescue-chart dropdown, first-day reference, blocked unconfirmed dosing, vet-tech approval requirement and custom free-text fallback');
+    await chartContext.close();
   } finally {await browser.close();server.close()}
 })().catch(error=>{console.error(error);server.close();process.exitCode=1});

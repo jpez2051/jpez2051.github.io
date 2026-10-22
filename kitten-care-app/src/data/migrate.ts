@@ -1,6 +1,6 @@
 import type { CareState, Kitten, Litter, Medication } from '../domain/models';
 
-export const APP_SCHEMA_VERSION = 6;
+export const APP_SCHEMA_VERSION = 7;
 
 export function emptyState(): CareState {
   return { version: APP_SCHEMA_VERSION, kittens: [], litters: [], events: [], settings: {} };

@@ -1,0 +1,24 @@
+import { describe,expect,it } from 'vitest';
+import { addCourseDays,chartArithmetic,chartRateForDay,chartSetupIssues,GRAMS_PER_POUND,recentMedicationWeight,rescueDoseIssues,rescueTemplate,treatmentDay } from './rescueMedications';
+import { calculateDose } from './medication';
+import { validateCareDraft } from './validation';
+import type { CareState,Kitten,Medication } from './models';
+const now=new Date('2026-10-22T12:00:00');
+const kitten:Kitten={id:'k1',name:'Test kitten',litterId:null,inFosterCare:true,dob:'',sex:'',markings:'',specialNeeds:'',feedingIntervalHours:4,medications:[],photo:null,carePlan:{feedingEnabled:true,dailyWeight:true,bottleBaby:true}};
+const template=rescueTemplate('albon')!;
+const medication:Medication={id:'m1',name:template.name,route:'Oral',source:'Rescue chart',manualDose:'',unit:'mL',doseCalc:{mode:'rescueChart'},rescueChart:{templateId:template.id,revision:template.revision,productConfirmed:true},schedule:{type:'daily',times:['08:00']},startDate:'2026-10-22',endDate:'2026-11-04',instructions:template.instructions};
+const state:CareState={version:7,kittens:[{...kitten,medications:[medication]}],litters:[],settings:{},events:[{id:'w1',kittenId:kitten.id,type:'weight',ts:now.toISOString(),createdAt:now.toISOString(),data:{grams:GRAMS_PER_POUND}}]};
+describe('rescue chart reference and safeguards',()=>{
+ it('converts grams to pounds without using a rounded kg approximation',()=>{expect(chartArithmetic(GRAMS_PER_POUND,0.5)).toBe(0.5);expect(chartArithmetic(GRAMS_PER_POUND*2,0.25)).toBe(0.5)});
+ it('rejects invalid weights/rates in arithmetic',()=>{for(const weight of [0,-1,NaN,Infinity])expect(chartArithmetic(weight,0.5)).toBeNull();expect(chartArithmetic(400,0)).toBeNull()});
+ it('keeps Albon first-day and subsequent-day chart rates distinct',()=>{expect(chartRateForDay(template,1)).toBe(0.5);expect(chartRateForDay(template,2)).toBe(0.25);expect(chartRateForDay(template,14)).toBe(0.25);expect(chartRateForDay(template,15)).toBeNull()});
+ it('uses local calendar treatment days, not elapsed 24-hour periods',()=>{expect(treatmentDay('2026-10-22',new Date('2026-10-23T00:01:00'))).toBe(2);expect(addCourseDays('2026-10-22',14)).toBe('2026-11-04')});
+ it('rejects impossible calendar dates and course lengths',()=>{expect(treatmentDay('2026-02-30',now)).toBeNull();expect(addCourseDays('2026-02-30',14)).toBe('');expect(addCourseDays('2026-10-22',0)).toBe('')});
+ it('accepts weights at 24 hours and flags weights beyond 24 hours',()=>{const at=(hours:number)=>({...state,events:[{...state.events[0],ts:new Date(now.getTime()-hours*3600000).toISOString()}]});expect(recentMedicationWeight(at(24),kitten.id,now)?.fresh).toBe(true);expect(recentMedicationWeight(at(24.001),kitten.id,now)?.fresh).toBe(false)});
+ it('rejects missing, future and nonpositive weights',()=>{expect(recentMedicationWeight({...state,events:[]},kitten.id,now)).toBeNull();expect(recentMedicationWeight({...state,events:[{...state.events[0],ts:new Date(now.getTime()+1).toISOString()}]},kitten.id,now)).toBeNull();expect(recentMedicationWeight({...state,events:[{...state.events[0],data:{grams:0}}]},kitten.id,now)).toBeNull()});
+ it('does not infer a liquid concentration or daily frequency from the supplied chart',()=>{expect(chartSetupIssues(template).length).toBeGreaterThan(0);expect(calculateDose(state,kitten,medication,now)).toBeNull()});
+ it('blocks giving a draft even if product/weight override checkboxes are forced true',()=>{const result=validateCareDraft(state,{type:'medication',kittenId:kitten.id,when:now.toISOString(),data:{medId:medication.id,status:'given',adminAmount:'0.5',adminUnit:'mL',confirmed:true,staleWeightApproved:true}},now);expect(result.valid).toBe(false);expect(result.errors.join(' ')).toMatch(/strength\/preparation/)});
+ it('requires recorded vet-tech approval for Baytril',()=>{const bay={...medication,rescueChart:{templateId:'baytril',revision:template.revision,productConfirmed:true}};expect(rescueDoseIssues(state,kitten,bay,now).join(' ')).toMatch(/vet-tech approval/)});
+ it('does not repeat the first-day dose when its history is missing',()=>{const later={...medication,startDate:'2026-10-21'};expect(rescueDoseIssues(state,kitten,later,now).join(' ')).toMatch(/first treatment day is not recorded/)});
+ it('does not extend a course automatically',()=>{expect(rescueDoseIssues(state,kitten,medication,new Date('2026-11-05T12:00:00')).join(' ')).toMatch(/course has ended/)});
+});

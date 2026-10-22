@@ -1,14 +1,23 @@
-import { useState } from 'react';
+import { useState,type ReactNode } from 'react';
 import { Dialog } from './Dialog';
 import { DateField } from './DateField';
 import { localDateKey } from '../domain/care';
 import { createId } from '../domain/ids';
 import { scheduleErrors } from '../domain/schedule';
-import type { Kitten, Medication, MedicationSchedule } from '../domain/models';
+import type { CareState, Kitten, Medication, MedicationSchedule } from '../domain/models';
+import { RescueMedicationForm } from './RescueMedicationForm';
+import { RESCUE_MEDICATIONS,rescueTemplate } from '../domain/rescueMedications';
 
 const scheduleOptions: [MedicationSchedule['type'],string][]=[['daily','Once daily'],['twiceDaily','Twice daily'],['threeDaily','Three times daily'],['intervalHours','Every set number of hours'],['intervalDays','Every set number of days'],['specificDays','Selected weekdays'],['oneTime','One-time dose'],['prn','As needed (PRN)']];
 
-export function MedicationForm({kitten,onClose,onSave}:{kitten:Kitten;onClose:()=>void;onSave:(medication:Medication)=>Promise<boolean>}) {
+export function MedicationForm({state,kitten,onClose,onSave}:{state:CareState;kitten:Kitten;onClose:()=>void;onSave:(medication:Medication)=>Promise<boolean>}) {
+  const [selected,setSelected]=useState('custom');
+  const selector=<label>Choose a medication<select value={selected} onChange={(event)=>setSelected(event.target.value)}><option value="custom">Other medication — enter instructions</option>{RESCUE_MEDICATIONS.map((template)=><option key={template.id} value={template.id}>{template.name} — rescue chart</option>)}</select></label>;
+  const template=rescueTemplate(selected);
+  return template?<RescueMedicationForm key={selected} template={template} state={state} kitten={kitten} selector={selector} onClose={onClose} onSave={onSave}/>:<CustomMedicationForm kitten={kitten} selector={selector} onClose={onClose} onSave={onSave}/>;
+}
+
+function CustomMedicationForm({kitten,selector,onClose,onSave}:{kitten:Kitten;selector:ReactNode;onClose:()=>void;onSave:(medication:Medication)=>Promise<boolean>}) {
   const [mode,setMode]=useState<'manual'|'weightBased'>('manual'),[type,setType]=useState<MedicationSchedule['type']>('daily'),[error,setError]=useState(''),[saving,setSaving]=useState(false);
   const timed=['daily','twiceDaily','threeDaily','specificDays'].includes(type),timeCount=type==='twiceDaily'?2:type==='threeDaily'?3:1;
   return <Dialog title={`Add medication · ${kitten.name}`} onClose={onClose}><form onSubmit={async(event)=>{
@@ -32,6 +41,7 @@ export function MedicationForm({kitten,onClose,onSave}:{kitten:Kitten;onClose:()
     setSaving(true);setError('');
     try{const saved=await onSave({id:createId('med'),name:String(data.get('name')).trim(),route:String(data.get('route')),source:String(data.get('source')),manualDose:mode==='manual'?String(manual):'',unit:String(data.get('unit')),doseCalc:{mode,rate:mode==='weightBased'?rate:undefined,rateUnit:String(data.get('rateUnit')) as 'mg/kg'|'mcg/kg',concentration:mode==='weightBased'?concentration:null},schedule,startDate:start,endDate:end,instructions:String(data.get('instructions'))});if(!saved)setError('The medication plan was not saved. Check browser storage and try again.')}finally{setSaving(false)}
   }}>
+    {selector}
     <div className="warning"><b>Use current rescue or veterinary instructions.</b> Confirm the bottle concentration and prescribed schedule.</div>
     {error&&<div className="validation-summary" role="alert">{error}</div>}
     <label>Medication name *<input name="name" required/></label>

@@ -1,5 +1,6 @@
 import type { CareState, Kitten, Medication, MedicationSchedule } from './models';
 import { kittenEvents, localDateKey } from './care';
+import { chartSetupIssues,rescueTemplate } from './rescueMedications';
 
 const weekdays=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const validTime=(time:string)=>/^([01]\d|2[0-3]):[0-5]\d$/.test(time);
@@ -25,6 +26,14 @@ export function scheduleErrors(schedule:MedicationSchedule):string[] {
 }
 
 export function medicationScheduleIssue(state:CareState,kitten:Kitten,medication:Medication,now=new Date()):string|null {
+  if(medication.doseCalc.mode==='rescueChart'){
+    const template=medication.rescueChart&&rescueTemplate(medication.rescueChart.templateId);
+    if(!template)return 'Rescue chart entry unavailable. Review the plan.';
+    const issues=chartSetupIssues(template);
+    if(issues.length)return issues.join(' ');
+    if(!medication.rescueChart?.productConfirmed)return 'Confirm the product matches the rescue chart.';
+    if(template.requiresVetTech&&!medication.rescueChart?.vetTechApproval?.trim())return 'Rescue vet-tech approval required.';
+  }
   const errors=scheduleErrors(medication.schedule);
   if(errors.length)return errors.join(' ');
   if(!parseLocalDate(medication.startDate))return 'Confirm the prescription start date.';

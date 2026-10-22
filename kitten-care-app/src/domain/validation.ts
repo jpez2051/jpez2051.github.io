@@ -1,5 +1,7 @@
 import type { CareEventType, CareState, Kitten, Medication } from './models';
 import { calculateDose } from './medication';
+import { rescueDoseIssues } from './rescueMedications';
+import { localDateKey } from './care';
 
 export interface CareDraft {
   type: CareEventType;
@@ -43,6 +45,11 @@ export function validateCareDraft(state: CareState, draft: CareDraft, now = new 
       if (draft.data.confirmed !== true) errors.push('Confirm the kitten, medication, route, and dose before saving.');
       if (!positive(draft.data.adminAmount)) errors.push('Enter the actual positive amount given.');
       if (!String(draft.data.adminUnit || '').trim()) errors.push('Choose the unit actually given.');
+      if(medication?.doseCalc.mode==='rescueChart'){
+        errors.push(...rescueDoseIssues(state,kitten,medication,now));
+        if(draft.data.adminUnit!=='mL')errors.push('Rescue-chart doses must be recorded in mL.');
+        if(Number.isFinite(when.getTime())&&localDateKey(when)!==localDateKey(now))errors.push('Do not use today’s chart calculation to record a dose for a different treatment day. Confirm historical instructions with the rescue.');
+      }
       if (medication?.doseCalc.mode === 'weightBased') {
         const dose = calculateDose(state, kitten, medication, now);
         if (!dose) errors.push('Record a current valid weight before giving this weight-based medication.');
@@ -61,6 +68,6 @@ export function validateCareDraft(state: CareState, draft: CareDraft, now = new 
 }
 
 export function medicationSummary(kitten: Kitten, medication: Medication): string {
-  const manual = medication.doseCalc.mode==='weightBased'?'Weight-based prescription':`${medication.manualDose || 'amount not set'} ${medication.unit || ''}`.trim();
+  const manual = medication.doseCalc.mode==='rescueChart'?'Rescue chart · weight-based':medication.doseCalc.mode==='weightBased'?'Weight-based prescription':`${medication.manualDose || 'amount not set'} ${medication.unit || ''}`.trim();
   return `${kitten.name} — ${medication.name} — ${manual} — ${medication.route || 'route not set'}`;
 }

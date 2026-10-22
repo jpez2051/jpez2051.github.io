@@ -23,7 +23,8 @@ export interface Medication {
   source: string;
   manualDose: string;
   unit: string;
-  doseCalc: { mode: 'manual' | 'weightBased'; rate?: number; rateUnit?: 'mg/kg' | 'mcg/kg'; concentration?: number | null };
+  doseCalc: { mode: 'manual' | 'weightBased' | 'rescueChart'; rate?: number; rateUnit?: 'mg/kg' | 'mcg/kg'; concentration?: number | null };
+  rescueChart?: { templateId:string; revision:string; productConfirmed:boolean; vetTechApproval?:string; courseStartedElsewhere?:boolean };
   schedule: MedicationSchedule;
   startDate: string;
   endDate: string;

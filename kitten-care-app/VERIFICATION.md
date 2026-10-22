@@ -1,5 +1,11 @@
 # Application verification — October 19, 2026
 
+## v0.4.0 rescue-chart follow-up — October 22, 2026
+
+Build 2026.10.22.1 adds the three owner-supplied rescue-chart references and custom-entry fallback. Albon has distinct first-day/subsequent-day arithmetic; all chart calculations require a valid weight within 24 hours. Baytril requires recorded vet-tech approval. All three chart entries remain drafts because product preparation and dose frequency were not provided. No actionable administration amount or given-dose logging is enabled for incomplete entries. Azithromycin mixing details were not invented.
+
+Schema 7 preserves chart references. 55 automated tests and the production browser suite pass, including chart selection, incomplete-preparation blocking, approval requirements and custom entry. See `RESCUE-MEDICATION-CHART.md` for exact source rates and missing activation details. Firebase work is paused at the owner's request.
+
 ## v0.3.0 preview-preparation follow-up
 
 Build 2026.10.19.2 adds fixed-time daily/multiple-daily, hourly, calendar-day interval, selected-weekday, one-time and PRN schedule entry. The due engine uses local calendar dates, explicit first-dose anchors for interval prescriptions, and given-dose logs; skipped/unable doses do not silently advance the schedule. Missing imported interval anchors are flagged for review. The care queue now includes medication, daily weight, weight-decrease and recorded-health review items.
