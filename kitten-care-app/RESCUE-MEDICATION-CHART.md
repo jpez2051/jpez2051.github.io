@@ -1,12 +1,12 @@
 # Rescue medication chart — initial reference entries
 
-Version 0.4.0 / Build 2026.10.22.1. Source: rescue-owner transcription supplied October 22, 2026. This is a reference library, not a list of medications to administer together or a diagnosis/prescribing feature.
+Version 0.4.1 / Build 2026.10.22.2. Source: rescue-owner transcription supplied October 22, 2026. This is a reference library, not a list of medications to administer together or a diagnosis/prescribing feature.
 
 ## Supplied entries
 
 | Medication | Supplied chart rate | Course | Status |
 | --- | --- | --- | --- |
-| Albon | First treatment day 0.5 mL/lb; subsequent days 0.25 mL/lb | First day plus 13 more days | Liquid preparation and dose frequency unconfirmed |
+| Albon | First treatment day 0.5 mL/lb; subsequent days 0.25 mL/lb | First day plus 13 more days | Once daily confirmed by owner; bottle must match rescue chart |
 | Azithromycin | 0.1 mL/lb | 10 days; no automatic extension | Pill strength, final liquid preparation and frequency unconfirmed |
 | Baytril (enrofloxacin) | 0.022 mL/lb | Rescue-approved 5–10 days | Liquid preparation and frequency unconfirmed; recorded vet-tech approval required |
 
@@ -26,10 +26,10 @@ The owner clarified that the chart name was written “Baryril (enrofloxacin)”
 - No automatic extension beyond the approved course; no use of today's chart calculation for backdated administration on a different treatment day.
 - Schema 7 preserves the chart reference/revision and prevents older clients from silently interpreting this mode as a manual prescription.
 
-## Details needed from the rescue before activating automatic amounts
+## Details still needed for incomplete entries
 
-1. Product name, route, and exact liquid strength/preparation that each mL/lb rate refers to.
-2. How often doses are given, and confirmation that the rate is per administration rather than a daily total.
+1. For azithromycin and Baytril, exact liquid strength/preparation that each mL/lb rate refers to.
+2. For azithromycin and Baytril, how often doses are given. Albon is confirmed once daily.
 3. For azithromycin, tablet/pill strength and the complete preparation instructions, including the intended final volume and any supplied storage/expiry instructions.
 4. For Baytril, approval for the kitten, formulation, rate and exact course duration.
 5. Appropriate measuring-device precision for the resulting volumes.
@@ -37,3 +37,7 @@ The owner clarified that the chart name was written “Baryril (enrofloxacin)”
 The 24-hour weight limit follows the application's existing medication-weight policy; the rescue can require a stricter limit. No product concentration, mixing recipe or frequency was inferred from external product labels.
 
 Tests cover conversion, loading/maintenance phases, local course boundaries, missing/old/future weights, incomplete preparation blocking, course expiry, approval and custom-entry preservation. Browser tests cover selection, source display, draft persistence, blocked administration and missing approval.
+
+## Albon activation in 0.4.1
+
+The owner confirmed 14 total days, once daily: day 1 at 0.5 mL/lb, days 2–14 at 0.25 mL/lb. The calculator uses the supplied volume rate directly; no mg/mL concentration was invented. Every plan requires confirmation that the bottle supplied by the rescue matches this chart. Existing drafts must be reviewed and reconfirmed; review preserves the plan ID and administration history. A second given dose on the same local day is blocked. The day and rate used are stored with each given record. The ciprofloxacin example was not added as a prescription.

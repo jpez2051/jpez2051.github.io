@@ -1,7 +1,7 @@
 import type { CareEventType, CareState, Kitten, Medication } from './models';
 import { calculateDose } from './medication';
 import { rescueDoseIssues } from './rescueMedications';
-import { localDateKey } from './care';
+import { kittenEvents,localDateKey } from './care';
 
 export interface CareDraft {
   type: CareEventType;
@@ -49,6 +49,7 @@ export function validateCareDraft(state: CareState, draft: CareDraft, now = new 
         errors.push(...rescueDoseIssues(state,kitten,medication,now));
         if(draft.data.adminUnit!=='mL')errors.push('Rescue-chart doses must be recorded in mL.');
         if(Number.isFinite(when.getTime())&&localDateKey(when)!==localDateKey(now))errors.push('Do not use today’s chart calculation to record a dose for a different treatment day. Confirm historical instructions with the rescue.');
+        if(kittenEvents(state,kitten.id,'medication').some((event)=>event.data.medId===medication.id&&event.data.status==='given'&&localDateKey(new Date(event.ts))===localDateKey(when)))errors.push('A dose is already recorded for this treatment day. Review the care record before giving another.');
       }
       if (medication?.doseCalc.mode === 'weightBased') {
         const dose = calculateDose(state, kitten, medication, now);

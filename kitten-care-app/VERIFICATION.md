@@ -60,3 +60,7 @@ Remaining implementation: shared litter plans and overrides; all medication sche
 Remaining validation: manual screen-reader testing, real device/OS text sizing, all-screen contrast testing, realistic service-worker upgrade/rollback testing, Firebase authorization/emulator tests and existing-data migration tests. No accessibility conformance certification is claimed.
 
 Firebase project `a4a-kitten-tracker` is recorded. Its existing configuration, account permissions and data schema still need authenticated inspection. No Firebase data or deployment was changed in this verification pass.
+
+## Albon update 0.4.1 / 2026.10.22.2
+
+Confirmed once daily for 14 total days: day 1 at 0.5 mL/lb; days 2–14 at 0.25 mL/lb. Tests cover day 14/15, fresh weight, first-day history and duplicate daily administration. All 59 automated tests and the production build passed. Browser checks cover live day-1 calculation and plan review preserving IDs. Existing preview limitations above still apply.
