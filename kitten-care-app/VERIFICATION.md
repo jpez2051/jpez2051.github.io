@@ -72,3 +72,9 @@ The calculated per-dose amount has a separate prominent label, distinct from the
 Completing day 1 outside the app does not invent a start date or advance the calendar. If the actual first date is today, the calculator and given-dose validation block another dose, while the plan can still be saved. The next scheduled dose moves to day 2. If the actual date is yesterday, today's calculation uses 0.25 mL/lb. Tests cover both cases and an early daily dose not reappearing at its later scheduled time. No external administration event is fabricated.
 
 All 61 automated tests, the production build, and the browser regression checks passed.
+
+## Administration instructions: 0.4.3 / 2026.10.22.4
+
+The logging panel is titled How to give and describes dosing method and route without repeating the selected kitten or medication. Saved administration instructions and notes are now shown for all medications, alongside the distinct per-dose amount. Fixed prescriptions retain their prescribed amount. Dropdown selection and confirmation safeguards are unchanged.
+
+All 62 automated tests and the production build passed. Browser checks verify Albon, Azithromycin and Baytril instructions in the logging panel, absence of redundant names, and continued blocking for incomplete preparations/frequencies. No medication rates, frequency assumptions, approval requirements or historical care records were changed.

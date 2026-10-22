@@ -1,4 +1,4 @@
-import type { CareEventType, CareState, Kitten, Medication } from './models';
+import type { CareEventType, CareState, Medication } from './models';
 import { calculateDose } from './medication';
 import { rescueDoseIssues } from './rescueMedications';
 import { kittenEvents,localDateKey } from './care';
@@ -68,7 +68,7 @@ export function validateCareDraft(state: CareState, draft: CareDraft, now = new 
   return { valid: errors.length === 0, errors };
 }
 
-export function medicationSummary(kitten: Kitten, medication: Medication): string {
-  const manual = medication.doseCalc.mode==='rescueChart'?'Weight-based medication':medication.doseCalc.mode==='weightBased'?'Weight-based prescription':`${medication.manualDose || 'amount not set'} ${medication.unit || ''}`.trim();
-  return `${kitten.name} — ${medication.name} — ${manual} — ${medication.route || 'route not set'}`;
+export function medicationSummary(medication: Medication): string {
+  const method = medication.doseCalc.mode==='manual'?'Fixed-dose medication':'Weight-based medication';
+  return `${method} — ${medication.route || 'route not set'}`;
 }
