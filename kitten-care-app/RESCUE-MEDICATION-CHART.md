@@ -1,6 +1,6 @@
 # Medication library
 
-Version 0.5.0 / Build 2026.10.22.5. Source: rescue-owner instructions and frequency confirmations supplied October 22, 2026. The app tracks prescribed care; it does not select treatments.
+Version 0.6.0 / Build 2026.10.22.7. Source: rescue-owner instructions and frequency confirmations supplied October 22, 2026. The app tracks prescribed care; it does not select treatments.
 
 | Medication | Volume per dose | Frequency | Course |
 | --- | --- | --- | --- |
@@ -16,3 +16,9 @@ Calculations and administration require a valid weight no older than 24 hours, w
 Clavamox has two distinct planned times. A given entry records its scheduled dose time as well as its actual administration time; duplicate slots and a third daily dose are rejected. Reminder calculations keep the second dose available after the first. Skipped/unable entries do not count as given. Legacy given entries without a slot occupy the earliest available slot so they cannot disappear from daily counts.
 
 Existing Azithromycin and Baytril drafts require Review medication plan and reconfirmation; review preserves medication IDs, care history, selected duration and additional instructions while updating the built-in instructions. Internal reference field names remain unchanged for storage compatibility. Custom prescriptions remain available.
+
+## Private testing safeguards
+
+Automation is enabled. Product identity, preparation, approving contact, measuring device, reliable minimum, graduations, minimum spacing and per-kitten weight limits can be entered in plan review or custom-plan Safety settings. Clinical limits are not prefilled. A flagged weight requires a recheck; other warnings require an explicit reason/contact or testing-only exception. Fresh in-range weights with configured limits do not require reweighing for every dose.
+
+Given records retain a plan and safety-policy snapshot, instruction revision, weight/date, DOB/age, warnings and exception details. Built-in instructions and caregiver notes are separated. The schema is now 8. Close older app tabs before opening this build. Neither these checks nor a testing exception constitutes clinical approval.

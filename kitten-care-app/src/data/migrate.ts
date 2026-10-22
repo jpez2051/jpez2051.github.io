@@ -1,6 +1,6 @@
 import type { CareState, Kitten, Litter, Medication } from '../domain/models';
 
-export const APP_SCHEMA_VERSION = 7;
+export const APP_SCHEMA_VERSION = 8;
 
 export function emptyState(): CareState {
   return { version: APP_SCHEMA_VERSION, kittens: [], litters: [], events: [], settings: {} };
@@ -16,6 +16,21 @@ export function restoreBackup(value: unknown): CareState {
     if(new Set(list.map((item)=>item.id)).size!==list.length) throw new Error('Duplicate records');
   }
   if(raw.events.some((event)=>!event.data||typeof event.data!=='object'||Array.isArray(event.data)||!Number.isFinite(Date.parse(event.ts))||!raw.kittens!.some((kitten)=>kitten.id===event.kittenId))) throw new Error('Invalid care history');
+  for(const kitten of raw.kittens){
+    if(kitten.medications!==undefined&&!Array.isArray(kitten.medications))throw new Error('Invalid medication plans');
+    const medications=kitten.medications||[];
+    if(medications.some(medication=>!medication||typeof medication!=='object'||typeof medication.id!=='string'||!medication.id)||new Set(medications.map(medication=>medication.id)).size!==medications.length)throw new Error('Invalid medication identity');
+    for(const medication of medications){
+    if(medication.safety!==undefined){
+      const policy=medication.safety;
+      if(!policy||typeof policy!=='object'||Array.isArray(policy))throw new Error('Invalid medication safety policy');
+      for(const key of ['productLabel','preparation','approvedBy','deviceName'] as const)if(policy[key]!==undefined&&typeof policy[key]!=='string')throw new Error('Invalid medication identity');
+      for(const key of ['minimumMeasurableMl','incrementMl','minimumSpacingHours','minimumWeightG','maximumWeightG','maximumWeightChangePercent'] as const)if(policy[key]!==undefined&&(typeof policy[key]!=='number'||!Number.isFinite(policy[key])||Number(policy[key])<=0))throw new Error('Invalid medication safety limit');
+      if(policy.minimumWeightG&&policy.maximumWeightG&&policy.minimumWeightG>=policy.maximumWeightG)throw new Error('Invalid medication weight range');
+    }
+    if(medication.rescueChart?.additionalInstructions!==undefined&&typeof medication.rescueChart.additionalInstructions!=='string')throw new Error('Invalid medication notes');
+    }
+  }
   return migrateState(raw);
 }
 

@@ -11,7 +11,24 @@ const server = http.createServer((request,response)=>{
   if(!filename.startsWith(root+path.sep)){response.writeHead(403);response.end();return}
   fs.readFile(filename,(error,data)=>{response.writeHead(error?404:200,{'Content-Type':mime[path.extname(filename)]||'application/octet-stream'});response.end(error?'Missing':data)});
 });
-(async()=>{
+async function administrationInstructions(page){
+  const instructions=page.locator('.administration-instructions');
+  if(!await instructions.isVisible())await page.getByText('Full instructions and calculation',{exact:true}).click();
+  return instructions.innerText();
+}async function completeTestingReview(page){
+  const recheck=page.getByLabel('Rechecked weight in grams *');
+  if(await recheck.count()){
+    const kittenId=await page.getByRole('combobox',{name:/^Kitten/}).inputValue();
+    const grams=await page.evaluate(id=>{const state=JSON.parse(localStorage.getItem('a4a-kitten-care-app'));return state.events.filter(e=>e.kittenId===id&&e.type==='weight'&&!e.deletedAt).reverse().sort((a,b)=>Date.parse(b.ts)-Date.parse(a.ts)||Date.parse(b.createdAt)-Date.parse(a.createdAt))[0]?.data.grams},kittenId);
+    if(grams!==undefined)await recheck.fill(String(grams));
+  }
+  const reason=page.getByLabel('Reason / instructions for this testing exception');
+  if(await reason.count()){
+    await reason.fill('Automated synthetic test only; no medication administered');
+    await page.getByLabel(/^Approving contact or/).fill('testing only');
+    await page.getByLabel('I reviewed these warnings').check();
+  }
+}(async()=>{
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   const address=`http://127.0.0.1:${server.address().port}/`;
   const browser=await chromium.launch({headless:true,channel:'chrome'});
@@ -52,6 +69,7 @@ const server = http.createServer((request,response)=>{
     await page.getByLabel('Actual amount given *').fill('0.4');
     await page.getByRole('button',{name:'Review and save'}).click();
     assert.match(await page.getByRole('alert').innerText(),/Confirm the kitten/);
+    await completeTestingReview(page);
     await page.getByLabel('I confirmed the kitten').check();
     await page.getByRole('button',{name:'Review and save'}).click();
     await page.getByRole('button',{name:'Undo',exact:true}).waitFor();
@@ -85,6 +103,7 @@ const server = http.createServer((request,response)=>{
     await populatedPage.locator('.medication-row').filter({hasText:'Second prescription'}).getByRole('button',{name:'Log dose'}).click();
     assert.equal(await populatedPage.getByRole('combobox',{name:/^Medication/}).inputValue(),'m2');
     await populatedPage.getByLabel('Actual amount given *').fill('0.4');
+    await completeTestingReview(populatedPage);
     await populatedPage.getByLabel('I confirmed the kitten').check();
     await populatedPage.getByRole('combobox',{name:/^Medication/}).selectOption('m1');
     assert.equal(await populatedPage.getByLabel('I confirmed the kitten').isChecked(),false,'Confirmation must reset when medication changes');
@@ -213,8 +232,8 @@ const server = http.createServer((request,response)=>{
     assert.match(await chartPage.locator('.calculated-amount').innerText(),/Calculated amount for this dose:/);
     assert.equal(await chartPage.locator('.dose-confirm > b').innerText(),'Weight-based medication — Oral');
     assert.doesNotMatch(await chartPage.locator('.dose-confirm').innerText(),/Mochi|Albon/);
-    assert.match(await chartPage.locator('.administration-instructions').innerText(),/Once daily/);
-    const instructions=await chartPage.locator('.administration-instructions').innerText();
+    assert.match(await administrationInstructions(chartPage),/Once daily/);
+    const instructions=await administrationInstructions(chartPage);
     assert.equal((instructions.match(/No storage or expiration information supplied\./g)||[]).length,1);
     assert.doesNotMatch(instructions,/on the first treatment day/);
     assert.match(instructions,/Call the mentor/);
@@ -233,7 +252,7 @@ const server = http.createServer((request,response)=>{
     await chartPage.getByRole('button',{name:'Save medication plan'}).click();
     await chartPage.locator('.medication-row').filter({hasText:'Baytril'}).getByRole('button',{name:'Log dose'}).click();
     assert.equal(await chartPage.locator('.dose-confirm > b').innerText(),'Weight-based medication — Oral');
-    assert.match(await chartPage.locator('.administration-instructions').innerText(),/0.022 mL\/lb per dose/);
+    assert.match(await administrationInstructions(chartPage),/0.022 mL\/lb per dose/);
     assert.equal(await chartPage.getByRole('button',{name:'Review and save'}).isDisabled(),false);
     await chartPage.getByRole('button',{name:'Close dialog'}).click();
     await chartPage.getByRole('button',{name:/Mochi/}).click();
@@ -243,7 +262,7 @@ const server = http.createServer((request,response)=>{
     await chartPage.getByRole('button',{name:'Save medication plan'}).click();
     await chartPage.locator('.medication-row').filter({hasText:'Azithromycin'}).getByRole('button',{name:'Log dose'}).click();
     assert.equal(await chartPage.locator('.dose-confirm > b').innerText(),'Weight-based medication — Oral');
-    assert.match(await chartPage.locator('.administration-instructions').innerText(),/0.1 mL\/lb per dose for 10 days/);
+    assert.match(await administrationInstructions(chartPage),/0.1 mL\/lb per dose for 10 days/);
     assert.equal(await chartPage.getByRole('button',{name:'Review and save'}).isDisabled(),false);
     await chartPage.getByRole('button',{name:'Close dialog'}).click();
     await chartPage.getByRole('button',{name:/Mochi/}).click();
@@ -254,20 +273,26 @@ const server = http.createServer((request,response)=>{
     await chartPage.getByLabel('Second daily dose time').fill('20:00');
     await chartPage.getByRole('button',{name:'Save medication plan'}).click();
     await chartPage.locator('.medication-row').filter({hasText:'Clavamox'}).getByRole('button',{name:'Log dose'}).click();
-    assert.match(await chartPage.locator('.administration-instructions').innerText(),/Twice daily: 0.1 mL\/lb per dose/);
+    assert.match(await administrationInstructions(chartPage),/Twice daily: 0.1 mL\/lb per dose/);
     await chartPage.getByLabel('Scheduled dose').selectOption('08:00');
     await chartPage.getByLabel('Actual amount given *').fill('0.090');
+    await completeTestingReview(chartPage);
     await chartPage.getByLabel('I confirmed the kitten').check();
     await chartPage.getByRole('button',{name:'Review and save'}).click();
     await chartPage.getByRole('button',{name:/Mochi/}).click();
     await chartPage.locator('.medication-row').filter({hasText:'Clavamox'}).getByRole('button',{name:'Log dose'}).click();
     await chartPage.getByLabel('Scheduled dose').selectOption('08:00');
     await chartPage.getByLabel('Actual amount given *').fill('0.090');
+    await completeTestingReview(chartPage);
     await chartPage.getByLabel('I confirmed the kitten').check();
     await chartPage.getByRole('button',{name:'Review and save'}).click();
     assert.match(await chartPage.getByRole('alert').innerText(),/already recorded/);
     await chartPage.getByLabel('Scheduled dose').selectOption('20:00');
+    assert.equal(await chartPage.getByLabel('I confirmed the kitten').isChecked(),false);
+    await completeTestingReview(chartPage);
+    await chartPage.getByLabel('I confirmed the kitten').check();
     await chartPage.getByRole('button',{name:'Review and save'}).click();
+    await chartPage.waitForFunction(()=>JSON.parse(localStorage.getItem('a4a-kitten-care-app')).events.filter(e=>e.data.medName==='Clavamox'&&e.data.status==='given').length===2);
     const clavamoxGiven=await chartPage.evaluate(()=>JSON.parse(localStorage.getItem('a4a-kitten-care-app')).events.filter(e=>e.data.medName==='Clavamox'&&e.data.status==='given'));
     assert.equal(clavamoxGiven.length,2);
     await chartPage.getByRole('button',{name:/Mochi/}).click();
@@ -276,5 +301,45 @@ const server = http.createServer((request,response)=>{
     assert.equal(await chartPage.getByLabel('Medication name *').isVisible(),true);
     console.log('PASS: Albon day-1 calculation, existing-plan review without duplicates, vet-tech approval requirement and custom free-text fallback');
     await chartContext.close();
+    const safetyContext=await browser.newContext({viewport:{width:390,height:844},timezoneId:'Pacific/Honolulu'});
+    const tinyFixture=structuredClone(fixture);tinyFixture.events[0].data.grams=23;tinyFixture.kittens[0].dob='2026-08-26';
+    await safetyContext.addInitScript(data=>{if(!localStorage.getItem('a4a-kitten-care-app'))localStorage.setItem('a4a-kitten-care-app',JSON.stringify(data))},tinyFixture);
+    const safetyPage=await safetyContext.newPage();safetyPage.setDefaultTimeout(10000);await safetyPage.goto(address,{waitUntil:'networkidle'});
+    await safetyPage.getByRole('button',{name:'Kittens',exact:true}).click();await safetyPage.getByRole('button',{name:/Mochi/}).click();await safetyPage.getByRole('button',{name:'Add medication'}).click();
+    await safetyPage.getByRole('combobox',{name:/^Choose a medication/}).selectOption('albon');await safetyPage.getByRole('checkbox',{name:/product supplied/}).check();
+    await safetyPage.getByText('Product, measuring device and safety limits',{exact:true}).click();
+    await safetyPage.getByLabel('Exact bottle or product label').fill('TEST Albon prepared liquid');await safetyPage.getByLabel('Preparation / concentration as supplied').fill('TEST preparation only');await safetyPage.getByLabel('Approving rescue or veterinary contact').fill('TEST contact');await safetyPage.getByLabel('Measuring device name').fill('TEST device');
+    await safetyPage.getByLabel('Smallest reliable amount (mL)').fill('0.05');await safetyPage.getByLabel('Device graduation size (mL)').fill('0.01');await safetyPage.getByLabel('Minimum hours between doses, if instructed').fill('6');await safetyPage.getByLabel('Expected minimum weight (g)').fill('100');await safetyPage.getByLabel('Expected maximum weight (g)').fill('1000');await safetyPage.getByLabel('Weight-change recheck threshold (%)').fill('20');
+    await safetyPage.getByRole('button',{name:'Save medication plan'}).click();await safetyPage.locator('.medication-row').filter({hasText:'Albon'}).getByRole('button',{name:'Log dose'}).click();
+    assert.match(await safetyPage.locator('.calculated-amount').innerText(),/0.025 mL/,'Automation must remain enabled');
+    assert.equal(await safetyPage.locator('.administration-instructions').isVisible(),false,'Full instructions should be collapsed initially');
+    assert.match(await safetyPage.locator('.safety-review').innerText(),/below the plan|below the device/);
+    await safetyPage.getByLabel('Actual amount given *').fill('0.5');await safetyPage.getByLabel('I confirmed the kitten').check();await safetyPage.getByRole('button',{name:'Review and save'}).click();
+    assert.match(await safetyPage.getByRole('dialog').getByRole('alert').innerText(),/Reweigh|safety warnings/);
+    await completeTestingReview(safetyPage);await safetyPage.getByLabel('I confirmed the kitten').check();await safetyPage.getByRole('button',{name:'Review and save'}).click();
+    await safetyPage.getByRole('heading',{name:'Log medication',exact:true}).waitFor({state:'hidden'}).catch(async()=>{throw new Error(await safetyPage.getByRole('dialog').innerText())});
+    const snapshot=await safetyPage.evaluate(()=>JSON.parse(localStorage.getItem('a4a-kitten-care-app')).events.find(e=>e.data.medName==='Albon'));
+    assert.equal(JSON.parse(snapshot.data.safetySnapshot).minimumMeasurableMl,0.05);assert.equal(JSON.parse(snapshot.data.planSnapshot).safety.productLabel,'TEST Albon prepared liquid');assert.equal(snapshot.data.safetyApproval,'testing only');assert.equal(snapshot.data.recheckedWeightG,'23');assert.ok(JSON.parse(snapshot.data.safetyWarnings).some(w=>w.id==='amount-difference'));assert.ok(JSON.parse(snapshot.data.safetyWarnings).some(w=>w.id==='too-small'));
+    await safetyPage.getByRole('button',{name:'Settings & help',exact:true}).click();const recoveryDownload=safetyPage.waitForEvent('download');await safetyPage.getByRole('button',{name:'Download previous saved copy'}).click();const previousDownload=await recoveryDownload;const previousState=JSON.parse(fs.readFileSync(await previousDownload.path(),'utf8'));assert.equal(previousState.events.filter(e=>e.data.medName==='Albon').length,0);assert.equal(previousState.kittens[0].medications.at(-1).name,'Albon');
+    await safetyContext.close();console.log('PASS: configured weight/device warnings, active automation, explicit exceptions, immutable dose snapshots and recovery export');
+
+    const tabs=await browser.newContext({timezoneId:'Pacific/Honolulu'});
+    await tabs.addInitScript(data=>{if(!localStorage.getItem('a4a-kitten-care-app'))localStorage.setItem('a4a-kitten-care-app',JSON.stringify(data));const request=navigator.locks.request.bind(navigator.locks);navigator.locks.request=(name,callback)=>{if(window.holdNextWrite){window.holdNextWrite=false;return new Promise(resolve=>{window.releaseWrite=()=>resolve(request(name,callback))})}return request(name,callback)}},fixture);
+    const tabA=await tabs.newPage(),tabB=await tabs.newPage();tabA.setDefaultTimeout(10000);tabB.setDefaultTimeout(10000);await tabA.goto(address,{waitUntil:'networkidle'});await tabB.goto(address,{waitUntil:'networkidle'});
+    async function draftNote(page,text){await page.getByRole('button',{name:'Kittens',exact:true}).click();await page.getByRole('button',{name:/Mochi/}).click();await page.locator('.profile-actions').getByRole('button',{name:'note',exact:true}).click();await page.getByLabel('Notes',{exact:true}).fill(text)}
+    await draftNote(tabA,'Draft kept from tab A');await draftNote(tabB,'Winning entry from tab B');await tabA.evaluate(()=>window.holdNextWrite=true);await tabA.getByRole('button',{name:'Review and save'}).click();await tabA.waitForFunction(()=>Boolean(window.releaseWrite));
+    await tabB.getByRole('button',{name:'Review and save'}).click();await tabB.getByRole('button',{name:'Undo',exact:true}).waitFor();await tabA.evaluate(()=>window.releaseWrite());
+    await tabA.getByRole('dialog').getByRole('alert').waitFor();assert.equal(await tabA.getByLabel('Notes',{exact:true}).inputValue(),'Draft kept from tab A');assert.match(await tabA.locator('.save-error').innerText(),/Another tab/);await tabA.getByRole('button',{name:'Review and save'}).click();await tabA.getByRole('button',{name:'Undo',exact:true}).waitFor();
+    const merged=await tabA.evaluate(()=>JSON.parse(localStorage.getItem('a4a-kitten-care-app')).events.filter(e=>e.type==='note').map(e=>e.data.note));assert.deepEqual(merged.sort(),['Draft kept from tab A','Winning entry from tab B'].sort());
+    await tabA.getByRole('button',{name:/Mochi/}).click();await tabA.locator('.medication-row').filter({hasText:'First prescription'}).getByRole('button',{name:'Log dose'}).click();await tabA.getByLabel('Actual amount given *').fill('0.4');await completeTestingReview(tabA);await tabA.getByLabel('I confirmed the kitten').check();
+    await tabB.getByRole('button',{name:/Mochi/}).click();await tabB.locator('.profile-actions').getByRole('button',{name:'weight',exact:true}).click();await tabB.getByLabel('Weight in grams *').fill('411');await tabB.getByRole('button',{name:'Review and save'}).click();
+    await tabA.getByText(/Care details changed while this form was open/).waitFor();assert.equal(await tabA.getByLabel('I confirmed the kitten').isChecked(),false);assert.equal(await tabA.getByLabel('Actual amount given *').inputValue(),'0.4');
+    await tabs.close();console.log('PASS: real two-tab stale-write rejection, retained draft, safe retry/merge, live updates and medication confirmation reset');
+
+    const fallback=await browser.newContext({timezoneId:'Pacific/Honolulu'});await fallback.addInitScript(data=>{Object.defineProperty(navigator,'locks',{value:undefined});if(!localStorage.getItem('a4a-kitten-care-app'))localStorage.setItem('a4a-kitten-care-app',JSON.stringify(data))},fixture);
+    const fallbackPage=await fallback.newPage();fallbackPage.setDefaultTimeout(10000);await fallbackPage.goto(address,{waitUntil:'networkidle'});await fallbackPage.getByRole('button',{name:'Log a feeding',exact:true}).click();await fallbackPage.getByLabel('Amount eaten').fill('7');await fallbackPage.getByRole('button',{name:'Review and save'}).click();await fallbackPage.getByRole('button',{name:'Undo',exact:true}).waitFor();assert.equal(await fallbackPage.evaluate(()=>JSON.parse(localStorage.getItem('a4a-kitten-care-app')).events.filter(e=>e.type==='feeding').length),1);const fallbackB=await fallback.newPage();fallbackB.setDefaultTimeout(10000);await fallbackB.goto(address,{waitUntil:'networkidle'});await draftNote(fallbackPage,'Fallback note A');await draftNote(fallbackB,'Fallback note B');
+    await Promise.all([fallbackPage.getByRole('button',{name:'Review and save'}).click(),fallbackB.getByRole('button',{name:'Review and save'}).click()]);
+    for(const candidate of [fallbackPage,fallbackB]){await candidate.waitForFunction(()=>!document.querySelector('[role="dialog"]')||Boolean(document.querySelector('[role="dialog"] [role="alert"]')));if(await candidate.getByRole('dialog').count()){await candidate.getByRole('button',{name:'Review and save'}).click();await candidate.getByRole('heading',{name:'Log note',exact:true}).waitFor({state:'hidden'})}}
+    const fallbackNotes=await fallbackPage.evaluate(()=>JSON.parse(localStorage.getItem('a4a-kitten-care-app')).events.filter(e=>e.type==='note').map(e=>e.data.note));assert.deepEqual(fallbackNotes.sort(),['Fallback note A','Fallback note B'].sort());await fallback.close();console.log('PASS: IndexedDB transactional fallback, including two-tab saves, when Web Locks are unavailable');
   } finally {await browser.close();server.close()}
 })().catch(error=>{console.error(error);server.close();process.exitCode=1});

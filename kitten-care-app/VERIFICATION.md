@@ -98,3 +98,24 @@ Profile medication actions now have distinct primary/secondary treatments, a 12-
 All 67 automated tests and the production build passed. Browser regression checks passed, including exact duplicate cleanup, note preservation, current dose equation, button gaps/heights and no document overflow at 320/390/1280 pixels. Phone close-up screenshots of medication buttons, dose calculations and kitten-card contrast were visually inspected. No dosing rates, schedule policies, medication logs, legacy V2 or V3 files were changed.
 
 See USABILITY-REVIEW-2026-10-22.md for the candid release assessment and remaining safety/usability priorities. Passing these tests is not clinical validation or an accessibility certification.
+
+## Safety foundation and private testing: 0.6.0 / 2026.10.22.7
+
+Medication automation remains enabled at the owner's request. No medication rates, frequencies or course lengths were changed. The testing build is not a clinically validated prescribing or administration system; Shelterluv remains the official rescue record.
+
+Implemented:
+
+- Rescue-configured weight bounds and change thresholds, DOB/age and previous-weight context, weight-loss warnings, and required rechecked grams when weight warnings apply. Configured, fresh, in-range weights do not require unnecessary repeat weighing for every dose.
+- Product/preparation/approving-contact and measuring-device metadata; reliable minimum and graduation checks, actual-dose discrepancy and prescribed-unit checks, configured spacing checks on both sides of historical doses, and early-slot warnings. No clinical thresholds, preparation strengths or spacing intervals were invented.
+- Explicit reason, approving contact or testing-only marker, and acknowledgment for warning exceptions. A testing exception is not veterinary approval. Calculations remain visible; exception details are retained with the record.
+- Per-dose plan, instruction revision, product/device policy, weight/date, DOB/age, warning and exception snapshots. Atomic validation rejects changed plans, weights or warning reviews before committing.
+- Dose/route/next/last given first; full instructions and arithmetic expandable. Profiles explicitly label once/twice daily and overdue times. Care-queue review actions open the relevant plan. Visible keyboard focus and focused error summaries improve error recovery.
+- Separate logging, dose panel, profile and settings components; scoped button styling; separately stored caregiver notes. Existing mixed instruction text remains readable through compatibility cleanup.
+- Serialized Web Lock saves with captured-revision conflict detection and live cross-tab updates; IndexedDB read/write transaction fallback. Rejected drafts remain open. Medication plan and Settings edits compare their original values before replacing newer edits.
+- A previous verified saved copy, recovery export, current backup export, last-download-request timestamp, daily backup reminder and explicit restore record counts. No local copy survives intentional browser-data deletion; independent downloaded backups remain necessary.
+- Second-level care timestamps and deterministic ordering of equal-time records, so a newly recorded same-minute weight is not silently ignored.
+- Schema 8 migration and backup validation for safety metadata. Older clients reject newer-schema data on load. Previously open old-version tabs must be closed because old running code does not honor the new locking protocol.
+
+Verification: 82 automated tests and the production build passed. Local Chrome browser checks passed for phone/desktop and larger-text reflow, keyboard dialog focus, feeding/medication validation, confirmation resets, failed-save draft retention, legacy migration/recovery, invalid backups, offline reopening, all four medication examples, duplicate dose slots, configured tiny-volume/out-of-range/discrepancy warnings, active calculations, saved snapshots, previous-copy export, forced two-tab stale-write rejection, retained draft/retry/merge, live weight updates and confirmation reset, and two-tab saves through the IndexedDB fallback. Phone dose/profile screenshots were inspected. No V2 or legacy V3 files changed.
+
+Human/clinical work not claimed complete: caregiver participant sessions, real screen-reader/device sessions, physical syringe validation and rescue approval of actual products and safety limits. CAREGIVER-TEST-GUIDE.md provides tasks, success criteria and a results sheet and is linked in Settings. These limitations do not turn off automation in this private testing build. No Firebase migration, cloud login or wider foster rollout occurred.

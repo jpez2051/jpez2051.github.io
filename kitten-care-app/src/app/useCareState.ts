@@ -19,8 +19,8 @@ export function useCareState(repository: CareRepository) {
   const update = useCallback((change: (current: CareState) => CareState) => {
     const operation=writeQueue.current.then(async()=>{
       if(loadFailed.current){setSaveError('Saved care data could not be loaded. Reload or recover a backup before adding new records.');return false}
-      const next=change(currentRef.current);
       try {
+        const next=change(currentRef.current);
         await repository.save(next);
         currentRef.current=next;setState(next);setSaveError('');return true;
       } catch(error){setSaveError(String(error instanceof Error ? error.message : error));return false}

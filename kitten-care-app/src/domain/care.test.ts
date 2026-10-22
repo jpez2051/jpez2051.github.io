@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { activeKittens, latestWeight, localDateKey, nextFeedingAt, todayCount } from './care';
+import { activeKittens, latestWeight,localDateTimeValue, localDateKey, nextFeedingAt, todayCount } from './care';
 import { calculateDose } from './medication';
 import type { CareState, Kitten, Medication } from './models';
 
@@ -20,4 +20,5 @@ describe('weight-based medication arithmetic',()=>{
   const medication: Medication={id:'m1',name:'Test',route:'Oral',source:'Vet',manualDose:'',unit:'mL',doseCalc:{mode:'weightBased',rate:50,rateUnit:'mg/kg',concentration:50},schedule:{type:'daily'},startDate:'',endDate:'',instructions:''};
   it('calculates mg and mL from the recorded weight',()=>{const result=calculateDose(state,kitten,medication,new Date('2026-08-28T09:00:00Z'));expect(result?.mg).toBe(20);expect(result?.ml).toBe(.4);expect(result?.stale).toBe(false)});
   it('flags a weight older than 24 hours',()=>expect(calculateDose(state,kitten,medication,new Date('2026-08-30T09:00:00Z'))?.stale).toBe(true));
-});
+ it('uses the later-created measurement for equal care timestamps without mutating history',()=>{const original=state.events[0],recheck={...original,id:'recheck',createdAt:'2026-08-28T08:00:30Z',data:{grams:411}},events=[original,recheck],current={...state,events};expect(latestWeight(current,'k1')).toBe(411);expect(current.events[0].id).toBe('w1');expect(latestWeight({...current,events:[original,{...recheck,createdAt:original.createdAt}]},'k1')).toBe(411)});
+ it('preserves seconds when initializing a care timestamp',()=>expect(localDateTimeValue(new Date('2026-10-22T08:31:42'))).toBe('2026-10-22T08:31:42'));});

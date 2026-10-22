@@ -1,5 +1,26 @@
 # Candid usability and safety review
 
+## Follow-up implementation: v0.6.0 / Build 2026.10.22.7
+
+Medication automation remains enabled for private testing. The original findings below are retained as the review history, not a claim that those software controls remain absent.
+
+| Recommendation | Implemented follow-up |
+| --- | --- |
+| Weight plausibility | Configurable rescue-defined range and change threshold; DOB/age and previous-weight context; warnings for missing policy, weight loss and out-of-range readings. Weight warnings require rechecked grams; configured, fresh, in-range weights do not require repeated reweighing. |
+| Measuring precision | Product/device details, reliable minimum and graduation size; explicit warnings for missing precision, tiny volumes and amounts between marks. Calculations remain active; no automatic rounding to a syringe mark. |
+| Actual-dose discrepancies | Live prescribed-versus-actual comparison and unit checking. Warnings require a reason, contact or “testing only” and explicit acknowledgment before a given entry can save. |
+| Timing | Rescue-defined minimum spacing, previous/following-dose checks for historical entries, and early-slot warnings. Existing daily counts and duplicate-slot protection remain. |
+| Product identity and audit | Per-dose snapshots retain the complete plan, product/preparation/device policy, instruction revision, weight/date, DOB/age, warnings and recorded exception. Later plan changes do not rewrite older snapshots. |
+| Tab conflicts and recovery | Web Locks with an IndexedDB transaction fallback, captured-revision checks, live storage updates, stale medication/settings edit checks, previous-save recovery export, backup reminders and recorded download-request time. |
+| Simpler navigation | Dose/route/next/last given first, expandable full details, direct care-queue review actions, explicit once/twice-daily profile labels and visible keyboard focus. Logging, dose review, profile and settings are separate components; caregiver notes are separate from built-in instructions. |
+| Caregiver testing | A task-based guide and result sheet are linked in Settings. Actual participant, physical-device and real screen-reader sessions remain outstanding. |
+
+Safety limits are user-supplied, not invented clinical defaults. A testing exception records what was reviewed; it is not veterinary approval. Unknown safety information is displayed as unknown rather than silently assumed safe. The software does not validate the rescue's prescription or the physical accuracy of a measuring device.
+
+Schema 8 preserves these controls and prevents older clients from loading a newer-schema backup. Close previously open older-version tabs before testing: old running code cannot be made to honor a newer locking protocol. Local recovery copies are not independent backups and can disappear with browser data. No cloud migration or public foster rollout was performed.
+
+See `VERIFICATION.md` for test results and `CAREGIVER-TEST-GUIDE.md` for the human checks that must not be represented as completed by automation.
+
 ## Release assessment
 
 The app is useful for supervised foster-care tracking, but the current medication workflow should not be treated as a validated medication administration system. A polished calculated number can create more confidence than the underlying checks warrant. Shelterluv remains the official rescue record.

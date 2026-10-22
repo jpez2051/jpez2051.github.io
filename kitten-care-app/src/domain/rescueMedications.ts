@@ -27,11 +27,12 @@ const PREVIOUS_INSTRUCTIONS:Record<string,string[]>={
 };
 const normalizedInstruction=(line:string)=>line.trim().replace(/\s+/g,' ').replace(/[–—]/g,'-');
 export function medicationAdditionalInstructions(medication:Medication):string {
+  const content=medication.rescueChart?.additionalInstructions??medication.instructions;
   const template=medication.rescueChart&&rescueTemplate(medication.rescueChart.templateId);
   if(!template)return medication.instructions;
   const builtIn=new Set([template.instructions,template.notes,...(PREVIOUS_INSTRUCTIONS[template.id]||[])].map(normalizedInstruction));
   const seen=new Set<string>();
-  return medication.instructions.split(/\r?\n/).filter(line=>{const key=normalizedInstruction(line);if(!key||builtIn.has(key)||seen.has(key))return false;seen.add(key);return true}).join('\n');
+  return content.split(/\r?\n/).filter(line=>{const key=normalizedInstruction(line);if(!key||builtIn.has(key)||seen.has(key))return false;seen.add(key);return true}).join('\n');
 }
 export function medicationInstructions(medication:Medication):string {
   const template=medication.rescueChart&&rescueTemplate(medication.rescueChart.templateId);

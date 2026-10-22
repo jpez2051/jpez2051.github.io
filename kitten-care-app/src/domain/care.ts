@@ -5,9 +5,9 @@ export function activeKittens(state: CareState): Kitten[] {
 }
 
 export function kittenEvents(state: CareState, kittenId: string, type?: CareEvent['type']): CareEvent[] {
-  return state.events
+  return state.events.slice().reverse()
     .filter((event) => event.kittenId === kittenId && !event.deletedAt && (!type || event.type === type))
-    .sort((a, b) => Date.parse(b.ts) - Date.parse(a.ts));
+    .sort((a, b) => Date.parse(b.ts) - Date.parse(a.ts) || Date.parse(b.createdAt)-Date.parse(a.createdAt) || 0);
 }
 
 export function latestWeight(state: CareState, kittenId: string): number | null {
@@ -44,5 +44,6 @@ export function localDateKey(date = new Date()): string {
 export function localDateTimeValue(date = new Date()): string {
   const hours = String(date.getHours()).padStart(2, '0');
   const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${localDateKey(date)}T${hours}:${minutes}`;
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  return `${localDateKey(date)}T${hours}:${minutes}:${seconds}`;
 }

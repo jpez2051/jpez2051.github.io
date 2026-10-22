@@ -2,6 +2,7 @@ import type { CareEventType, CareState, Medication } from './models';
 import { calculateDose } from './medication';
 import { givenMedicationSlots,medicationDosesPerDay,rescueDoseIssues } from './rescueMedications';
 import { kittenEvents,localDateKey } from './care';
+import { validateMedicationSafety } from './medicationSafety';
 
 export interface CareDraft {
   type: CareEventType;
@@ -42,6 +43,7 @@ export function validateCareDraft(state: CareState, draft: CareDraft, now = new 
     const status = String(draft.data.status || '');
     if (!['given', 'skipped', 'unable'].includes(status)) errors.push('Choose whether the dose was given, skipped, or unable to give.');
     if (status === 'given') {
+      if(medication&&state.version>=8)errors.push(...validateMedicationSafety(state,kitten,medication,draft.data,when,now));
       if (draft.data.confirmed !== true) errors.push('Confirm the kitten, medication, route, and dose before saving.');
       if (!positive(draft.data.adminAmount)) errors.push('Enter the actual positive amount given.');
       if (!String(draft.data.adminUnit || '').trim()) errors.push('Choose the unit actually given.');

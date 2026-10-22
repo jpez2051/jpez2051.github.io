@@ -1,3 +1,5 @@
+import { MedicationSafetyFields } from './MedicationSafetyFields';
+import { readMedicationSafety,safetyPolicyErrors } from '../domain/medicationSafety';
 import { useState,type ReactNode } from 'react';
 import { Dialog } from './Dialog';
 import { DateField } from './DateField';
@@ -23,6 +25,7 @@ function CustomMedicationForm({kitten,selector,onClose,onSave}:{kitten:Kitten;se
   return <Dialog title={`Add medication · ${kitten.name}`} onClose={onClose}><form onSubmit={async(event)=>{
     event.preventDefault();if(saving)return;
     const data=new FormData(event.currentTarget),manual=Number(data.get('manualDose')),rate=Number(data.get('rate')),concentration=Number(data.get('concentration')),start=String(data.get('startDate')),end=String(data.get('endDate'));
+    const safety=readMedicationSafety(data);if(safetyPolicyErrors(safety).length){setError(safetyPolicyErrors(safety).join(' '));return}
     if(mode==='manual'&&(!Number.isFinite(manual)||manual<=0)){setError('Enter a positive fixed amount.');return}
     if(mode==='weightBased'&&(!Number.isFinite(rate)||rate<=0||!Number.isFinite(concentration)||concentration<=0)){setError('Enter a positive prescribed rate and concentration.');return}
     if(end&&end<start){setError('End date cannot be before the start date.');return}
@@ -39,7 +42,7 @@ function CustomMedicationForm({kitten,selector,onClose,onSave}:{kitten:Kitten;se
     if(anchor&&(localDateKey(new Date(anchor))<start||(end&&localDateKey(new Date(anchor))>end)))errors.push('The first dose must fall within the prescription dates.');
     if(errors.length){setError(errors.join(' '));return}
     setSaving(true);setError('');
-    try{const saved=await onSave({id:createId('med'),name:String(data.get('name')).trim(),route:String(data.get('route')),source:String(data.get('source')),manualDose:mode==='manual'?String(manual):'',unit:String(data.get('unit')),doseCalc:{mode,rate:mode==='weightBased'?rate:undefined,rateUnit:String(data.get('rateUnit')) as 'mg/kg'|'mcg/kg',concentration:mode==='weightBased'?concentration:null},schedule,startDate:start,endDate:end,instructions:String(data.get('instructions'))});if(!saved)setError('The medication plan was not saved. Check browser storage and try again.')}finally{setSaving(false)}
+    try{const saved=await onSave({id:createId('med'),safety,name:String(data.get('name')).trim(),route:String(data.get('route')),source:String(data.get('source')),manualDose:mode==='manual'?String(manual):'',unit:String(data.get('unit')),doseCalc:{mode,rate:mode==='weightBased'?rate:undefined,rateUnit:String(data.get('rateUnit')) as 'mg/kg'|'mcg/kg',concentration:mode==='weightBased'?concentration:null},schedule,startDate:start,endDate:end,instructions:String(data.get('instructions'))});if(!saved)setError('The medication plan was not saved. Check browser storage and try again.')}finally{setSaving(false)}
   }}>
     {selector}
     <div className="warning"><b>Use current rescue or veterinary instructions.</b> Confirm the bottle concentration and prescribed schedule.</div>
@@ -57,6 +60,6 @@ function CustomMedicationForm({kitten,selector,onClose,onSave}:{kitten:Kitten;se
     {type==='oneTime'&&<label>One-time dose date and time<DateField name="oneTimeAt" type="datetime-local" required/></label>}
     {type==='prn'&&<p className="info">As-needed medication has no automatic due reminder. Follow the prescriber's criteria and limits.</p>}
     <label>Instructions<textarea name="instructions"/></label>
-    <div className="actions"><button type="button" className="secondary" onClick={onClose}>Cancel</button><button disabled={saving}>{saving?'Saving…':'Save medication plan'}</button></div>
+    <MedicationSafetyFields/><div className="actions"><button type="button" className="secondary" onClick={onClose}>Cancel</button><button disabled={saving}>{saving?'Saving…':'Save medication plan'}</button></div>
   </form></Dialog>;
 }

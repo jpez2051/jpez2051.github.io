@@ -24,11 +24,25 @@ export interface Medication {
   manualDose: string;
   unit: string;
   doseCalc: { mode: 'manual' | 'weightBased' | 'rescueChart'; rate?: number; rateUnit?: 'mg/kg' | 'mcg/kg'; concentration?: number | null };
-  rescueChart?: { templateId:string; revision:string; productConfirmed:boolean; vetTechApproval?:string; courseStartedElsewhere?:boolean };
+  rescueChart?: { templateId:string; revision:string; productConfirmed:boolean; vetTechApproval?:string; courseStartedElsewhere?:boolean;additionalInstructions?:string };
+  safety?: MedicationSafety;
   schedule: MedicationSchedule;
   startDate: string;
   endDate: string;
   instructions: string;
+}
+
+export interface MedicationSafety {
+  productLabel?:string;
+  preparation?:string;
+  approvedBy?:string;
+  deviceName?:string;
+  minimumMeasurableMl?:number;
+  incrementMl?:number;
+  minimumSpacingHours?:number;
+  minimumWeightG?:number;
+  maximumWeightG?:number;
+  maximumWeightChangePercent?:number;
 }
 
 export interface Kitten {

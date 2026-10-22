@@ -1,4 +1,6 @@
-import { useState,type ReactNode } from 'react';
+import { MedicationSafetyFields } from './MedicationSafetyFields';
+import { readMedicationSafety,safetyPolicyErrors } from '../domain/medicationSafety';
+import { useRef,useState,type ReactNode } from 'react';
 import { Dialog } from './Dialog';
 import { DateField } from './DateField';
 import { localDateKey } from '../domain/care';
@@ -9,28 +11,31 @@ import { calculateDose } from '../domain/medication';
 import { FIRST_DAY_COMPLETED,rescueDoseIssues,chartRateForDay,treatmentDay } from '../domain/rescueMedications';
 import { scheduleErrors } from '../domain/schedule';
 
-export function RescueMedicationForm({template,state,kitten,selector,onClose,onSave,existing}:{template:RescueMedicationTemplate;state:CareState;kitten:Kitten;selector:ReactNode;onClose:()=>void;onSave:(medication:Medication)=>Promise<boolean>;existing?:Medication}){
+export function RescueMedicationForm({template,state,kitten,selector,onClose,onSave,existing}:{template:RescueMedicationTemplate;state:CareState;kitten:Kitten;selector:ReactNode;onClose:()=>void;onSave:(medication:Medication,expectedPlan?:string)=>Promise<boolean>;existing?:Medication}){
+  const originalPlan=useRef(JSON.stringify(existing));
   const [start,setStart]=useState(existing?.startDate||localDateKey()),[days,setDays]=useState(existing?.endDate?(treatmentDay(existing.startDate,new Date(`${existing.endDate}T12:00:00`))||template.minDays):template.minDays),[saving,setSaving]=useState(false),[error,setError]=useState('');
   const [productConfirmed,setProductConfirmed]=useState(false),[courseStartedElsewhere,setCourseStartedElsewhere]=useState(existing?.rescueChart?.courseStartedElsewhere||false);
+  const [vetTechApproval,setVetTechApproval]=useState(existing?.rescueChart?.vetTechApproval||'');
   const issues=chartSetupIssues(template),weight=recentMedicationWeight(state,kitten.id);
   const end=/^\d{4}-\d{2}-\d{2}$/.test(start)?addCourseDays(start,days):'';
-  const preview:Medication={id:existing?.id||'chart-preview',name:template.name,route:'Oral',source:'Medication instructions',manualDose:'',unit:'mL',doseCalc:{mode:'rescueChart'},rescueChart:{templateId:template.id,revision:template.revision,productConfirmed,courseStartedElsewhere},schedule:{type:template.dosesPerDay===2?'twiceDaily':'daily',times:template.dosesPerDay===2?['08:00','20:00']:['08:00']},startDate:start,endDate:end,instructions:template.instructions};
+  const preview:Medication={id:existing?.id||'chart-preview',name:template.name,route:'Oral',source:'Medication instructions',manualDose:'',unit:'mL',doseCalc:{mode:'rescueChart'},rescueChart:{templateId:template.id,revision:template.revision,productConfirmed,courseStartedElsewhere,vetTechApproval},schedule:{type:template.dosesPerDay===2?'twiceDaily':'daily',times:template.dosesPerDay===2?['08:00','20:00']:['08:00']},startDate:start,endDate:end,instructions:template.instructions};
   const dose=calculateDose(state,kitten,preview),day=treatmentDay(start),rate=day?chartRateForDay(template,day):null;
   return <Dialog title={`${template.name} · ${kitten.name}`} onClose={onClose}><form onSubmit={async(event)=>{
     event.preventDefault();if(saving)return;
-    const data=new FormData(event.currentTarget);
+    if(existing&&JSON.stringify(existing)!==originalPlan.current){setError('This plan changed while you were reviewing it. Your edits are still here to copy. Close and reopen the plan before saving so another tab’s changes are not overwritten.');return}
+    const data=new FormData(event.currentTarget);const safety=readMedicationSafety(data);if(safetyPolicyErrors(safety).length){setError(safetyPolicyErrors(safety).join(' '));return}
     const schedule:Medication['schedule']={type:template.dosesPerDay===2?'twiceDaily':'daily',times:template.dosesPerDay===2?[String(data.get('time')),String(data.get('time2'))]:[String(data.get('time'))]};
     if(scheduleErrors(schedule).length){setError(scheduleErrors(schedule).join(' '));return}
     if(!start||!end||days<template.minDays||days>template.maxDays){setError('Confirm the treatment dates and approved course length.');return}
     if(template.requiresVetTech&&!String(data.get('vetTechApproval')||'').trim()){setError('Enter the approving rescue vet tech before saving this plan.');return}
     if(!issues.length){const doseIssues=rescueDoseIssues(state,kitten,{...preview,rescueChart:{...preview.rescueChart!,vetTechApproval:String(data.get('vetTechApproval')||'').trim()}}).filter(issue=>issue!==FIRST_DAY_COMPLETED);if(doseIssues.length){setError(doseIssues.join(' '));return}}
-    const medication:Medication={id:existing?.id||createId('med'),name:template.name,route:'Oral',source:'Medication instructions supplied 2026-10-22',manualDose:'',unit:'mL',doseCalc:{mode:'rescueChart'},rescueChart:{templateId:template.id,revision:template.revision,productConfirmed:data.get('productConfirmed')==='on',vetTechApproval:String(data.get('vetTechApproval')||'').trim(),courseStartedElsewhere:data.get('courseStartedElsewhere')==='on'},schedule,startDate:start,endDate:end,instructions:`${template.instructions}\n${template.notes}\n${String(data.get('notes')||'')}`};
-    setSaving(true);setError('');try{if(!await onSave({...medication,instructions:medicationInstructions(medication)}))setError('The plan was not saved. Check browser storage and try again.')}finally{setSaving(false)}
+    const medication:Medication={id:existing?.id||createId('med'),name:template.name,route:'Oral',source:'Medication instructions supplied 2026-10-22',manualDose:'',unit:'mL',doseCalc:{mode:'rescueChart'},rescueChart:{templateId:template.id,revision:template.revision,productConfirmed:data.get('productConfirmed')==='on',vetTechApproval:String(data.get('vetTechApproval')||'').trim(),courseStartedElsewhere:data.get('courseStartedElsewhere')==='on',additionalInstructions:String(data.get('notes')||'')},safety,schedule,startDate:start,endDate:end,instructions:`${template.instructions}\n${template.notes}\n${String(data.get('notes')||'')}`};
+    setSaving(true);setError('');try{if(!await onSave({...medication,rescueChart:{...medication.rescueChart!,additionalInstructions:medicationAdditionalInstructions(medication)},instructions:medicationInstructions(medication)},originalPlan.current))setError('The plan was not saved. Check browser storage and try again.')}finally{setSaving(false)}
   }}>
     {selector}
     <p className="info">Select a medication because the rescue prescribed it for this kitten; the app does not choose a treatment. The rate applies to the rescue-supplied product covered by these instructions.</p>
     <section className="chart-reference"><h3>Medication instructions</h3><p><b>When the rescue uses it:</b> {template.indication}</p><p><b>Dosing instructions:</b> {template.instructions}</p><p><b>Notes:</b> {template.notes}</p></section>
-    {template.requiresVetTech&&<div className="validation-summary"><b>Rescue vet-tech approval is required.</b><label>Approving vet tech and approval reference *<input name="vetTechApproval" defaultValue={existing?.rescueChart?.vetTechApproval||''} required placeholder="Name and date or instruction reference"/></label></div>}
+    {template.requiresVetTech&&<div className="validation-summary"><b>Rescue vet-tech approval is required.</b><label>Approving vet tech and approval reference *<input name="vetTechApproval" value={vetTechApproval} onChange={event=>setVetTechApproval(event.target.value)} required placeholder="Name and date or instruction reference"/></label></div>}
     <section className="weight-check"><h3>Recorded weight</h3>{weight?<><p><b>{weight.grams} g · {weight.pounds.toFixed(3)} lb</b></p><p>Recorded {new Date(weight.recordedAt).toLocaleString()}</p><p>{weight.fresh?'Within the 24-hour medication weight limit.':'Too old for a medication calculation. Record a new weight first.'}</p></>:<p>No valid current weight. Record a weight before using a medication calculation.</p>}</section>
     {issues.length>0&&<div className="validation-summary" role="status"><b>Medication details awaiting confirmation</b><ul>{issues.map((issue)=><li key={issue}>{issue}</li>)}</ul><p>This entry can be saved as a draft reference. It cannot calculate an administration amount or be logged as given yet.</p></div>}
     <div className="two"><label>Actual first treatment date<DateField name="startDate" value={start} onChange={(event)=>setStart(event.target.value)} required/></label><label>Course length in days{template.minDays===template.maxDays?<input readOnly value={days}/>:<select value={days} onChange={(event)=>setDays(Number(event.target.value))}>{Array.from({length:template.maxDays-template.minDays+1},(_,index)=>index+template.minDays).map((day)=><option key={day} value={day}>{day} days</option>)}</select>}</label></div>
@@ -41,7 +46,7 @@ export function RescueMedicationForm({template,state,kitten,selector,onClose,onS
     <label className="check"><input name="productConfirmed" type="checkbox" disabled={issues.length>0} checked={productConfirmed} onChange={(event)=>setProductConfirmed(event.target.checked)}/> The product supplied matches the prescribed preparation (prepared liquid supplied or confirmed by the rescue, not an unconfirmed home mixture)</label>
     {template.firstDayMlPerLb!==template.laterMlPerLb&&<label className="check"><input name="courseStartedElsewhere" type="checkbox" checked={courseStartedElsewhere} onChange={(event)=>setCourseStartedElsewhere(event.target.checked)}/> Day 1 dose was already given outside this app</label>}
     {courseStartedElsewhere&&<p className="info">Enter the actual date day 1 was given above. If that was today, do not give another dose today. If it was yesterday, today is day 2. Checking this box does not change the date.</p>}{!issues.length&&<section className="dose-confirm" aria-live="polite"><h3>Today’s calculation</h3>{day&&rate&&dose?<p>Treatment day {day} of {days} · {rate} mL/lb</p>:<p>No dose amount is available right now.</p>}{dose&&dose.ml!==null?<><p className="calculated-amount">Calculated amount for this dose: <strong>{dose.ml.toFixed(3)} mL</strong></p><p>{dose.weightG} g ÷ 453.59237 g/lb × {dose.rateMlPerLb} mL/lb</p></>:<p>{rescueDoseIssues(state,kitten,preview).join(' ')}</p>}</section>}
-    <label>Additional rescue instructions<textarea name="notes" defaultValue={existing?medicationAdditionalInstructions(existing):''}/></label>
+    <MedicationSafetyFields value={existing?.safety}/><label>Additional rescue instructions<textarea name="notes" defaultValue={existing?medicationAdditionalInstructions(existing):''}/></label>
     {error&&<div className="validation-summary" role="alert">{error}</div>}
     <div className="actions"><button type="button" className="secondary" onClick={onClose}>Cancel</button><button disabled={saving}>{saving?'Saving…':issues.length?'Save medication draft':'Save medication plan'}</button></div>
   </form></Dialog>;
