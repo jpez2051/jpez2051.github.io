@@ -6,18 +6,27 @@ export const MAX_MEDICATION_WEIGHT_AGE_HOURS=24;
 export interface RescueMedicationTemplate {
   id:string;name:string;revision:string;indication:string;instructions:string;
   notes:string;firstDayMlPerLb:number;laterMlPerLb:number;minDays:number;maxDays:number;
-  preparationReference:string|null;frequencyConfirmed:boolean;nameConfirmed:boolean;requiresVetTech:boolean;
+  preparationReference:string|null;frequencyConfirmed:boolean;nameConfirmed:boolean;requiresVetTech:boolean;dosesPerDay?:1|2;
 }
 
 // Source: chart text supplied by the rescue owner on 2026-10-22.
 // No product strength, dosing frequency, or spelling correction is inferred.
 export const RESCUE_MEDICATIONS:RescueMedicationTemplate[]=[
   {id:'albon',name:'Albon',revision:'2026-10-22.2',indication:'“icky poo, possibly coccidia.”',instructions:'Once daily: 0.5 mL/lb on treatment day 1, then 0.25 mL/lb on days 2–14 (13 more days).',notes:'No storage or expiration information supplied.',firstDayMlPerLb:0.5,laterMlPerLb:0.25,minDays:14,maxDays:14,preparationReference:'Rescue-supplied Albon liquid covered by this mL/lb chart; confirm the bottle matches rescue instructions.',frequencyConfirmed:true,nameConfirmed:true,requiresVetTech:false},
-  {id:'azithromycin',name:'Azithromycin',revision:'2026-10-22.1',indication:'antibiotic for upper respiratory infections when others have not worked.',instructions:'0.1 mL/lb for 10 days. Any extension requires new rescue/veterinary instructions.',notes:'Supplied instructions say to dissolve a pill in 5 mL water. Pill strength and final preparation must be confirmed before this is used as a mixing instruction.',firstDayMlPerLb:0.1,laterMlPerLb:0.1,minDays:10,maxDays:10,preparationReference:null,frequencyConfirmed:false,nameConfirmed:true,requiresVetTech:false},
-  {id:'baytril',name:'Baytril (enrofloxacin)',revision:'2026-10-22.1',indication:'powerful oral medication for bacterial infections.',instructions:'0.022 mL/lb for a rescue-approved course of 5–10 days. Use only for the approved duration.',notes:'Must be approved by the rescue vet tech. The rescue liquid formulation needs confirmation.',firstDayMlPerLb:0.022,laterMlPerLb:0.022,minDays:5,maxDays:10,preparationReference:null,frequencyConfirmed:false,nameConfirmed:true,requiresVetTech:true},
+  {id:'azithromycin',name:'Azithromycin',revision:'2026-10-22.3',indication:'antibiotic for upper respiratory infections when others have not worked.',instructions:'Once daily: 0.1 mL/lb per dose for 10 days. May be extended in serious conditions only with updated rescue/veterinary instructions.',notes:'Use prepared liquid supplied or confirmed by the rescue. The earlier pill-in-5-mL note is incomplete and must not be used as a mixing recipe.',firstDayMlPerLb:0.1,laterMlPerLb:0.1,minDays:10,maxDays:10,preparationReference:'Prepared liquid supplied or confirmed by the rescue for these mL/lb instructions.',frequencyConfirmed:true,nameConfirmed:true,requiresVetTech:false},
+  {id:'baytril',name:'Baytril (enrofloxacin)',revision:'2026-10-22.3',indication:'powerful oral medication for bacterial infections.',instructions:'Once daily: 0.022 mL/lb per dose for a prescribed course of 5–10 days. Use only for the approved duration.',notes:'Must be approved by the rescue vet tech. Use prepared liquid supplied or confirmed by the rescue for these instructions.',firstDayMlPerLb:0.022,laterMlPerLb:0.022,minDays:5,maxDays:10,preparationReference:'Prepared liquid supplied or confirmed by the rescue for these mL/lb instructions.',frequencyConfirmed:true,nameConfirmed:true,requiresVetTech:true},
+  {id:'clavamox',name:'Clavamox',revision:'2026-10-22.1',indication:'Use only when prescribed by the rescue or veterinarian.',instructions:'Twice daily: 0.1 mL/lb per dose for a prescribed course of 5–7 days.',notes:'Use prepared liquid supplied or confirmed by the rescue. No storage or expiration instructions were supplied.',firstDayMlPerLb:0.1,laterMlPerLb:0.1,minDays:5,maxDays:7,preparationReference:'Prepared liquid supplied or confirmed by the rescue for these mL/lb instructions.',frequencyConfirmed:true,nameConfirmed:true,requiresVetTech:false,dosesPerDay:2},
 ];
 
 export function rescueTemplate(id:string){return RESCUE_MEDICATIONS.find((template)=>template.id===id)}
+export function medicationDosesPerDay(medication:Medication){return rescueTemplate(medication.rescueChart?.templateId||'')?.dosesPerDay||1}
+export function givenMedicationSlots(state:CareState,kittenId:string,medication:Medication,date:Date):Set<string>{
+  const times=[...(medication.schedule.times||[])].sort(),slots=new Set<string>();
+  const given=kittenEvents(state,kittenId,'medication').filter(e=>e.data.medId===medication.id&&e.data.status==='given'&&localDateKey(new Date(e.ts))===localDateKey(date));
+  for(const event of given)if(times.includes(String(event.data.doseSlot)))slots.add(String(event.data.doseSlot));
+  for(const event of given)if(!times.includes(String(event.data.doseSlot))){const free=times.find(time=>!slots.has(time));if(free)slots.add(free)}
+  return slots;
+}
 export const FIRST_DAY_COMPLETED = 'Day 1 was already completed today. Do not give another dose today. The day-2 amount starts tomorrow. If day 1 was completed earlier, correct the actual first treatment date.';
 export function chartSetupIssues(template:RescueMedicationTemplate):string[]{
   const issues:string[]=[];
@@ -53,6 +62,8 @@ export function rescueDoseIssues(state:CareState,kitten:Kitten,medication:Medica
   if(!template)return ['Choose a valid medication.'];
   const issues=chartSetupIssues(template);
   if(reference!.revision!==template.revision)issues.push('The medication instructions changed. Review this plan before use.');
+  const count=template.dosesPerDay||1,times=medication.schedule.times||[];
+  if(medication.schedule.type!==(count===2?'twiceDaily':'daily')||times.length!==count||new Set(times).size!==count||times.some(time=>!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)))issues.push('Review the plan and confirm its daily dose times.');
   if(!reference!.productConfirmed)issues.push('Confirm the supplied product matches the rescue preparation.');
   if(template.requiresVetTech&&!reference!.vetTechApproval?.trim())issues.push('Record rescue vet-tech approval before use.');
   const weight=recentMedicationWeight(state,kitten.id,now);

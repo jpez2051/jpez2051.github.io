@@ -78,3 +78,13 @@ All 61 automated tests, the production build, and the browser regression checks 
 The logging panel is titled How to give and describes dosing method and route without repeating the selected kitten or medication. Saved administration instructions and notes are now shown for all medications, alongside the distinct per-dose amount. Fixed prescriptions retain their prescribed amount. Dropdown selection and confirmation safeguards are unchanged.
 
 All 62 automated tests and the production build passed. Browser checks verify Albon, Azithromycin and Baytril instructions in the logging panel, absence of redundant names, and continued blocking for incomplete preparations/frequencies. No medication rates, frequency assumptions, approval requirements or historical care records were changed.
+
+## Confirmed medication frequencies: 0.5.0 / 2026.10.22.5
+
+Owner-confirmed frequencies: Azithromycin once daily, 0.1 mL/lb per dose for 10 days; Baytril once daily, 0.022 mL/lb per dose for a prescribed 5–10 days; new Clavamox twice daily, 0.1 mL/lb per dose for a prescribed 5–7 days. These are owner-supplied instructions, not a general inference that course length determines frequency.
+
+All four library entries calculate from recent weight after confirmation of the prepared rescue-supplied/confirmed product. Baytril still requires vet-tech approval. The incomplete azithromycin mixing note remains non-executable; no strength was guessed. Existing affected drafts require review and reconfirmation; ID and care history remain unchanged.
+
+Clavamox stores two scheduled times and the selected dose slot with each given event. Duplicate slots and a third daily administration are blocked; reminder calculations preserve the second dose after the first is given. Course duration, existing notes, and approval references are preserved during plan review.
+
+All 64 automated tests, the production build and browser regression checks passed. Browser checks include activated Azithromycin and approved Baytril calculations, Clavamox first/second dose logging and duplicate rejection, and unchanged Albon day-1 completion safeguards. V2 and legacy V3 assets were not modified. Existing preview limitations listed earlier remain.

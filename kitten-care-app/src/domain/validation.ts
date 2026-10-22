@@ -1,6 +1,6 @@
 import type { CareEventType, CareState, Medication } from './models';
 import { calculateDose } from './medication';
-import { rescueDoseIssues } from './rescueMedications';
+import { givenMedicationSlots,medicationDosesPerDay,rescueDoseIssues } from './rescueMedications';
 import { kittenEvents,localDateKey } from './care';
 
 export interface CareDraft {
@@ -49,7 +49,9 @@ export function validateCareDraft(state: CareState, draft: CareDraft, now = new 
         errors.push(...rescueDoseIssues(state,kitten,medication,now));
         if(draft.data.adminUnit!=='mL')errors.push('Calculated doses must be recorded in mL.');
         if(Number.isFinite(when.getTime())&&localDateKey(when)!==localDateKey(now))errors.push('Do not use today’s chart calculation to record a dose for a different treatment day. Confirm historical instructions with the rescue.');
-        if(kittenEvents(state,kitten.id,'medication').some((event)=>event.data.medId===medication.id&&event.data.status==='given'&&localDateKey(new Date(event.ts))===localDateKey(when)))errors.push('A dose is already recorded for this treatment day. Review the care record before giving another.');
+        const given=kittenEvents(state,kitten.id,'medication').filter(event=>event.data.medId===medication.id&&event.data.status==='given'&&localDateKey(new Date(event.ts))===localDateKey(when));
+        if(given.length>=medicationDosesPerDay(medication))errors.push('All prescribed doses are already recorded for this treatment day. Review the care record before giving another.');
+        if(medicationDosesPerDay(medication)===2){const slot=String(draft.data.doseSlot||'');if(!medication.schedule.times?.includes(slot))errors.push('Choose which scheduled dose you are recording.');else if(givenMedicationSlots(state,kitten.id,medication,when).has(slot))errors.push('That scheduled dose is already recorded. Do not give it again.');}
       }
       if (medication?.doseCalc.mode === 'weightBased') {
         const dose = calculateDose(state, kitten, medication, now);

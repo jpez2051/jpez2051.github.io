@@ -1,6 +1,6 @@
 import type { CareState, Kitten, Medication, MedicationSchedule } from './models';
 import { kittenEvents, localDateKey } from './care';
-import { chartSetupIssues,rescueTemplate } from './rescueMedications';
+import { chartSetupIssues,givenMedicationSlots,rescueTemplate } from './rescueMedications';
 
 const weekdays=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const validTime=(time:string)=>/^([01]\d|2[0-3]):[0-5]\d$/.test(time);
@@ -29,6 +29,7 @@ export function medicationScheduleIssue(state:CareState,kitten:Kitten,medication
   if(medication.doseCalc.mode==='rescueChart'){
     const template=medication.rescueChart&&rescueTemplate(medication.rescueChart.templateId);
     if(!template)return 'Medication entry unavailable. Review the plan.';
+    if(medication.rescueChart?.revision!==template.revision)return 'The medication instructions changed. Review this plan before use.';
     const issues=chartSetupIssues(template);
     if(issues.length)return issues.join(' ');
     if(!medication.rescueChart?.productConfirmed)return 'Confirm the product matches the prescribed preparation.';
@@ -75,7 +76,7 @@ export function nextMedicationDue(state:CareState,kitten:Kitten,medication:Medic
   for(let day=0;day<8;day++){
     const date=new Date(firstDay);date.setDate(firstDay.getDate()+day);
     if(schedule.type==='specificDays'&&!schedule.days?.includes(weekdays[date.getDay()]))continue;
-    for(const time of times){const [hours,minutes]=time.split(':').map(Number);const candidate=new Date(date);candidate.setHours(hours,minutes,0,0);const alreadyGiven=medication.doseCalc.mode==='rescueChart'&&given&&localDateKey(candidate)===localDateKey(new Date(given.ts));if(allowed(candidate)&&(!last||candidate>last)&&!alreadyGiven)return candidate;}
+    for(const time of times){const [hours,minutes]=time.split(':').map(Number);const candidate=new Date(date);candidate.setHours(hours,minutes,0,0);const chart=medication.doseCalc.mode==='rescueChart',alreadyGiven=chart&&givenMedicationSlots(state,kitten.id,medication,candidate).has(time);if(allowed(candidate)&&(!last||chart||candidate>last)&&!alreadyGiven&&!(chart&&medication.rescueChart?.courseStartedElsewhere&&localDateKey(candidate)===medication.startDate))return candidate;}
   }
   return null;
 }
