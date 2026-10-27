@@ -9,16 +9,16 @@
   <meta http-equiv="Expires" content="0">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="ʻŌlelo Hawaiʻi">
-  <base href="https://cdn.jsdelivr.net/gh/jpez2051/olelo-hawaii@e79a972c846ddaf89c452ffae623185b4aed2c9d/">
+  <base href="https://cdn.jsdelivr.net/gh/jpez2051/olelo-hawaii@f6438ced34af788987db46311950e6cc806b7921/">
   <title>ʻŌlelo Hawaiʻi — Learn to use the language</title>
-  <link rel="stylesheet" href="./css/app.css?v=6.0.0">
+  <link rel="stylesheet" href="./css/app.css?v=7.0.0">
 </head>
 <body>
   <header class="site-header">
     <div class="header-inner">
       <p class="eyebrow" lang="haw">E ola ka ʻōlelo Hawaiʻi</p>
       <h1 lang="haw">ʻŌlelo Hawaiʻi</h1>
-      <p class="subtitle">Build understanding, listening, memory, and the ability to follow connected Hawaiian meaning.</p>
+      <p class="subtitle">Build accurate pronunciation, listening, memory, and whole-message Hawaiian comprehension.</p>
     </div>
   </header>
 
@@ -35,7 +35,7 @@
         <div>
           <p class="section-kicker">Your path</p>
           <h2 id="learn-title">Build the language in stages</h2>
-          <p>Build from sound and spelling into pronouns, noun phrases, action patterns, questions, possession, and mixed whole-sentence comprehension. The same grammar returns in new contexts so you learn meaning relationships instead of memorizing isolated answers.</p>
+          <p>Start by learning how Hawaiian spelling carries sound, then build pronouns, noun phrases, action patterns, questions, possession, and whole-sentence comprehension. Hints fade as evidence gets stronger, and familiar grammar returns in new sourced contexts.</p>
         </div>
         <button id="start-due-btn" class="primary-btn">Practice what’s due</button>
       </div>
@@ -77,6 +77,23 @@
           <p id="instruction" class="instruction"></p>
           <div id="prompt" class="prompt"></div>
           <p id="support" class="support-text"></p>
+
+          <details id="sound-guide-panel" class="sound-guide" hidden>
+            <summary>Sound guide</summary>
+            <div id="sound-guide-content"></div>
+          </details>
+
+          <div id="pronunciation-panel" class="pronunciation-panel" hidden>
+            <p class="study-label">Pronunciation foundation</p>
+            <div id="pronunciation-source" class="pronunciation-source" lang="haw"></div>
+            <div class="sentence-pattern-heading">
+              <p class="study-label">What to notice</p>
+              <span id="pronunciation-rule" class="tag"></span>
+            </div>
+            <ul id="pronunciation-notes" class="study-notes"></ul>
+            <p id="pronunciation-language-note" class="sentence-note"></p>
+            <button id="pronunciation-continue-btn" class="primary-btn" type="button">Continue</button>
+          </div>
 
           <div id="choice-panel" class="choice-panel" hidden>
             <p class="study-label">Check your understanding</p>
@@ -192,8 +209,8 @@
       </div>
 
       <div class="panel">
-        <h3>Mastery means remembering</h3>
-        <p>Scored practice separates spelling, pronouns/participants, noun phrases, sentence patterns, questions, possession, and whole-sentence comprehension. Mixed checkpoints test whether those skills transfer across contexts; Immersion remains unscored exposure.</p>
+        <h3>Mastery means more than recognition</h3>
+        <p>Scored practice separates spelling, pronunciation, pronouns/participants, noun phrases, sentence patterns, questions, possession, and whole-sentence comprehension. Recognition counts as weaker evidence than unaided recall or transfer in a new context; Immersion remains unscored exposure.</p>
         <div class="data-actions">
           <button id="export-btn" class="secondary-btn">Export progress</button>
           <button id="reset-btn" class="danger-btn">Reset local progress</button>
@@ -204,7 +221,7 @@
 
   <footer class="site-footer">
     <span lang="haw">E hoʻomau i ke aʻo ʻana.</span> Keep learning.
-    <span class="site-version">Version 6.0.0</span>
+    <span class="site-version">Version 7.0.0</span>
   </footer>
 
   <script>
@@ -220,6 +237,6 @@
       }, true);
     })();
   </script>
-  <script type="module" src="./js/app.js?v=6.0.0"></script>
+  <script type="module" src="./js/app.js?v=7.0.0"></script>
 </body>
 </html>
