@@ -123,7 +123,7 @@ async function administrationInstructions(page){
     await populatedPage.getByRole('button',{name:'Download backup'}).click();
     const download=await downloadEvent;
     const downloaded=JSON.parse(fs.readFileSync(await download.path(),'utf8'));
-    assert.deepEqual(downloaded.kittens,fixture.kittens);
+    assert.deepEqual(downloaded.kittens.map(({careStays,...kitten})=>kitten),fixture.kittens);assert.equal(downloaded.version,9);assert.equal(downloaded.kittens[0].careStays[0].arrival,'');
     assert.deepEqual(downloaded.events,fixture.events);
     const invalidNotice=populatedPage.waitForEvent('dialog');
     await populatedPage.locator('input[type=file]').setInputFiles({name:'invalid.json',mimeType:'application/json',buffer:Buffer.from('{"unexpected":true}')});

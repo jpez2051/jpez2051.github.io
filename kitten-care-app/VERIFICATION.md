@@ -125,3 +125,18 @@ Human/clinical work not claimed complete: caregiver participant sessions, real s
 84 automated tests and the production build passed. Added domain regressions distinguish setup from given-dose validation, including missing/stale weights, future starts, product confirmation, and skipped/unable entries. Chrome regressions create and review Albon plans with no weight and with a 25-hour-old weight, verify exactly one saved plan and no dose records, and confirm given-dose submission remains disabled. Existing regression coverage remains in place. No schema change, clinical rate change, Firebase work, V2 edit or legacy V3 edit.
 
 Further source review and the proposed design/automation/AI roadmap are in POST-UPDATE-REVIEW-2026-10-29.md. Findings there are recommendations, not claims of completed implementation or human/clinical validation.
+
+## Foster companion and care stays: 0.7.0 / 2026.10.29.2
+
+Schema 9 adds care stays per kitten. Existing kittens retain their identity, care events, medication plans, settings and photos. Imported records receive an open or closed stay based on existing in-care status, with unknown dates/outcomes explicitly retained. No arrival date is inferred from DOB or the first log.
+
+- My Journey: unique kitten count, current count, number of stays, inclusive calendar days per stay, departure totals, name/litter/marking search and current/past/outcome filters. Date estimates and missing durations are visible. Transfers and Petco departures remain distinct from adoption.
+- Add past care to a new or existing kitten, or enter a past litter together. Earlier stays do not create feeding/medication events. Record a return under the existing kitten ID. Return requires review of existing care plans and preserves medication start/end dates.
+- Departure closes the stay and removes the kitten from active lists, logging options and care queues while preserving records. Corrections require a reason and retain previous stay details; stale edits and overlapping/duplicate-open stays are rejected. Same-day departure/return boundaries are allowed.
+- Profiles show stays and filterable chronological care history, with progressively loaded records. Past profiles preserve history without daily logging controls. Handoff summary now uses the most recent successful feeding rather than a refused attempt.
+- Warmer responsive visual design, prominent next-action card, kitten overview, clearer six-destination navigation, large text and reduced-motion support. Optional locally resized photos for new kittens and historical entries.
+- Fixed Save & add another: reads the clicked submit button, waits for saving, clears the next kitten form and preserves the litter DOB.
+
+92 domain/migration/storage tests passed. Production type-check/build passed. Browser coverage includes existing medication, failed-save, migration, offline, accessibility/reflow and simultaneous-tab regressions, plus a dedicated journey suite for historical entries, approximate dates, bulk litter entry, photo import, return without duplicate kitten, departures, correction history, care-history filters, phone/desktop reflow, reload and full backup preservation. Screenshot review covers phone and desktop Today/Journey views. Browser scripts: scripts/browser-check.cjs and scripts/journey-check.cjs.
+
+This is a working companion foundation, not a complete guided-round or AI release. No AI provider, automatic clinical advice, background push notifications, cloud accounts or external messaging was added. Older tabs must be closed before using schema 9. Human caregiver/screen-reader sessions and clinical validation remain outstanding.

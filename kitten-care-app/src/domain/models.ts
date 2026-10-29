@@ -46,6 +46,7 @@ export interface MedicationSafety {
 }
 
 export interface Kitten {
+  careStays?: CareStay[];
   id: Id;
   name: string;
   litterId: Id | null;
@@ -58,6 +59,21 @@ export interface Kitten {
   medications: Medication[];
   photo: string | null;
   carePlan: CarePlan;
+}
+
+export type Departure = 'another-foster' | 'adopted' | 'petco' | 'rescue' | 'deceased' | 'other' | 'unknown';
+export interface CareStay {
+  id: Id;
+  arrival: string;
+  departure: string;
+  closed: boolean;
+  approximate: boolean;
+  from: string;
+  destination: string;
+  outcome: Departure;
+  notes: string;
+  createdAt: string;
+  revisions?: Array<{at:string;reason:string;previous:string}>;
 }
 
 export interface Litter {

@@ -21,3 +21,9 @@ The local repository automatically imports existing `a4a-kitten-care-v3` browser
 - The production build includes a web app manifest and service worker for installability and offline reopening.
 
 Firebase authentication, authorization rules, cloud backup, and multi-device conflict handling are intentionally deferred until the Firebase deployment phase.
+
+## Foster companion (0.7.0)
+
+Use My journey to record past care, grouped past litters, departures and returns. Open a kitten for its stay timeline and filterable care history. Historical dates may remain unknown or be marked approximate; counts describe personal fostering activity rather than official rescue records. Departures stop active care tasks without deleting records. Returns reuse the existing kitten identity and require review of care plans. Save a backup before updating and close older tabs.
+
+Run scripts/browser-check.cjs and scripts/journey-check.cjs with Playwright available for production-build browser verification. AI and background delivery remain future work; current next-action suggestions use the tested care queue.

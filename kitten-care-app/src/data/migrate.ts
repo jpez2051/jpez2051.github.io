@@ -1,6 +1,7 @@
-import type { CareState, Kitten, Litter, Medication } from '../domain/models';
+import type { CareState, Kitten, Litter, Medication, CareStay } from '../domain/models';
+import {stayErrors} from '../domain/journey';
 
-export const APP_SCHEMA_VERSION = 8;
+export const APP_SCHEMA_VERSION = 9;
 
 export function emptyState(): CareState {
   return { version: APP_SCHEMA_VERSION, kittens: [], litters: [], events: [], settings: {} };
@@ -17,6 +18,14 @@ export function restoreBackup(value: unknown): CareState {
   }
   if(raw.events.some((event)=>!event.data||typeof event.data!=='object'||Array.isArray(event.data)||!Number.isFinite(Date.parse(event.ts))||!raw.kittens!.some((kitten)=>kitten.id===event.kittenId))) throw new Error('Invalid care history');
   for(const kitten of raw.kittens){
+    if(kitten.careStays!==undefined){
+      if(!Array.isArray(kitten.careStays))throw new Error('Invalid care stays');
+      const stays=kitten.careStays;
+      if(new Set(stays.map(s=>s?.id)).size!==stays.length)throw new Error('Duplicate care stays');
+      for(const stay of stays){if(!stay||typeof stay.id!=='string'||!stay.id||typeof stay.closed!=='boolean'||typeof stay.approximate!=='boolean'||['arrival','departure','from','destination','notes','createdAt'].some(key=>typeof stay[key as keyof CareStay]!=='string')||!Number.isFinite(Date.parse(stay.createdAt))||stayErrors(stay,stays).length)throw new Error('Invalid care stay');
+      if(stay.revisions!==undefined&&(!Array.isArray(stay.revisions)||stay.revisions.some(r=>!r||typeof r.reason!=='string'||typeof r.previous!=='string'||!Number.isFinite(Date.parse(r.at)))))throw new Error('Invalid stay corrections');}
+      if(stays.length&&stays.some(s=>!s.closed)!==kitten.inFosterCare)throw new Error('Care stay status does not match kitten');
+    }
     if(kitten.medications!==undefined&&!Array.isArray(kitten.medications))throw new Error('Invalid medication plans');
     const medications=kitten.medications||[];
     if(medications.some(medication=>!medication||typeof medication!=='object'||typeof medication.id!=='string'||!medication.id)||new Set(medications.map(medication=>medication.id)).size!==medications.length)throw new Error('Invalid medication identity');
@@ -67,6 +76,7 @@ export function migrateState(value: unknown): CareState {
     },
   }));
 
+  for(const kitten of kittens)if(!kitten.careStays?.length)kitten.careStays=[{id:`legacy-stay-${kitten.id}`,arrival:'',departure:'',closed:!kitten.inFosterCare,approximate:false,from:'',destination:'',outcome:'unknown',notes:'Imported existing record. Care dates and outcome have not been confirmed.',createdAt:new Date().toISOString()}];
   return {
     version: APP_SCHEMA_VERSION,
     kittens,
