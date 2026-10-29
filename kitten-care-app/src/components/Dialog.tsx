@@ -1,3 +1,4 @@
+import {Icon} from './Icon';
 import type { PropsWithChildren } from 'react';
 import { useEffect, useRef } from 'react';
 
@@ -28,7 +29,7 @@ export function Dialog({ title, onClose, children }: DialogProps) {
 
   return <div className="overlay" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
     <div className="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title" tabIndex={-1} ref={panel}>
-      <header className="dialog-head"><h2 id="dialog-title">{title}</h2><button className="icon-close" aria-label="Close dialog" onClick={onClose}>×</button></header>
+      <header className="dialog-head"><h2 id="dialog-title">{title}</h2><button className="icon-close" aria-label="Close dialog" onClick={onClose}><Icon name="close"/></button></header>
       {children}
     </div>
   </div>;

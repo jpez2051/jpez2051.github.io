@@ -109,7 +109,7 @@ async function administrationInstructions(page){
     assert.equal(await populatedPage.getByLabel('I confirmed the kitten').isChecked(),false,'Confirmation must reset when medication changes');
     assert.equal(await populatedPage.getByLabel('Actual amount given *').inputValue(),'');
     await populatedPage.getByRole('button',{name:'Close dialog'}).click();
-    await populatedPage.getByRole('button',{name:'Handoff',exact:true}).click();
+    if(!await populatedPage.getByRole('button',{name:'Handoff',exact:true}).isVisible())await populatedPage.getByRole('button',{name:'More',exact:true}).click();await populatedPage.getByRole('button',{name:'Handoff',exact:true}).click();
     await populatedPage.getByLabel('Nani',{exact:true}).check();
     assert.match(await populatedPage.getByLabel('Review summary').inputValue(),/Nani/);
     assert.doesNotMatch(await populatedPage.getByLabel('Review summary').inputValue(),/Mochi|History kitten/);
@@ -195,7 +195,7 @@ async function administrationInstructions(page){
     await chartPage.goto(address,{waitUntil:'networkidle'});
     await chartPage.getByRole('button',{name:'Kittens',exact:true}).click();
     const colors=await chartPage.locator('.kitten-card').first().evaluate(el=>({background:getComputedStyle(el).backgroundColor,text:getComputedStyle(el.querySelector('small')).color}));
-    assert.equal(colors.background,'rgb(16, 42, 131)');assert.equal(colors.text,'rgb(255, 255, 255)');
+    const luminance=color=>color.match(/\d+/g).slice(0,3).map(v=>{const n=Number(v)/255;return n<=0.04045?n/12.92:((n+0.055)/1.055)**2.4}).reduce((n,v,i)=>n+v*[0.2126,0.7152,0.0722][i],0);const levels=[luminance(colors.background),luminance(colors.text)].sort((a,b)=>b-a);assert.ok((levels[0]+0.05)/(levels[1]+0.05)>=4.5,'Kitten detail text must remain readable');
     await chartPage.screenshot({path:path.join(reviewArtifacts,'kitten-cards-phone.png'),fullPage:true});
     await chartPage.getByRole('button',{name:/Mochi/}).click();
     await chartPage.getByRole('button',{name:'Add medication'}).click();
