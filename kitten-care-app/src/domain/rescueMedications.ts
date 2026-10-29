@@ -78,7 +78,8 @@ export function recentMedicationWeight(state:CareState,kittenId:string,now=new D
   const ageHours=(now.getTime()-time)/3600000;
   return {grams,pounds:grams/GRAMS_PER_POUND,recordedAt:weight.ts,ageHours,fresh:ageHours<=MAX_MEDICATION_WEIGHT_AGE_HOURS};
 }
-export function rescueDoseIssues(state:CareState,kitten:Kitten,medication:Medication,now=new Date()):string[]{
+// Plan setup validates the prescription, not whether a dose can be given right now.
+export function rescuePlanIssues(medication:Medication):string[]{
   const reference=medication.rescueChart,template=reference&&rescueTemplate(reference.templateId);
   if(!template)return ['Choose a valid medication.'];
   const issues=chartSetupIssues(template);
@@ -87,6 +88,12 @@ export function rescueDoseIssues(state:CareState,kitten:Kitten,medication:Medica
   if(medication.schedule.type!==(count===2?'twiceDaily':'daily')||times.length!==count||new Set(times).size!==count||times.some(time=>!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)))issues.push('Review the plan and confirm its daily dose times.');
   if(!reference!.productConfirmed)issues.push('Confirm the supplied product matches the rescue preparation.');
   if(template.requiresVetTech&&!reference!.vetTechApproval?.trim())issues.push('Record rescue vet-tech approval before use.');
+  return issues;
+}
+export function rescueDoseIssues(state:CareState,kitten:Kitten,medication:Medication,now=new Date()):string[]{
+  const reference=medication.rescueChart,template=reference&&rescueTemplate(reference.templateId);
+  if(!template)return ['Choose a valid medication.'];
+  const issues=rescuePlanIssues(medication);
   const weight=recentMedicationWeight(state,kitten.id,now);
   if(!weight)issues.push('Record a valid current weight before calculating this medication.');
   else if(!weight.fresh)issues.push('Record a weight from the last 24 hours before calculating this medication.');

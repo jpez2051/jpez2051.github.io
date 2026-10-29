@@ -1,5 +1,6 @@
 import { replaceMedicationPlan,ageInDays,medicationSafetyWarnings,validateMedicationSafety,safetyPolicyErrors } from './medicationSafety';
 import { nextMedicationDue } from './schedule';
+import { rescuePlanIssues } from './rescueMedications';
 import { describe,expect,it } from 'vitest';
 import { addCourseDays,medicationAdditionalInstructions,medicationInstructions,chartArithmetic,chartRateForDay,chartSetupIssues,GRAMS_PER_POUND,recentMedicationWeight,rescueDoseIssues,rescueTemplate,treatmentDay } from './rescueMedications';
 import { calculateDose } from './medication';
@@ -11,6 +12,8 @@ const template=rescueTemplate('albon')!;
 const medication:Medication={id:'m1',name:template.name,route:'Oral',source:'Rescue chart',manualDose:'',unit:'mL',doseCalc:{mode:'rescueChart'},rescueChart:{templateId:template.id,revision:template.revision,productConfirmed:true},schedule:{type:'daily',times:['08:00']},startDate:'2026-10-22',endDate:'2026-11-04',instructions:template.instructions};
 const state:CareState={version:7,kittens:[{...kitten,medications:[medication]}],litters:[],settings:{},events:[{id:'w1',kittenId:kitten.id,type:'weight',ts:now.toISOString(),createdAt:now.toISOString(),data:{grams:GRAMS_PER_POUND}}]};
 describe('rescue chart reference and safeguards',()=>{
+ it('allows plan setup without weight while blocking given doses and permitting skipped records',()=>{for(const events of [[],[{...state.events[0],ts:new Date(now.getTime()-25*3600000).toISOString()}]]){const current={...state,events};expect(rescuePlanIssues(medication)).toEqual([]);expect(calculateDose(current,kitten,medication,now)).toBeNull();const draft={type:'medication' as const,kittenId:kitten.id,when:now.toISOString(),data:{medId:medication.id,status:'given',adminAmount:'0.5',adminUnit:'mL',confirmed:true,note:'Waiting for weight'}};expect(validateCareDraft(current,draft,now).valid).toBe(false);for(const status of ['skipped','unable'])expect(validateCareDraft(current,{...draft,data:{...draft.data,status}},now).valid).toBe(true)}});
+ it('separates future plan setup from administration readiness without dropping product checks',()=>{const future={...medication,startDate:'2026-10-23'};expect(rescuePlanIssues(future)).toEqual([]);expect(rescueDoseIssues(state,kitten,future,now).length).toBeGreaterThan(0);expect(rescuePlanIssues({...medication,rescueChart:{...medication.rescueChart!,productConfirmed:false}}).length).toBeGreaterThan(0)});
  it('converts grams to pounds without using a rounded kg approximation',()=>{expect(chartArithmetic(GRAMS_PER_POUND,0.5)).toBe(0.5);expect(chartArithmetic(GRAMS_PER_POUND*2,0.25)).toBe(0.5)});
  it('rejects invalid weights/rates in arithmetic',()=>{for(const weight of [0,-1,NaN,Infinity])expect(chartArithmetic(weight,0.5)).toBeNull();expect(chartArithmetic(400,0)).toBeNull()});
  it('keeps Albon first-day and subsequent-day chart rates distinct',()=>{expect(chartRateForDay(template,1)).toBe(0.5);expect(chartRateForDay(template,2)).toBe(0.25);expect(chartRateForDay(template,14)).toBe(0.25);expect(chartRateForDay(template,15)).toBeNull()});

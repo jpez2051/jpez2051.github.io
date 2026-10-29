@@ -178,6 +178,16 @@ async function administrationInstructions(page){
     console.log('PASS: prescription-change confirmation reset, weekday validation and hourly prescription entry');
     await schedules.close();
 
+    for(const stale of [false,true]){
+      const setupFixture=structuredClone(fixture);setupFixture.events=stale?[{...setupFixture.events[0],ts:new Date(Date.now()-25*3600000).toISOString()}]:[];
+      const setupContext=await browser.newContext({timezoneId:'Pacific/Honolulu'});
+      await setupContext.addInitScript(data=>{if(!localStorage.getItem('a4a-kitten-care-app'))localStorage.setItem('a4a-kitten-care-app',JSON.stringify(data))},setupFixture);
+      const setupPage=await setupContext.newPage();setupPage.setDefaultTimeout(10000);await setupPage.goto(address,{waitUntil:'networkidle'});
+      await setupPage.getByRole('button',{name:'Kittens',exact:true}).click();await setupPage.getByRole('button',{name:/Mochi/}).click();await setupPage.getByRole('button',{name:'Add medication'}).click();await setupPage.getByRole('combobox',{name:/^Choose a medication/}).selectOption('albon');await setupPage.getByRole('checkbox',{name:/product supplied/}).check();await setupPage.getByRole('button',{name:'Save medication plan'}).click();
+      const row=setupPage.locator('.medication-row').filter({hasText:'Albon'});await row.waitFor();await row.getByRole('button',{name:'Review medication plan'}).click();await setupPage.getByRole('checkbox',{name:/product supplied/}).check();await setupPage.getByRole('button',{name:'Save medication plan'}).click();await row.waitFor();await row.getByRole('button',{name:'Log dose'}).click();assert.equal(await setupPage.getByRole('button',{name:'Review and save'}).isDisabled(),true);
+      const saved=await setupPage.evaluate(()=>JSON.parse(localStorage.getItem('a4a-kitten-care-app')));assert.equal(saved.kittens[0].medications.filter(m=>m.name==='Albon').length,1);assert.equal(saved.events.filter(e=>e.type==='medication').length,0);await setupContext.close();
+    }
+    console.log('PASS: missing/stale weights permit plan creation and review, while given-dose submission remains blocked');
     const chartContext=await browser.newContext({viewport:{width:390,height:844},timezoneId:'Pacific/Honolulu'});
     await chartContext.addInitScript((data)=>localStorage.setItem('a4a-kitten-care-app',JSON.stringify(data)),fixture);
     const reviewArtifacts=path.resolve(root,'../review-artifacts');fs.mkdirSync(reviewArtifacts,{recursive:true});
