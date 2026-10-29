@@ -98,6 +98,7 @@ export interface CareEvent {
 }
 
 export interface FosterSettings {
+  walkthroughStatus?: 'completed' | 'skipped';
   fosterName?: string;
   fosterArea?: string;
   mentorName?: string;

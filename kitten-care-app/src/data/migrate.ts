@@ -10,6 +10,7 @@ export function emptyState(): CareState {
 export function restoreBackup(value: unknown): CareState {
   if (!value || typeof value !== 'object') throw new Error('Invalid backup');
   const raw=value as Partial<CareState>;
+  if(raw.settings?.walkthroughStatus!==undefined&&!['completed','skipped'].includes(raw.settings.walkthroughStatus))throw new Error('Invalid walkthrough preference');
   if(typeof raw.version==='number'&&raw.version>APP_SCHEMA_VERSION) throw new Error('This backup requires a newer application version');
   if (!Array.isArray(raw.kittens)||!Array.isArray(raw.events)||!Array.isArray(raw.litters)) throw new Error('Invalid backup');
   for (const list of [raw.kittens,raw.events,raw.litters]) {

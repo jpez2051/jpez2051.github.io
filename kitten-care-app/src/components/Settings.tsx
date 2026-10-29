@@ -8,11 +8,12 @@ function downloadState(state:CareState,name:string){
   link.href=url;link.download=name;link.click();window.setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 export const settingsEditToken=(settings:FosterSettings)=>JSON.stringify([settings.textSize||'standard',settings.mentorName||'',settings.mentorPhone||'',settings.rescueName||'',settings.rescuePhone||'',settings.emergencyInstructions||'']);
-export function Settings({state,onClose,onHelp,onSave,onRestore,onBackup,onRecovery}:{state:CareState;onClose:()=>void;onHelp:()=>void;onSave:(settings:FosterSettings,expectedToken:string)=>Promise<boolean>;onRestore:(state:CareState)=>Promise<boolean>;onBackup:()=>Promise<boolean>;onRecovery:()=>Promise<CareState|null>}){
+export function Settings({state,onClose,onHelp,onWalkthrough,onSave,onRestore,onBackup,onRecovery}:{state:CareState;onClose:()=>void;onHelp:()=>void;onWalkthrough:()=>void;onSave:(settings:FosterSettings,expectedToken:string)=>Promise<boolean>;onRestore:(state:CareState)=>Promise<boolean>;onBackup:()=>Promise<boolean>;onRecovery:()=>Promise<CareState|null>}){
   const [message,setMessage]=useState(''),[saving,setSaving]=useState(false);
   const originalSettings=useRef(settingsEditToken(state.settings));
   return <Dialog title="Settings and help" onClose={onClose}>
     <button className="primary-wide" onClick={onHelp}>Open how-to guides</button>
+    <button className="primary-wide replay-walkthrough" onClick={onWalkthrough}>Replay walkthrough</button>
     <p><a href="https://github.com/jpez2051/jpez2051.github.io/blob/main/kitten-care-app/CAREGIVER-TEST-GUIDE.md" target="_blank" rel="noreferrer">Caregiver testing checklist</a> · Use made-up records for testing.</p>
     {/not saved|changed in another|could not|were not/i.test(message)&&<p className="validation-summary" role="alert">{message}</p>}
     <form onSubmit={async event=>{

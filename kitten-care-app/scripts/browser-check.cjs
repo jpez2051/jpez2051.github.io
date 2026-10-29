@@ -36,7 +36,7 @@ async function administrationInstructions(page){
     const context=await browser.newContext({viewport:{width:390,height:844},timezoneId:'Pacific/Honolulu'});
     const page=await context.newPage(),errors=[];
     page.on('pageerror',error=>errors.push(error.message));
-    await page.goto(address,{waitUntil:'networkidle'});
+    await page.goto(address,{waitUntil:'networkidle'});if(await page.getByRole('button',{name:'Skip walkthrough',exact:true}).count())await page.getByRole('button',{name:'Skip walkthrough',exact:true}).click();
     for(const width of [320,390,1280]){
       await page.setViewportSize({width,height:844});
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`Overflow at ${width}`);
@@ -90,7 +90,7 @@ async function administrationInstructions(page){
     const now=new Date().toISOString();
     const medication=(id,name)=>({id,name,route:'Oral',source:'Test prescription',manualDose:'0.4',unit:'mL',doseCalc:{mode:'manual'},schedule:{type:'daily',times:['08:00']},startDate:'2026-01-01',endDate:'',instructions:''});
     const kitten=(id,name,litterId,inFosterCare=true)=>({id,name,litterId,inFosterCare,dob:'2026-09-01',sex:'',markings:'',specialNeeds:'Test notes',feedingIntervalHours:4,medications:[medication('m1','First prescription'),medication('m2','Second prescription')],photo:null,carePlan:{feedingEnabled:true,dailyWeight:true,bottleBaby:true}});
-    const fixture={version:6,kittens:[kitten('k1','Mochi','l1'),kitten('k2','Nani','l2'),kitten('k3','History kitten','l1',false)],litters:[{id:'l1',name:'First litter',dob:'',notes:''},{id:'l2',name:'Second litter',dob:'',notes:''}],events:[{id:'w1',kittenId:'k1',type:'weight',ts:now,createdAt:now,data:{grams:410}}],settings:{textSize:'large',mentorName:'Test mentor',mentorPhone:'8085550123'}};
+    const fixture={version:6,kittens:[kitten('k1','Mochi','l1'),kitten('k2','Nani','l2'),kitten('k3','History kitten','l1',false)],litters:[{id:'l1',name:'First litter',dob:'',notes:''},{id:'l2',name:'Second litter',dob:'',notes:''}],events:[{id:'w1',kittenId:'k1',type:'weight',ts:now,createdAt:now,data:{grams:410}}],settings:{walkthroughStatus:'skipped',textSize:'large',mentorName:'Test mentor',mentorPhone:'8085550123'}};
     const populated=await browser.newContext({viewport:{width:390,height:844},timezoneId:'Pacific/Honolulu'});
     await populated.addInitScript((data)=>{if(!localStorage.getItem('a4a-kitten-care-app'))localStorage.setItem('a4a-kitten-care-app',JSON.stringify(data))},fixture);
     const populatedPage=await populated.newPage(); populatedPage.setDefaultTimeout(10000); populatedPage.setDefaultNavigationTimeout(15000); console.log('CHECK: populated fixture');

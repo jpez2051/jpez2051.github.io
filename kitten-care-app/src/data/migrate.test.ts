@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { migrateState, restoreBackup } from './migrate';
 
 describe('V3 migration',()=>{
+  it('preserves walkthrough choices independently of inferred onboarding and rejects invalid choices',()=>{const source={version:9,kittens:[],litters:[],events:[],settings:{walkthroughStatus:'skipped'}};expect(restoreBackup(source).settings.walkthroughStatus).toBe('skipped');expect(migrateState({kittens:[{id:'k1'}],litters:[],events:[]}).settings.walkthroughStatus).toBeUndefined();expect(()=>restoreBackup({...source,settings:{walkthroughStatus:'invalid'}})).toThrow(/walkthrough/)});
   it('keeps legacy departed kittens out of active care',()=>{const migrated=migrateState({kittens:[{id:'k1',name:'Archived',status:'Adopted'},{id:'k2',name:'Returned',status:'Returned to A4A'}],events:[],litters:[]});expect(migrated.kittens.every((k)=>!k.inFosterCare)).toBe(true)});
   it('imports legacy kittens with safe defaults',()=>{const migrated=migrateState({kittens:[{id:'k1',name:'Mochi'}],events:[],litters:[]});expect(migrated.version).toBe(9);expect(migrated.kittens[0].carePlan.feedingEnabled).toBe(true);expect(migrated.kittens[0].feedingIntervalHours).toBe(4)});
   it('marks measured legacy feedings as successful',()=>{const migrated=migrateState({kittens:[{id:'k1',name:'Mochi'}],events:[{id:'f1',kittenId:'k1',type:'feeding',ts:'2026-01-01T00:00:00Z',createdAt:'2026-01-01T00:00:00Z',data:{amount:'8'}}],litters:[]});expect(migrated.events[0].data.outcome).toBe('fed')});
