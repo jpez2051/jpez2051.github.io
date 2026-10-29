@@ -1,3 +1,5 @@
+import {KittenPhotoEditor} from '../components/KittenPhotoEditor';
+import {updateKittenPhoto} from '../domain/photos';
 import {Icon,type IconName} from '../components/Icon';
 import {Walkthrough} from '../components/Walkthrough';
 import {PastLitterForm} from '../components/PastLitterForm';
@@ -27,7 +29,7 @@ import { RescueMedicationForm } from '../components/RescueMedicationForm';
 
 type View = 'today' | 'kittens' | 'attention' | 'handoff' | 'journey';
 type StayModal={kind:'pastLitter'}|{kind:'stay';kittenId?:string;stayId?:string;mode?:'departure'|'return'};
-type Modal = null | {kind:'more'} | {kind:'quickLog'} | { kind: 'litter' } | { kind: 'kitten'; litter?: Litter } | { kind: 'log'; eventType: CareEventType; kittenId?: string; medId?: string } | { kind: 'help' } | { kind: 'emergency' } | { kind: 'settings' } | { kind:'profile'; kittenId:string } | {kind:'medication';kittenId:string} | {kind:'reviewChart';kittenId:string;medId:string};
+type Modal = null | {kind:'photo';kittenId:string} | {kind:'more'} | {kind:'quickLog'} | { kind: 'litter' } | { kind: 'kitten'; litter?: Litter } | { kind: 'log'; eventType: CareEventType; kittenId?: string; medId?: string } | { kind: 'help' } | { kind: 'emergency' } | { kind: 'settings' } | { kind:'profile'; kittenId:string } | {kind:'medication';kittenId:string} | {kind:'reviewChart';kittenId:string;medId:string};
 
 export function App({ repository }: { repository: CareRepository }) {
   const { state, update, recover, ready, saveError, clearSaveError } = useCareState(repository);
@@ -72,7 +74,8 @@ export function App({ repository }: { repository: CareRepository }) {
     {modal?.kind === 'litter' && <LitterForm onClose={() => setModal(null)} onSave={async(litter) => { if(!await update((s) => ({ ...s, litters: [...s.litters, litter] })))return; setModal({ kind: 'kitten', litter }); setView('kittens'); return true; }} />}
     {modal?.kind === 'kitten' && <KittenForm litter={modal.litter} onClose={() => setModal(null)} onSave={async(kitten, another) => { if(!await update((s) => ({ ...s, kittens: [...s.kittens, kitten] })))return false; setModal(another && modal.litter ? { kind: 'kitten', litter: modal.litter } : null); setView('kittens'); return true; }} />}
     {modal?.kind === 'log' && <LogForm state={state} type={modal.eventType} initialKittenId={modal.kittenId} initialMedId={modal.medId} onClose={() => setModal(null)} onSave={async(event) => {const saved=await update((s) => {const checked=validateCareDraft(s,{type:event.type,kittenId:event.kittenId,when:event.ts,data:event.data});if(!checked.valid)throw new Error('Care changed before saving: '+checked.errors.join(' '));return { ...s, events: [...s.events, event] }});if(saved)setUndoEvent(event);return saved}} />}
-    {modal?.kind==='profile'&&<KittenProfile onStay={(stay,mode)=>setModal({kind:'stay',kittenId:modal.kittenId,stayId:stay?.id,mode})} state={state} kittenId={modal.kittenId} onClose={()=>setModal(null)} onLog={(eventType,medId)=>setModal({kind:'log',eventType,kittenId:modal.kittenId,medId})} onAddMedication={()=>setModal({kind:'medication',kittenId:modal.kittenId})} onReviewChart={(medId)=>setModal({kind:'reviewChart',kittenId:modal.kittenId,medId})}/>}
+    {modal?.kind==='photo'&&(()=>{const kitten=state.kittens.find(k=>k.id===modal.kittenId);if(!kitten)return null;return <KittenPhotoEditor kitten={kitten} onClose={()=>setModal({kind:'profile',kittenId:kitten.id})} onSave={async(photo,expected)=>{const saved=await update(s=>updateKittenPhoto(s,kitten.id,photo,expected));if(saved)setModal({kind:'profile',kittenId:kitten.id});return saved}}/>})()}
+    {modal?.kind==='profile'&&<KittenProfile onEditPhoto={()=>setModal({kind:'photo',kittenId:modal.kittenId})} onStay={(stay,mode)=>setModal({kind:'stay',kittenId:modal.kittenId,stayId:stay?.id,mode})} state={state} kittenId={modal.kittenId} onClose={()=>setModal(null)} onLog={(eventType,medId)=>setModal({kind:'log',eventType,kittenId:modal.kittenId,medId})} onAddMedication={()=>setModal({kind:'medication',kittenId:modal.kittenId})} onReviewChart={(medId)=>setModal({kind:'reviewChart',kittenId:modal.kittenId,medId})}/>}
     {modal?.kind==='medication'&&<MedicationForm state={state} kitten={state.kittens.find((k)=>k.id===modal.kittenId)!} onClose={()=>setModal({kind:'profile',kittenId:modal.kittenId})} onSave={async(medication)=>{const saved=await update((s)=>({...s,kittens:s.kittens.map((k)=>k.id===modal.kittenId?{...k,medications:[...k.medications,medication]}:k)}));if(saved)setModal({kind:'profile',kittenId:modal.kittenId});return saved}}/>}
     {modal?.kind==='reviewChart'&&(()=>{
       const kitten=state.kittens.find(k=>k.id===modal.kittenId),medication=kitten?.medications.find(m=>m.id===modal.medId),template=medication?.rescueChart&&rescueTemplate(medication.rescueChart.templateId);

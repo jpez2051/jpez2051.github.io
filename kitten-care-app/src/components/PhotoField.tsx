@@ -9,8 +9,8 @@ async function readPhoto(file:File){
  catch{const url=URL.createObjectURL(file),image=new Image();try{await new Promise<void>((resolve,reject)=>{image.onload=()=>resolve();image.onerror=reject;image.src=url});source=image;width=image.naturalWidth;height=image.naturalHeight;cleanup=()=>URL.revokeObjectURL(url)}catch(error){URL.revokeObjectURL(url);throw error}}
  try{const scale=Math.min(1,640/Math.max(width,height)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(width*scale));canvas.height=Math.max(1,Math.round(height*scale));const context=canvas.getContext('2d');if(!context)throw new Error('Photo unavailable');context.fillStyle='#fff';context.fillRect(0,0,canvas.width,canvas.height);context.drawImage(source,0,0,canvas.width,canvas.height);return canvas.toDataURL('image/jpeg',0.8)}finally{cleanup()}
 }
-export function PhotoField(){
- const [photo,setPhoto]=useState(''),[error,setError]=useState(''),[loading,setLoading]=useState(false);
+export function PhotoField({initialPhoto=''}:{initialPhoto?:string}){
+ const [photo,setPhoto]=useState(initialPhoto),[error,setError]=useState(''),[loading,setLoading]=useState(false);
  const selection=useRef(0),library=useRef<HTMLInputElement>(null),camera=useRef<HTMLInputElement>(null);
  function validity(message:string){library.current?.setCustomValidity(message);camera.current?.setCustomValidity(message)}
  async function select(event:ChangeEvent<HTMLInputElement>){
