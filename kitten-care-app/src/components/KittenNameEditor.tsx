@@ -1,0 +1,7 @@
+import {useRef,useState} from 'react';
+import type {Kitten} from '../domain/models';
+import {Dialog} from './Dialog';
+export function KittenNameEditor({kitten,onClose,onSave}:{kitten:Kitten;onClose:()=>void;onSave:(name:string,expectedName:string)=>Promise<boolean>}){
+ const original=useRef(kitten.name),[name,setName]=useState(kitten.name),[saving,setSaving]=useState(false),[error,setError]=useState('');
+ return <Dialog title="Edit kitten name" onClose={onClose}><form onSubmit={async event=>{event.preventDefault();if(saving)return;if(!name.trim()){setError('Enter a kitten name.');return}setSaving(true);setError('');try{if(!await onSave(name,original.current))setError('Name not saved. Your edit is still here. Check the message above and try again.')}catch(err){setError(err instanceof Error?err.message:'Name could not be saved. Try again.')}finally{setSaving(false)}}}><p>Updating the name keeps this kitten’s existing care history, medications, photos and stays together.</p><label>Kitten name *<input name="name" value={name} onChange={event=>setName(event.target.value)} maxLength={120} required autoFocus autoComplete="off"/></label>{error&&<p className="validation-summary" role="alert">{error}</p>}<div className="actions"><button className="secondary" type="button" onClick={onClose}>Cancel</button><button disabled={saving}>{saving?'Saving…':'Save name'}</button></div></form></Dialog>;
+}
