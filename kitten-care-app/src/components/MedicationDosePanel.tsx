@@ -1,3 +1,6 @@
+import {DoseAmount,DoseMath} from './DoseCalculation';
+import {formatDose} from '../domain/doseDisplay';
+export {formatDose} from '../domain/doseDisplay';
 import {Disclosure} from './Disclosure';
 import {MedicationInstructions} from './MedicationInstructions';
 import { useEffect,useRef,useState } from 'react';
@@ -9,7 +12,7 @@ import { medicationInstructions,medicationDosesPerDay,rescueDoseIssues } from '.
 import { weightNeedsRecheck,ageInDays,medicationSafetyWarnings } from '../domain/medicationSafety';
 import { nextMedicationDue } from '../domain/schedule';
 
-export const formatDose=(amount:number)=>amount!==0&&Math.abs(amount)<0.001?amount.toPrecision(3):amount.toFixed(3);
+
 
 export function MedicationDosePanel({state,kitten,medication,medications,onMedication,onStatus,when}:{state:CareState;kitten:Kitten;medication:Medication;medications:Medication[];onMedication:(id:string)=>void;onStatus:(status:string)=>void;when:string}){
   const [status,setStatus]=useState('given'),[amount,setAmount]=useState(''),[unit,setUnit]=useState(medication.unit),[slot,setSlot]=useState('');
@@ -25,15 +28,14 @@ export function MedicationDosePanel({state,kitten,medication,medications,onMedic
   return <div className="medication-dose-panel">{changed&&<p className="info" role="status">Care details changed while this form was open. Recheck the weight, dose and confirmations before saving.</p>}
     <label>Medication<select name="medId" value={medication.id} onChange={event=>onMedication(event.target.value)}>{medications.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}</select></label>
     <section className="dose-confirm"><h3>How to give</h3><b>{medicationSummary(medication)}</b>
-      {medication.doseCalc.mode==='manual'?<p className="calculated-amount">Prescribed amount per dose: <strong>{medication.manualDose||'Not set'} {medication.unit}</strong></p>:dose?<p className="calculated-amount">Calculated amount for this dose: <strong>{medication.unit==='mg'?dose.mg!==null?`${formatDose(dose.mg)} mg`:'Amount unavailable':dose.ml!==null?`${formatDose(dose.ml)} mL`:'Amount unavailable'}</strong></p>:<p>No calculated amount is available. Review the weight and plan.</p>}
-      {dose?.treatmentDay&&<p>Treatment day {dose.treatmentDay} · {dose.rateMlPerLb} mL/lb</p>}
+      <DoseAmount medication={medication} dose={dose}/>
       <p><b>{due&&due<=new Date()?'Dose due/overdue since:':'Next scheduled dose:'}</b> {due?due.toLocaleString():'No next dose scheduled'}</p>
       <p><b>Last given:</b> {last?new Date(last.ts).toLocaleString():'Not recorded in this app'}</p>
       <Disclosure label="Full instructions and calculation">
         <MedicationInstructions medication={medication}/>
-        {dose&&<><p>Based on {dose.weightG} g recorded {new Date(dose.weightRecordedAt).toLocaleString()}.</p>{dose.rateMlPerLb!==undefined&&<p className="dose-equation">{dose.weightG} g ÷ 453.59237 g per lb × {dose.rateMlPerLb} mL/lb = {dose.ml!==null?formatDose(dose.ml):'unavailable'} mL per dose.</p>}<p>Unrounded calculation: {medication.unit==='mg'?dose.mg:dose.ml} {medication.unit}. Display precision is not a syringe instruction.</p></>}
+        <DoseMath medication={medication} dose={dose}/>
         {medication.safety?.productLabel&&<p>Product: {medication.safety.productLabel}<br/>Preparation: {medication.safety.preparation}<br/>Approved by: {medication.safety.approvedBy}</p>}
-      {!dose&&medication.doseCalc.mode!=='manual'&&<p>No current calculation is available. Record a recent weight and check the plan dates.</p>}</Disclosure>
+      </Disclosure>
     </section>
     {issues.length>0&&<div className="validation-summary" role="status"><b>Not ready to administer</b><ul>{issues.map(issue=><li key={issue}>{issue}</li>)}</ul></div>}
     {medicationDosesPerDay(medication)>1&&<label>Scheduled dose<select name="doseSlot" value={slot} onChange={event=>setSlot(event.target.value)}><option value="">Choose the dose you are recording</option>{[...(medication.schedule.times||[])].sort().map(time=><option key={time} value={time}>{time} dose</option>)}</select></label>}
