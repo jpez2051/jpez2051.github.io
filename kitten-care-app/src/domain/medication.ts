@@ -24,6 +24,7 @@ export function calculateDose(state: CareState, kitten: Kitten, medication: Medi
   const weightG = Number(weight?.data.grams);
   if (!weight || !Number.isFinite(weightG) || weightG <= 0 || !Number.isFinite(Date.parse(weight.ts)) || Date.parse(weight.ts) > now.getTime()) return null;
   const kg = weightG / 1000;
+  if(medication.doseCalc.rateUnit==='mL/lb')return {weightG,weightRecordedAt:weight.ts,stale:now.getTime()-Date.parse(weight.ts)>24*3_600_000,mg:null,ml:chartArithmetic(weightG,Number(medication.doseCalc.rate)),rateMlPerLb:Number(medication.doseCalc.rate)};
   const mg = medication.doseCalc.rateUnit === 'mcg/kg' ? Number(medication.doseCalc.rate) * kg / 1000 : Number(medication.doseCalc.rate) * kg;
   const concentration = Number(medication.doseCalc.concentration);
   return {

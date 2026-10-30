@@ -123,7 +123,7 @@ async function administrationInstructions(page){
     await populatedPage.getByRole('button',{name:'Download backup'}).click();
     const download=await downloadEvent;
     const downloaded=JSON.parse(fs.readFileSync(await download.path(),'utf8'));
-    assert.deepEqual(downloaded.kittens.map(({careStays,...kitten})=>kitten),fixture.kittens);assert.equal(downloaded.version,9);assert.equal(downloaded.kittens[0].careStays[0].arrival,'');
+    assert.deepEqual(downloaded.kittens.map(({careStays,...kitten})=>kitten),fixture.kittens);assert.equal(downloaded.version,10);assert.equal(downloaded.kittens[0].careStays[0].arrival,'');
     assert.deepEqual(downloaded.events,fixture.events);
     const invalidNotice=populatedPage.waitForEvent('dialog');
     await populatedPage.locator('input[type=file]').setInputFiles({name:'invalid.json',mimeType:'application/json',buffer:Buffer.from('{"unexpected":true}')});
@@ -317,10 +317,10 @@ async function administrationInstructions(page){
     const safetyPage=await safetyContext.newPage();safetyPage.setDefaultTimeout(10000);await safetyPage.goto(address,{waitUntil:'networkidle'});
     await safetyPage.getByRole('button',{name:'Kittens',exact:true}).click();await safetyPage.getByRole('button',{name:/Mochi/}).click();await safetyPage.getByRole('button',{name:'Add medication'}).click();
     await safetyPage.getByRole('combobox',{name:/^Choose a medication/}).selectOption('albon');await safetyPage.getByRole('checkbox',{name:/product supplied/}).check();
-    await safetyPage.getByText('Product, measuring device and safety limits',{exact:true}).click();
-    await safetyPage.getByLabel('Exact bottle or product label').fill('TEST Albon prepared liquid');await safetyPage.getByLabel('Preparation / concentration as supplied').fill('TEST preparation only');await safetyPage.getByLabel('Approving rescue or veterinary contact').fill('TEST contact');await safetyPage.getByLabel('Measuring device name').fill('TEST device');
-    await safetyPage.getByLabel('Smallest reliable amount (mL)').fill('0.05');await safetyPage.getByLabel('Device graduation size (mL)').fill('0.01');await safetyPage.getByLabel('Minimum hours between doses, if instructed').fill('6');await safetyPage.getByLabel('Expected minimum weight (g)').fill('100');await safetyPage.getByLabel('Expected maximum weight (g)').fill('1000');await safetyPage.getByLabel('Weight-change recheck threshold (%)').fill('20');
-    await safetyPage.getByRole('button',{name:'Save medication plan'}).click();await safetyPage.locator('.medication-row').filter({hasText:'Albon'}).getByRole('button',{name:'Log dose'}).click();
+    assert.equal(await safetyPage.getByText('Product, measuring device and safety limits',{exact:true}).count(),0);
+    await safetyPage.getByRole('button',{name:'Save medication plan'}).click();await safetyPage.locator('.medication-row').filter({hasText:'Albon'}).waitFor();
+    await safetyPage.evaluate(()=>{const state=JSON.parse(localStorage.getItem('a4a-kitten-care-app'));state.kittens[0].medications.at(-1).safety={productLabel:'TEST Albon prepared liquid',preparation:'TEST preparation only',approvedBy:'TEST contact',deviceName:'TEST device',minimumMeasurableMl:.05,incrementMl:.01,minimumSpacingHours:6,minimumWeightG:100,maximumWeightG:1000,maximumWeightChangePercent:20};localStorage.setItem('a4a-kitten-care-app',JSON.stringify(state))});
+    await safetyPage.reload({waitUntil:'networkidle'});await safetyPage.getByRole('button',{name:'Kittens',exact:true}).click();await safetyPage.getByRole('button',{name:/Mochi/}).click();await safetyPage.locator('.medication-row').filter({hasText:'Albon'}).getByRole('button',{name:'Log dose'}).click();
     assert.match(await safetyPage.locator('.calculated-amount').innerText(),/0.025 mL/,'Automation must remain enabled');
     assert.equal(await safetyPage.locator('.administration-instructions').isVisible(),false,'Full instructions should be collapsed initially');
     assert.match(await safetyPage.locator('.safety-review').innerText(),/below the plan|below the device/);

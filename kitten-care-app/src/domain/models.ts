@@ -17,13 +17,15 @@ export interface MedicationSchedule {
 }
 
 export interface Medication {
+  litterPlanId?:string;
+  litterPlanOverride?:boolean;
   id: Id;
   name: string;
   route: string;
   source: string;
   manualDose: string;
   unit: string;
-  doseCalc: { mode: 'manual' | 'weightBased' | 'rescueChart'; rate?: number; rateUnit?: 'mg/kg' | 'mcg/kg'; concentration?: number | null };
+  doseCalc: { mode: 'manual' | 'weightBased' | 'rescueChart'; rate?: number; rateUnit?: 'mg/kg' | 'mcg/kg' | 'mL/lb'; concentration?: number | null };
   rescueChart?: { templateId:string; revision:string; productConfirmed:boolean; vetTechApproval?:string; courseStartedElsewhere?:boolean;additionalInstructions?:string };
   safety?: MedicationSafety;
   schedule: MedicationSchedule;

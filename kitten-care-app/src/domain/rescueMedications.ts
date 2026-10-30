@@ -27,9 +27,9 @@ const PREVIOUS_INSTRUCTIONS:Record<string,string[]>={
 };
 const normalizedInstruction=(line:string)=>line.trim().replace(/\s+/g,' ').replace(/[–—]/g,'-');
 export function medicationAdditionalInstructions(medication:Medication):string {
-  const content=medication.rescueChart?.additionalInstructions??medication.instructions;
+  const content=medication.rescueChart?.additionalInstructions??medication.instructions??'';
   const template=medication.rescueChart&&rescueTemplate(medication.rescueChart.templateId);
-  if(!template)return medication.instructions;
+  if(!template)return medication.instructions||'';
   const builtIn=new Set([template.instructions,template.notes,...(PREVIOUS_INSTRUCTIONS[template.id]||[])].map(normalizedInstruction));
   const seen=new Set<string>();
   return content.split(/\r?\n/).filter(line=>{const key=normalizedInstruction(line);if(!key||builtIn.has(key)||seen.has(key))return false;seen.add(key);return true}).join('\n');
@@ -40,7 +40,7 @@ export function medicationInstructions(medication:Medication):string {
   if(!template||medication.rescueChart?.revision!==template.revision)return medication.instructions;
   return [template.instructions,template.notes,medicationAdditionalInstructions(medication)].filter(Boolean).join('\n');
 }
-export function medicationDosesPerDay(medication:Medication){return rescueTemplate(medication.rescueChart?.templateId||'')?.dosesPerDay||1}
+export function medicationDosesPerDay(medication:Medication){return rescueTemplate(medication.rescueChart?.templateId||'')?.dosesPerDay||(medication.schedule.type==='twiceDaily'?2:medication.schedule.type==='threeDaily'?3:1)}
 export function givenMedicationSlots(state:CareState,kittenId:string,medication:Medication,date:Date):Set<string>{
   const times=[...(medication.schedule.times||[])].sort(),slots=new Set<string>();
   const given=kittenEvents(state,kittenId,'medication').filter(e=>e.data.medId===medication.id&&e.data.status==='given'&&localDateKey(new Date(e.ts))===localDateKey(date));

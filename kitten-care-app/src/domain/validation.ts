@@ -43,6 +43,9 @@ export function validateCareDraft(state: CareState, draft: CareDraft, now = new 
     const status = String(draft.data.status || '');
     if (!['given', 'skipped', 'unable'].includes(status)) errors.push('Choose whether the dose was given, skipped, or unable to give.');
     if (status === 'given') {
+      if(medication?.startDate&&medication.startDate>localDateKey(when))errors.push('This medication course has not started. Review its start date.');
+      if(medication?.endDate&&medication.endDate<localDateKey(when))errors.push('This medication course has ended. Review the plan before logging another dose.');
+      if(medication?.doseCalc.rateUnit==='mL/lb'&&localDateKey(when)!==localDateKey(now))errors.push('Do not use today’s weight calculation for a different treatment day.');
       if(medication&&state.version>=8)errors.push(...validateMedicationSafety(state,kitten,medication,draft.data,when,now));
       if (draft.data.confirmed !== true) errors.push('Confirm the kitten, medication, route, and dose before saving.');
       if (!positive(draft.data.adminAmount)) errors.push('Enter the actual positive amount given.');
@@ -58,7 +61,12 @@ export function validateCareDraft(state: CareState, draft: CareDraft, now = new 
       if (medication?.doseCalc.mode === 'weightBased') {
         const dose = calculateDose(state, kitten, medication, now);
         if (!dose) errors.push('Record a current valid weight before giving this weight-based medication.');
-        else if (dose.stale && draft.data.staleWeightApproved !== true) errors.push('The recorded weight is over 24 hours old. Record a current weight or confirm rescue approval to use it.');
+        else if (dose.stale && (medication.doseCalc.rateUnit==='mL/lb'||draft.data.staleWeightApproved !== true)) errors.push('The recorded weight is over 24 hours old. Record a current weight or confirm rescue approval to use it.');
+      }
+      if(medication&&!medication.rescueChart&&['daily','twiceDaily','threeDaily','specificDays'].includes(medication.schedule.type)){
+        const given=kittenEvents(state,kitten.id,'medication').filter(e=>e.data.medId===medication.id&&e.data.status==='given'&&localDateKey(new Date(e.ts))===localDateKey(when));
+        if(given.length>=medicationDosesPerDay(medication))errors.push('All prescribed doses are already recorded for this day.');
+        if(medicationDosesPerDay(medication)>1){const slot=String(draft.data.doseSlot||'');if(!medication.schedule.times?.includes(slot))errors.push('Choose which scheduled dose you are recording.');else if(givenMedicationSlots(state,kitten.id,medication,when).has(slot))errors.push('That scheduled dose is already recorded.');}
       }
     } else if (!String(draft.data.note || '').trim()) errors.push('Add a reason for a skipped or unsuccessful dose.');
   }

@@ -1,7 +1,7 @@
 import type { CareState, Kitten, Litter, Medication, CareStay } from '../domain/models';
 import {stayErrors} from '../domain/journey';
 
-export const APP_SCHEMA_VERSION = 9;
+export const APP_SCHEMA_VERSION = 10;
 
 export function emptyState(): CareState {
   return { version: APP_SCHEMA_VERSION, kittens: [], litters: [], events: [], settings: {} };
@@ -18,6 +18,7 @@ export function restoreBackup(value: unknown): CareState {
     if(new Set(list.map((item)=>item.id)).size!==list.length) throw new Error('Duplicate records');
   }
   if(raw.events.some((event)=>!event.data||typeof event.data!=='object'||Array.isArray(event.data)||!Number.isFinite(Date.parse(event.ts))||!raw.kittens!.some((kitten)=>kitten.id===event.kittenId))) throw new Error('Invalid care history');
+  for(const litter of raw.litters){if(litter.medicationPlans!==undefined){if(!Array.isArray(litter.medicationPlans)||new Set(litter.medicationPlans.map(p=>p?.id)).size!==litter.medicationPlans.length)throw new Error('Invalid litter medication plans');for(const plan of litter.medicationPlans){if(!plan||typeof plan.id!=='string'||!plan.id||!Array.isArray(plan.kittenIds)||plan.kittenIds.some(id=>typeof id!=='string'||!raw.kittens!.some(k=>k.id===id))||new Set(plan.kittenIds).size!==plan.kittenIds.length)throw new Error('Invalid litter medication membership');}}}
   for(const kitten of raw.kittens){
     if(kitten.careStays!==undefined){
       if(!Array.isArray(kitten.careStays))throw new Error('Invalid care stays');
@@ -27,6 +28,7 @@ export function restoreBackup(value: unknown): CareState {
       if(stay.revisions!==undefined&&(!Array.isArray(stay.revisions)||stay.revisions.some(r=>!r||typeof r.reason!=='string'||typeof r.previous!=='string'||!Number.isFinite(Date.parse(r.at)))))throw new Error('Invalid stay corrections');}
       if(stays.length&&stays.some(s=>!s.closed)!==kitten.inFosterCare)throw new Error('Care stay status does not match kitten');
     }
+    if(Array.isArray(kitten.medications)&&kitten.medications.some(m=>(m.litterPlanId!==undefined&&typeof m.litterPlanId!=='string')||(m.litterPlanOverride!==undefined&&typeof m.litterPlanOverride!=='boolean')))throw new Error('Invalid litter plan link');
     if(kitten.medications!==undefined&&!Array.isArray(kitten.medications))throw new Error('Invalid medication plans');
     const medications=kitten.medications||[];
     if(medications.some(medication=>!medication||typeof medication!=='object'||typeof medication.id!=='string'||!medication.id)||new Set(medications.map(medication=>medication.id)).size!==medications.length)throw new Error('Invalid medication identity');
@@ -55,6 +57,7 @@ export function migrateState(value: unknown): CareState {
     name: String(litter.name || 'Unnamed litter'),
     dob: String(litter.dob || ''),
     notes: String(litter.notes || ''),
+    medicationPlans:litter.medicationPlans?.map(plan=>({...plan,kittenIds:Array.isArray(plan.kittenIds)?plan.kittenIds:[],doseCalc:plan.doseCalc||{mode:'manual'},schedule:plan.schedule||{type:'daily',times:['08:00']}})),
   })) : [];
 
   const kittens: Kitten[] = raw.kittens.map((kitten) => ({

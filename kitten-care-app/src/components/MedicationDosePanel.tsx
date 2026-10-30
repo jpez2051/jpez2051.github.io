@@ -1,3 +1,5 @@
+import {Disclosure} from './Disclosure';
+import {MedicationInstructions} from './MedicationInstructions';
 import { useEffect,useRef,useState } from 'react';
 import type { CareState,Kitten,Medication } from '../domain/models';
 import { kittenEvents } from '../domain/care';
@@ -27,19 +29,19 @@ export function MedicationDosePanel({state,kitten,medication,medications,onMedic
       {dose?.treatmentDay&&<p>Treatment day {dose.treatmentDay} · {dose.rateMlPerLb} mL/lb</p>}
       <p><b>{due&&due<=new Date()?'Dose due/overdue since:':'Next scheduled dose:'}</b> {due?due.toLocaleString():'No next dose scheduled'}</p>
       <p><b>Last given:</b> {last?new Date(last.ts).toLocaleString():'Not recorded in this app'}</p>
-      <details><summary>Full instructions and calculation</summary>
-        {medication.instructions&&<p className="administration-instructions" style={{whiteSpace:'pre-line'}}>{medicationInstructions(medication)}</p>}
-        {dose&&<><p>Based on {dose.weightG} g recorded {new Date(dose.weightRecordedAt).toLocaleString()}.</p>{medication.rescueChart&&<p className="dose-equation">{dose.weightG} g ÷ 453.59237 g per lb × {dose.rateMlPerLb} mL/lb = {dose.ml!==null?formatDose(dose.ml):'unavailable'} mL per dose.</p>}<p>Unrounded calculation: {medication.unit==='mg'?dose.mg:dose.ml} {medication.unit}. Display precision is not a syringe instruction.</p></>}
+      <Disclosure label="Full instructions and calculation">
+        <MedicationInstructions medication={medication}/>
+        {dose&&<><p>Based on {dose.weightG} g recorded {new Date(dose.weightRecordedAt).toLocaleString()}.</p>{dose.rateMlPerLb!==undefined&&<p className="dose-equation">{dose.weightG} g ÷ 453.59237 g per lb × {dose.rateMlPerLb} mL/lb = {dose.ml!==null?formatDose(dose.ml):'unavailable'} mL per dose.</p>}<p>Unrounded calculation: {medication.unit==='mg'?dose.mg:dose.ml} {medication.unit}. Display precision is not a syringe instruction.</p></>}
         {medication.safety?.productLabel&&<p>Product: {medication.safety.productLabel}<br/>Preparation: {medication.safety.preparation}<br/>Approved by: {medication.safety.approvedBy}</p>}
-      </details>
+      {!dose&&medication.doseCalc.mode!=='manual'&&<p>No current calculation is available. Record a recent weight and check the plan dates.</p>}</Disclosure>
     </section>
     {issues.length>0&&<div className="validation-summary" role="status"><b>Not ready to administer</b><ul>{issues.map(issue=><li key={issue}>{issue}</li>)}</ul></div>}
-    {medication.rescueChart&&medicationDosesPerDay(medication)===2&&<label>Scheduled dose<select name="doseSlot" value={slot} onChange={event=>setSlot(event.target.value)}><option value="">Choose the dose you are recording</option>{[...(medication.schedule.times||[])].sort().map(time=><option key={time} value={time}>{time} dose</option>)}</select></label>}
+    {medicationDosesPerDay(medication)>1&&<label>Scheduled dose<select name="doseSlot" value={slot} onChange={event=>setSlot(event.target.value)}><option value="">Choose the dose you are recording</option>{[...(medication.schedule.times||[])].sort().map(time=><option key={time} value={time}>{time} dose</option>)}</select></label>}
     <label>Status<select name="status" value={status} onChange={event=>{setStatus(event.target.value);onStatus(event.target.value)}}><option value="given">Given</option><option value="skipped">Skipped</option><option value="unable">Unable to give</option></select></label>
     {status==='given'&&<>
       <div className="two"><label>Actual amount given *<input name="adminAmount" inputMode="decimal" value={amount} onChange={event=>setAmount(event.target.value)}/></label><label>Unit *<select name="adminUnit" value={unit} onChange={event=>setUnit(event.target.value)}>{[...new Set([medication.unit,'mL','mg','tablet','drop'])].map(value=><option key={value}>{value}</option>)}</select></label></div>
       {medication.doseCalc.mode!=='manual'&&<section key={signature} className="weight-recheck"><p><b>Recorded weight:</b> {weight?`${weight.data.grams} g · ${new Date(weight.ts).toLocaleString()}`:'None'}. {age===null?'Age unknown':`${age} days old`}.</p>{previous&&<p>Previous weight: {previous.data.grams} g.</p>}{weightNeedsRecheck(warnings)&&<><label>Rechecked weight in grams *<input name="recheckedWeightG" inputMode="decimal" placeholder="Reweigh, then confirm the recorded grams"/></label><small>If the scale differs, cancel and record the corrected weight first.</small></>}</section>}
-      {dose?.stale&&<label className="check warning-check"><input type="checkbox" name="staleWeightApproved"/> Rescue or veterinarian approved using this older weight</label>}
+      {dose?.stale&&medication.doseCalc.rateUnit!=='mL/lb'&&<label className="check warning-check"><input type="checkbox" name="staleWeightApproved"/> Rescue or veterinarian approved using this older weight</label>}
       {warnings.length>0&&<section className="safety-review warning" key={confirmationKey} aria-live="polite"><h3>Review before recording a dose</h3><ul>{warnings.map(warning=><li key={warning.id}>{warning.text}</li>)}</ul><p>This testing exception is recorded; it is not veterinary approval.</p><label>Reason / instructions for this testing exception<textarea name="safetyReason"/></label><label>Approving contact or “testing only”<input name="safetyApproval"/></label><label className="check"><input name="safetyAcknowledged" type="checkbox"/> I reviewed these warnings and am recording this exception explicitly</label></section>}
       <label key={confirmationKey+'confirm'} className="check confirmation"><input type="checkbox" name="confirmed"/> I confirmed the kitten, medication, route, and dose above</label>
     </>}

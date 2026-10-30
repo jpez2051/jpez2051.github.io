@@ -7,12 +7,13 @@ export const weightNeedsRecheck=(warnings:SafetyWarning[])=>warnings.some(warnin
 export function replaceMedicationPlan(state:CareState,kittenId:string,updated:Medication,expectedPlan?:string):CareState {
   const current=state.kittens.find(kitten=>kitten.id===kittenId)?.medications.find(medication=>medication.id===updated.id);
   if(!current||expectedPlan&&JSON.stringify(current)!==expectedPlan)throw new Error('The medication plan changed elsewhere. Your changes were not saved. Reopen the current plan before editing.');
-  return {...state,kittens:state.kittens.map(kitten=>kitten.id===kittenId?{...kitten,medications:kitten.medications.map(medication=>medication.id===updated.id?updated:medication)}:kitten)};
+  const replacement=current.litterPlanId?{...updated,litterPlanId:current.litterPlanId,litterPlanOverride:true}:updated;
+  return {...state,kittens:state.kittens.map(kitten=>kitten.id===kittenId?{...kitten,medications:kitten.medications.map(medication=>medication.id===updated.id?replacement:medication)}:kitten)};
 }
 export const safetyNumberFields = ['minimumMeasurableMl','incrementMl','minimumSpacingHours','minimumWeightG','maximumWeightG','maximumWeightChangePercent'] as const;
 export function readMedicationSafety(data:FormData):MedicationSafety {
   const result:MedicationSafety={};
-  for(const key of ['productLabel','preparation','approvedBy','deviceName'] as const)result[key]=String(data.get(key)||'').trim();
+  for(const key of ['productLabel','preparation','approvedBy','deviceName'] as const)if(data.has(key))result[key]=String(data.get(key)||'').trim();
   for(const key of safetyNumberFields){const raw=String(data.get(key)||'').trim();if(raw)result[key]=Number(raw)}
   return result;
 }
@@ -31,12 +32,9 @@ export function medicationSafetyWarnings(state:CareState,kitten:Kitten,medicatio
   const warnings:SafetyWarning[]=[],policy=medication.safety||{};
   const add=(id:string,text:string)=>warnings.push({id,text});
   if(safetyPolicyErrors(policy).length)add('invalid-policy','The saved safety limits are invalid. Review the medication plan.');
-  if(!policy.productLabel?.trim()||!policy.preparation?.trim()||!policy.approvedBy?.trim())add('product','The exact product, preparation or approving contact is not recorded. Confirm them before relying on this amount.');
   const dose=calculateDose(state,kitten,medication,now),weightBased=medication.doseCalc.mode!=='manual';
   const weights=kittenEvents(state,kitten.id,'weight'),grams=Number(weights[0]?.data.grams),previous=Number(weights[1]?.data.grams);
   if(weightBased){
-    if(ageInDays(kitten,now)===null)add('age','The date of birth is missing, invalid or in the future; age cannot be used to review this weight.');
-    if(!policy.minimumWeightG||!policy.maximumWeightG)add('weight-policy','No rescue-approved weight range is configured for this kitten. Reweigh and check the grams, age and previous weight.');
     if(policy.minimumWeightG&&grams<policy.minimumWeightG)add('weight-low',`The recorded ${grams} g is below the plan’s ${policy.minimumWeightG} g minimum. Reweigh and contact the rescue.`);
     if(policy.maximumWeightG&&grams>policy.maximumWeightG)add('weight-high',`The recorded ${grams} g exceeds the plan’s ${policy.maximumWeightG} g maximum. Reweigh and contact the rescue.`);
     if(previous>0&&Number.isFinite(grams)){
@@ -48,7 +46,6 @@ export function medicationSafetyWarnings(state:CareState,kitten:Kitten,medicatio
   const expected=medication.unit==='mg'?dose?.mg:medication.unit==='mL'?dose?.ml:Number(medication.manualDose);
   const prescribed=weightBased?expected:Number(medication.manualDose);
   if(medication.unit==='mL'){
-    if(!policy.deviceName?.trim()||!policy.minimumMeasurableMl||!policy.incrementMl)add('device','Measuring-device name, smallest reliable amount or graduation size is missing. A calculated decimal does not prove the amount can be measured.');
     const volume=weightBased?dose?.ml:Number(medication.manualDose);
     if(volume!==null&&volume!==undefined&&Number.isFinite(volume)){
       if(policy.minimumMeasurableMl&&volume<policy.minimumMeasurableMl)add('too-small',`The calculated ${volume.toPrecision(5)} mL is below the device’s ${policy.minimumMeasurableMl} mL reliable minimum. Obtain instructions; do not round it yourself.`);
@@ -61,7 +58,6 @@ export function medicationSafetyWarnings(state:CareState,kitten:Kitten,medicatio
   if(last){
     const elapsed=(when.getTime()-Date.parse(last.ts))/3600000;
     if(policy.minimumSpacingHours&&elapsed<policy.minimumSpacingHours)add('too-soon',`Only ${elapsed.toFixed(2)} hours since the last given dose; this plan requires at least ${policy.minimumSpacingHours} hours. Confirm instructions before proceeding.`);
-    if(!policy.minimumSpacingHours)add('spacing-policy','No rescue-approved minimum dose spacing is configured. Check the last given time before recording another dose.');
   }
   const following=kittenEvents(state,kitten.id,'medication').filter(e=>e.data.medId===medication.id&&e.data.status==='given'&&Date.parse(e.ts)>when.getTime()).at(-1);
   if(following&&policy.minimumSpacingHours&&(Date.parse(following.ts)-when.getTime())/3600000<policy.minimumSpacingHours)add('following-too-close','This historical entry is too close to the following recorded dose for the plan’s minimum spacing. Review both times.');
@@ -79,7 +75,7 @@ export function validateMedicationSafety(state:CareState,kitten:Kitten,medicatio
   const warnings=medicationSafetyWarnings(state,kitten,medication,data.adminAmount,String(data.adminUnit||''),when,now,String(data.doseSlot||''));
   if(medication.doseCalc.mode!=='manual'){
     const weight=kittenEvents(state,kitten.id,'weight')[0];
-    if(weightNeedsRecheck(warnings)&&(!weight||Number(data.recheckedWeightG)!==Number(weight.data.grams)||!String(data.recheckedWeightG||'').trim()))errors.push('Reweigh and enter the current recorded weight in grams to confirm the calculation.');
+    if((weightNeedsRecheck(warnings)||String(data.recheckedWeightG||'').trim())&&(!weight||Number(data.recheckedWeightG)!==Number(weight.data.grams)||!String(data.recheckedWeightG||'').trim()))errors.push('Reweigh and enter the current recorded weight in grams to confirm the calculation.');
     if(weight&&typeof data.weightRecordedAt==='string'&&data.weightRecordedAt!==weight.ts)errors.push('The recorded weight changed before saving. Review it and confirm again.');
   }
   if(typeof data.safetyWarnings==='string'&&data.safetyWarnings!==JSON.stringify(warnings))errors.push('The safety review changed before saving. Review the current warnings and confirm again.');

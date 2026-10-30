@@ -1,0 +1,8 @@
+import type {Medication} from '../domain/models';
+import {medicationInstructions} from '../domain/rescueMedications';
+export function MedicationInstructions({medication}:{medication:Medication}){
+ const instructions=medicationInstructions(medication)?.trim();
+ const rate=medication.doseCalc.mode==='rescueChart'?'See treatment-day rate in the instructions above':medication.doseCalc.mode==='weightBased'?`${medication.doseCalc.rate??'Not recorded'} ${medication.doseCalc.rateUnit||'mg/kg'} per dose`:`${medication.manualDose||'Not recorded'} ${medication.unit} per dose`;
+ const frequency:Record<string,string>={daily:'Once daily',twiceDaily:'Twice daily',threeDaily:'Three times daily',intervalHours:`Every ${medication.schedule.intervalHours} hours`,intervalDays:`Every ${medication.schedule.intervalDays} days`,specificDays:`On ${(medication.schedule.days||[]).join(', ')}`,oneTime:'One-time dose',prn:'As needed, following prescribed criteria'};
+ return <><p className="administration-instructions preserve-lines">{instructions||'No additional written instructions were entered. The saved dose, route and schedule are shown below.'}</p><dl className="instruction-facts"><div><dt>Route</dt><dd>{medication.route||'Not recorded'}</dd></div><div><dt>Prescribed dose</dt><dd>{rate}</dd></div><div><dt>Schedule</dt><dd>{frequency[medication.schedule.type]||'Review schedule'}{medication.schedule.times?.length?` · ${medication.schedule.times.join(' / ')}`:''}</dd></div><div><dt>Course</dt><dd>{medication.startDate||'Start not recorded'} to {medication.endDate||'No end date recorded'}</dd></div></dl></>;
+}
