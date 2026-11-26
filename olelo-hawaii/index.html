@@ -9,9 +9,9 @@
   <meta http-equiv="Expires" content="0">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="ʻŌlelo Hawaiʻi">
-  <base href="https://cdn.jsdelivr.net/gh/jpez2051/olelo-hawaii@8a49df6dc9d74720f4c1f9c063c904784fc541d5/">
+  <base href="https://cdn.jsdelivr.net/gh/jpez2051/olelo-hawaii@0602fa9e1a7a1f9bdd83d390065a320040ada89f/">
   <title>ʻŌlelo Hawaiʻi — Learn to use the language</title>
-  <link rel="stylesheet" href="./css/app.css?v=7.3.0">
+  <link rel="stylesheet" href="./css/app.css?v=7.4.0">
 </head>
 <body>
   <header class="site-header">
@@ -26,6 +26,7 @@
     <button class="nav-btn active" data-view="learn">Learn</button>
     <button class="nav-btn" data-view="immerse">Immerse</button>
     <button class="nav-btn" data-view="practice">Practice</button>
+    <button class="nav-btn" data-view="rehearse">Use it</button>
     <button class="nav-btn" data-view="progress">Progress</button>
   </nav>
 
@@ -56,6 +57,13 @@
         </div>
       </div>
       <div id="immersion-list" class="immersion-list"></div>
+    </section>
+
+    <section id="view-rehearse" class="view" aria-labelledby="rehearsal-title">
+      <div class="hero-card"><div><p class="section-kicker">Use it · personal rehearsal</p><h2 id="rehearsal-title">Move from a meaning to your own voice</h2><p>Practice small situations with the sourced models you have been learning. These are short rehearsal tasks, not a full conversation course. Try speaking first when you want to avoid seeing the answer.</p></div></div>
+      <div id="rehearsal-menu" class="unit-list"></div>
+      <article id="rehearsal-work" class="practice-card" hidden></article>
+      <details class="learning-help"><summary>Hear a trusted pronunciation model</summary><p>For sound practice, open the specific public lesson below. Listen to a pair there, repeat it, and compare your voice. These lessons are separate from the situation sentences above; they are not matched audio for those sentences.</p><ul><li><a href="https://oleloonline.com/0401p-pronunciation-practice-vowels/" target="_blank" rel="noopener noreferrer">ʻŌlelo Online: pure vowels and vowel glides</a></li><li><a href="https://oleloonline.com/0402p-pronunciation-practice-kahako/" target="_blank" rel="noopener noreferrer">ʻŌlelo Online: vowel length practice</a></li></ul><p>Audio plays at its original source. No speech is uploaded or automatically evaluated here. Scored listening exercises are deferred until matched recordings and transcripts can be verified.</p></details>
     </section>
 
     <section id="view-practice" class="view" aria-labelledby="practice-title">
@@ -187,6 +195,7 @@
         <p class="section-kicker">What is sticking</p>
         <h2 id="progress-title">Progress</h2>
         <div class="learning-help"><p id="progress-next"></p><button id="progress-next-btn" class="primary-btn" type="button">Choose a lesson</button><p>Correct-answer percentages include help and retries. Use the separate evidence counts below to distinguish recognition from unaided recall.</p></div>
+        <div class="learning-help"><h3>Reading and speaking rehearsal</h3><p id="rehearsal-evidence"></p></div>
         <div id="progress-summary" class="progress-grid"></div>
         <h3>What the evidence shows</h3><div id="evidence-summary" class="progress-grid"></div>
         <p>Earlier progress is preserved. Evidence categories begin with Version 7.1. Recognition, help, and immediate retries do not establish independent production. Delayed production means an unaided correct answer at least 24 hours after the previous attempt.</p>
@@ -214,7 +223,7 @@
 
       <div class="panel">
         <h3>Remembering needs stronger evidence</h3>
-        <p>Scored practice separates spelling, pronouns/participants, noun phrases, sentence patterns, questions, possession, and whole-sentence comprehension. Mixed checkpoints test whether those skills transfer across contexts; Immersion remains unscored exposure.</p>
+        <p>Scored practice separates spelling, pronouns/participants, noun phrases, sentence patterns, questions, possession, and whole-sentence comprehension. Mixed checkpoints revisit taught models across contexts; they do not establish understanding of unfamiliar speech. Immersion remains unscored exposure.</p>
         <div class="data-actions">
           <button id="export-btn" class="secondary-btn">Export progress</button>
           <button id="reset-btn" class="danger-btn">Reset local progress</button>
@@ -225,7 +234,7 @@
 
   <footer class="site-footer">
     <span lang="haw">E hoʻomau i ke aʻo ʻana.</span> Keep learning.
-    <span class="site-version">Version 7.3.0</span>
+    <span class="site-version">Version 7.4.0</span>
   </footer>
 
   <script>
@@ -241,6 +250,6 @@
       }, true);
     })();
   </script>
-  <script type="module" src="./js/app.js?v=7.3.0"></script>
+  <script type="module" src="./js/app.js?v=7.4.0"></script>
 </body>
 </html>
